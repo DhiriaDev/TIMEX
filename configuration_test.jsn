@@ -1,0 +1,24 @@
+{
+  "activity_title": "Title of the activity",
+  "input_parameter": {
+      "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
+      "columns_to_load_from_url": "data,nuovi_positivi,terapia_intensiva",
+      "datetime_column_name": "data",
+      "index_column_name": "data",
+      "datetime_format": "%Y-%m-%dT%H:%M:%S"
+  },
+  "output_parameter": {
+        "output_directory": "result_directory",
+        "save_to_file_image": "yes"
+  },
+  "selection_parameter": {
+        "column_name_selection": "",
+        "value_selection": "",
+        "init_datetime": "2020-09-01T17:00:00",
+        "end_datetime": "2020-12-09T17:00:00"
+  },
+  "visualization_parameter": {
+        "periodic_plot_horizon": "month,week"
+  }
+}
+
