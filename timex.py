@@ -6,17 +6,23 @@
 #       - kaleido
 
 def data_ingestion(config_file_name, verbose='yes'):
-    # function for the ingestion of data
-    #   Input Parameters:
-    #       - config_file_name: filename of the json config file
-    #       - verbose (yes/no): printing the activities of the function
-    #
-    #   Output Parameters:
-    #       - df: Pandas dataframe storing the data loaded from the url in config_file_name
-    #       - config_file_name: the dictionary storing the configuration parameters
-    #
-    # timex package - Politecnico di Milano
-    # v 1.0 - October 2020 - comment
+    """Retrieve the data at the URL in config_file_name and return it in a Pandas' DataFrame.
+
+    Parameters
+    ----------
+    config_file_name : str
+        Filename of the json config file
+    verbose : str, optional
+        Print details on the activities of the function (default is yes)
+
+    Returns
+    -------
+    df_ingestion : DataFrame
+        Pandas dataframe storing the data loaded from the url in config_file_name
+
+    param_config_ingestion : dict
+        Dictionary storing the configuration parameters
+    """
 
     import json
     import pandas as pd
@@ -52,22 +58,35 @@ def data_ingestion(config_file_name, verbose='yes'):
 def data_selection(data_frame, param_config=None, column_name=None, value=None, column_name_datetime=None,
                    init_datetime=None,
                    end_datetime=None, verbose='yes'):
-    # function for the selection of data
-    #   Input Parameters:
-    #       - data_frame: Pandas dataframe storing the data loaded from the url in config_file_name
-    #       - param_config: a timex json configuration file. If this parameter is present, all the other parameters are
-    #                       derived from this one (see json configuration of timex
-    #       - column_name (default = ''): the column where the selection with 'value' is applied
-    #       - value  (default = ''): the value for the selection
-    #       - init_datetime (default = ''): the first index row of the data_frame to be considered
-    #       - end_datetime (default = ''): the last index row of the data_frame to be considered
-    #       - verbose (yes/no): printing the activities of the function
-    #
-    #   Output Parameters:
-    #       - df: Pandas dataframe after the selection phase
-    #
-    # timex package - Politecnico di Milano
-    # v 1.0 - October 2020
+    """This allows the user to select only a part of a time series in DataFrame, according to some criteria.
+
+    The selected data is returned in a Pandas' DataFrame object.
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas dataframe storing the data loaded from the url in config_file_name
+    param_config : dict, optional
+        A timex json configuration file. If this parameter is present, all the other parameters are
+        derived from this one (see json configuration of timex)
+    column_name : str, optional
+        The column where the selection with 'value' is applied. Default is None
+    value : str, optional
+        The value for the selection. Default is None
+    column_name_datetime : str
+        ???
+    init_datetime : str, optional
+        The first index row of the data_frame to be considered. Default is None
+    end_datetime : str, optional
+        The last index row of the data_frame to be considered. Default is None
+    verbose : str, optional
+        Print details on the activities of the function (default is yes).
+
+    Returns
+    -------
+    df: DataFrame
+        Pandas' DataFrame after the selection phase.
+    """
 
     import datetime
 
@@ -100,21 +119,28 @@ def data_selection(data_frame, param_config=None, column_name=None, value=None, 
 
 
 def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, verbose='yes', ):
-    # Function for the adding a 1-step diff column computed on the  column_name_target_diff of the data frame.
-    # The function automatically removes the first row of the data_frame since the diff value is nan
-    # If the name_diff_column parameter is specified, it is used as name of the new column.
-    # Otherwise, the name 'diff' is used
-    #
-    #   Input Parameters:
-    #       - data_frame: Pandas dataframe storing the data loaded from the url in config_file_name
-    #       - column_name (default = ''): the column where the selection with 'value' is applied
-    #       - verbose (yes/no): printing the activities of the function
-    #
-    #   Output Parameters:
-    #       - df: Pandas dataframe with the new diff column and without the first row
-    #
-    # timex package - Politecnico di Milano
-    # v 1.0 - October 2020
+    """Function for adding a 1-step diff column computed on the column_name_target_diff of the data frame.
+
+    The function automatically removes the first row of the data_frame since the diff value is nan
+    If the name_diff_column parameter is specified, it is used as name of the new column.
+    Otherwise, the name 'diff' is used
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+       Pandas dataframe storing the data loaded from the url in config_file_name
+    column_name_target_diff : str
+        ???
+    name_diff_column : str, optional
+        The column where the selection with 'value' is applied
+    verbose : str, optional
+        Print details on the activities of the function (default is yes).
+
+    Returns
+    -------
+    df: Pandas dataframe with the new diff column and without the first row
+
+    """
 
     if verbose == 'yes':
         print('adding_diff_column: ' + 'starting the diff  phase')
@@ -136,19 +162,19 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
 
     return data_frame
 
+
 def data_description(data_frame, param_config, verbose='yes'):
-    # Function for description of the data stored in data_frame.
-    # This function activates specific functions:
-    #       - data_visualization
-    #
-    #   Input Parameters:
-    #       - data_frame: Pandas dataframe storing the data loaded from the url in config_file_name
-    #       - config_file_name: the dictionary storing the configuration parameters
-    #       - verbose (yes/no): printing the activities of the function
-    #
-    #
-    # timex package - Politecnico di Milano
-    # v 1.0 - October 2020
+    """Function which describes the data stored in data_frame.
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas' dataframe containing the data to describe
+    param_config : dict
+        Dictionary with the configuration parameters
+    verbose : str, optional
+        Print details on the activities of the function (default is yes)
+    """
 
     if verbose == 'yes':
         print('data_description: ' + 'starting the description of the data')
@@ -157,26 +183,22 @@ def data_description(data_frame, param_config, verbose='yes'):
 
 
 def data_frame_visualization(data_frame, param_config, visualization_type="line", mode="independent", verbose="yes"):
-    # Function for the visualization of time-series stored in data_frame.
-    # If mode="independent", one image is created for each time-series. Otherwise, when mode="stacked", all the time-series
-    # are presented in a single image.
-    # This function relies on plotly Python package.
-    #
-    #   Input Parameters:
-    #       - data_frame: Pandas dataframe storing the data loaded from the url in config_file_name
-    #       - param_config (default = ''): the dictionary storing the configuration parameters
-    #       - visualization_type (default = 'line'): the type of visualization.
-    #                                   Available types: line, hist
-    #       - mode (default = "independent"): the way time-series are plotted.
-    #                   Independent: one image for time-series; Stacked: one image for all the time-series
-    #       - verbose (yes/no): printing the activities of the function
-    #
-    #
-    # timex package - Politecnico di Milano
-    # v 1.0 - October 2020
+    """Function for the visualization of time-series stored in data_frame, using plotly.
 
-    # Dependencies:
-    #   - kaleido
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas' dataframe with the data to visualize
+    param_config : dict
+        Dictionary with the configuration parameters
+    visualization_type : str, optional
+        The type of visualization. Can be "line" or "hist". Default is "list"
+    mode : str, optional
+        Can be "independent" or "stacked". In independent mode one image is created for each time series.
+        In "stacked" mode only one image, with all the time series, is created.
+    verbose : str, optional
+        Print details on the activities of the function (default is yes)
+    """
 
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go

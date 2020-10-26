@@ -3,7 +3,7 @@ import timex as tx
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
 
 # PARAMETERS
-param_file_nameJSN = 'configuration_test.json'
+param_file_nameJSON = 'configuration_test.json'
 
 # data ingestion
 print('-> INGESTION')
