@@ -16,7 +16,7 @@ def data_ingestion(config_file_name, verbose='yes'):
     #       - config_file_name: the dictionary storing the configuration parameters
     #
     # timex package - Politecnico di Milano
-    # v 1.0 - October 2020
+    # v 1.0 - October 2020 - comment
 
     import json
     import pandas as pd
