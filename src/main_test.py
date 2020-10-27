@@ -1,3 +1,6 @@
+import src.data_ingestion.data_ingestion
+import src.data_preparation.data_preparation
+import src.data_visualization.data_visualization
 from src import timex as tx
 import json
 
@@ -15,20 +18,20 @@ if param_config["verbose"] == 'yes':
 
 # data ingestion
 print('-> INGESTION')
-df = tx.data_ingestion(param_config)   # ingestion of data
+df = src.data_ingestion.data_ingestion.data_ingestion(param_config)   # ingestion of data
 
 print('-> DESCRIPTION')
-tx.data_description(df, param_config)
+src.data_visualization.data_visualization.data_description(df, param_config)
 
 print('-> SELECTION')
-df = tx.data_selection(df, param_config)
+df = src.data_preparation.data_preparation.data_selection(df, param_config)
 
 print('-> ADD DIFF COLUMN')
-df = tx.add_diff_column(df, df.columns[1], 'incremento_column')
+df = src.data_preparation.data_preparation.add_diff_column(df, df.columns[1], 'incremento_column')
 
 print('-> DESCRIPTION')
-tx.data_description(df, param_config)
+src.data_visualization.data_visualization.data_description(df, param_config)
 
 print('-> DESCRIPTION')
-tx.data_frame_visualization(df, param_config, visualization_type="hist")
-tx.data_frame_visualization(df, param_config, visualization_type="line", mode="stacked")
+src.data_visualization.data_visualization.data_frame_visualization(df, param_config, visualization_type="hist")
+src.data_visualization.data_visualization.data_frame_visualization(df, param_config, visualization_type="line", mode="stacked")
