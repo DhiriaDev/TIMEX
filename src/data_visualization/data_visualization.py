@@ -1,3 +1,6 @@
+import webbrowser
+from threading import Timer
+
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import os
@@ -63,8 +66,11 @@ def data_frame_visualization_dash(data_frame, param_config, visualization_type="
 
     app.layout = html.Div(children=children)
 
-    app.run_server(debug=True)
+    def open_browser():
+        webbrowser.open("http://127.0.0.1:8050")
 
+    Timer(1, open_browser).start()
+    app.run_server(debug=True, use_reloader=False)
 
 def data_frame_visualization_plotly(data_frame, param_config, visualization_type="line", mode="independent"):
     """Function for the visualization of time-series stored in data_frame, using plotly.
