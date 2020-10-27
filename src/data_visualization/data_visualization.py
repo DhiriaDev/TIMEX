@@ -3,6 +3,10 @@ import plotly.graph_objects as go
 import os
 from datetime import datetime
 
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
 
 def data_description(data_frame, param_config):
     """Function which describes the data stored in data_frame.
@@ -17,10 +21,52 @@ def data_description(data_frame, param_config):
     if param_config["verbose"] == 'yes':
         print('data_description: ' + 'starting the description of the data')
 
-    data_frame_visualization(data_frame, param_config)
+    # data_frame_visualization_plotly(data_frame, param_config)
+    data_frame_visualization_dash(data_frame, param_config)
 
 
-def data_frame_visualization(data_frame, param_config, visualization_type="line", mode="independent"):
+def data_frame_visualization_dash(data_frame, param_config, visualization_type="line", mode="independent"):
+
+    app = dash.Dash(__name__)
+
+    children = [
+        html.H1(children=param_config["activity_title"]),
+    ]
+
+    if mode == "independent":
+        for col in data_frame.columns:
+            children.append(
+                html.Div(children=col + " analysis")
+            )
+            children.append(
+                dcc.Graph(
+                    # figure=px.line(data_frame, x=data_frame.index, y=col)
+                    figure=go.Figure(data=go.Scatter(x=data_frame.index, y=data_frame[col], mode='lines+markers'))
+            ))
+            children.append(
+                dcc.Graph(
+                    figure=px.histogram(data_frame, x=col)
+                )
+            )
+    elif mode == "stacked":
+        fig = go.Figure()
+        for col in data_frame.columns:
+            fig.add_trace(go.Scatter(x=data_frame.index, y=data_frame[col], mode='lines+markers', name=col))
+
+        children.append(
+            html.Div(children="stacked"),
+        )
+        children.append(
+            dcc.Graph(
+                figure=fig)
+        )
+
+    app.layout = html.Div(children=children)
+
+    app.run_server(debug=True)
+
+
+def data_frame_visualization_plotly(data_frame, param_config, visualization_type="line", mode="independent"):
     """Function for the visualization of time-series stored in data_frame, using plotly.
 
     Parameters
@@ -30,7 +76,7 @@ def data_frame_visualization(data_frame, param_config, visualization_type="line"
     param_config : dict
         Dictionary with the configuration parameters
     visualization_type : str, optional
-        The type of visualization. Can be "line" or "hist". Default is "list"
+        The type of visualization. Can be "line" or "hist". Default is "line"
     mode : str, optional
         Can be "independent" or "stacked". In independent mode one image is created for each time series.
         In "stacked" mode only one image, with all the time series, is created.

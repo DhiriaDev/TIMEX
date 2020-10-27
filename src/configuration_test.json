@@ -1,5 +1,5 @@
 {
-  "activity_title": "Title of the activity",
+  "activity_title": "Covid-19 Italy Analysis",
   "verbose": "yes",
   "input_parameters": {
       "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",

@@ -20,8 +20,8 @@ if param_config["verbose"] == 'yes':
 print('-> INGESTION')
 df = src.data_ingestion.data_ingestion.data_ingestion(param_config)   # ingestion of data
 
-print('-> DESCRIPTION')
-src.data_visualization.data_visualization.data_description(df, param_config)
+# print('-> DESCRIPTION')
+# src.data_visualization.data_visualization.data_description(df, param_config)
 
 print('-> SELECTION')
 df = src.data_preparation.data_preparation.data_selection(df, param_config)
@@ -33,5 +33,5 @@ print('-> DESCRIPTION')
 src.data_visualization.data_visualization.data_description(df, param_config)
 
 print('-> DESCRIPTION')
-src.data_visualization.data_visualization.data_frame_visualization(df, param_config, visualization_type="hist")
-src.data_visualization.data_visualization.data_frame_visualization(df, param_config, visualization_type="line", mode="stacked")
+# src.data_visualization.data_visualization.data_frame_visualization_plotly(df, param_config, visualization_type="hist")
+# src.data_visualization.data_visualization.data_frame_visualization_plotly(df, param_config, visualization_type="line", mode="stacked")

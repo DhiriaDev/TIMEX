@@ -38,11 +38,11 @@ def data_selection(data_frame, param_config):
         data_frame = data_frame.loc[data_frame[column_name] == value]
 
     if init_datetime and column_name_datetime:
-        mask = (data_frame[column_name_datetime] >= init_datetime)
+        mask = (data_frame.index.to_series() >= init_datetime)
         data_frame = data_frame.loc[mask]
 
     if end_datetime and column_name_datetime:
-        mask = (data_frame[column_name_datetime] <= end_datetime)
+        mask = (data_frame.index.to_series() <= end_datetime)
         data_frame = data_frame.loc[mask]
 
     print('data_selection: total amount of rows after the selection phase = ' + str(len(data_frame)))
