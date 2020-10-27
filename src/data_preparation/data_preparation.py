@@ -10,7 +10,7 @@ def data_selection(data_frame, param_config):
     ----------
     data_frame : DataFrame
         Pandas dataframe storing the data loaded from the url in config_file_name
-    param_config : dict, optional
+    param_config : dict
         A timex json configuration file.
 
     Returns

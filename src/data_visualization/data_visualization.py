@@ -41,6 +41,7 @@ def data_frame_visualization(data_frame, param_config, visualization_type="line"
     verbose = param_config["verbose"]
     datetime_column_name = param_config["input_parameters"]["datetime_column_name"]
 
+    data_frame = data_frame.reset_index()
     if verbose == 'yes':
         print('data_visualization: ' + 'starting the description of the data')
 
@@ -61,6 +62,7 @@ def data_frame_visualization(data_frame, param_config, visualization_type="line"
         exit()
 
     i = 1
+
     for col in data_frame.columns:
         if col != datetime_column_name:
             if visualization_type == 'line':
