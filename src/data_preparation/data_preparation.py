@@ -66,9 +66,9 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
     Parameters
     ----------
     data_frame : DataFrame
-       Pandas dataframe storing the data loaded from the url in config_file_name
+        Pandas dataframe storing the data loaded from the url in config_file_name
     column_name_target_diff : str
-        ???
+        Column used to compute the 1-step diff
     name_diff_column : str, optional
         The column where the selection with 'value' is applied
     verbose : str, optional

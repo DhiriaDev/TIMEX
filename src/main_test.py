@@ -8,7 +8,7 @@ import json
 
 # CHANGE HERE TO CHANGE EXAMPLE
 # Can be: "covid19", "airlines"
-example = "covid19"
+example = "airlines"
 
 if example == "airlines":
     # PARAMETERS
@@ -48,6 +48,9 @@ if example == "covid19":
 
     print('-> SELECTION')
     df = src.data_preparation.data_preparation.data_selection(df, param_config)
+
+    print('-> ADD DIFF COLUMN')
+    df = src.data_preparation.data_preparation.add_diff_column(df, df.columns[1], 'incremento_column')
 
     print('-> DESCRIPTION')
     src.data_visualization.data_visualization.data_description(df, param_config)

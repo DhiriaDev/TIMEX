@@ -1,6 +1,7 @@
 import webbrowser
 from threading import Timer
 
+from pandas import Grouper, DataFrame
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import os
@@ -31,6 +32,7 @@ def data_description(data_frame, param_config):
 
 
 def data_frame_visualization_dash(data_frame, param_config, visualization_type="line", mode="independent"):
+    visualization_parameters = param_config["visualization_parameters"]
 
     app = dash.Dash(__name__)
 
@@ -43,16 +45,34 @@ def data_frame_visualization_dash(data_frame, param_config, visualization_type="
             children.append(
                 html.Div(children=col + " analysis")
             )
+            # Simple plot
             children.append(
                 dcc.Graph(
-                    # figure=px.line(data_frame, x=data_frame.index, y=col)
                     figure=go.Figure(data=go.Scatter(x=data_frame.index, y=data_frame[col], mode='lines+markers'))
-            ))
+                ))
+            # Histogram
             children.append(
                 dcc.Graph(
                     figure=px.histogram(data_frame, x=col)
                 )
             )
+            # Box plot
+            temp = data_frame[col]
+            groups = temp.groupby(Grouper(freq=visualization_parameters["box_plot_frequency"]))
+
+            boxes = []
+            for group in groups:
+                boxes.append(go.Box(
+                    name=str(group[0]),
+                    y=group[1]
+                ))
+
+            children.append(
+                dcc.Graph(
+                    figure=go.Figure(data=boxes)
+                )
+            )
+
     elif mode == "stacked":
         fig = go.Figure()
         for col in data_frame.columns:
@@ -73,6 +93,7 @@ def data_frame_visualization_dash(data_frame, param_config, visualization_type="
 
     Timer(1, open_browser).start()
     app.run_server(debug=True, use_reloader=False)
+
 
 def data_frame_visualization_plotly(data_frame, param_config, visualization_type="line", mode="independent"):
     """Function for the visualization of time-series stored in data_frame, using plotly.

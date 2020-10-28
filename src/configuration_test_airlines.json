@@ -15,6 +15,7 @@
   "selection_parameters": {
   },
   "visualization_parameters": {
+        "box_plot_frequency": "1Y",
         "periodic_plot_horizon": "month,week"
   }
 }
