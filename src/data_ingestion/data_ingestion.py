@@ -24,10 +24,12 @@ def data_ingestion(param_config):
     index_column_name = input_parameters["index_column_name"]
 
     if verbose == 'yes':
-        print('data_ingestion: ' + 'starting the data ingestion phase')
+        print('------------------------------------------------------')
+        print('Data_ingestion: starting the data ingestion phase.')
 
     columns_to_read = list(columns_to_load_from_url.split(','))
-    df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)
+    # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
+    df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
 
     # These are optional.
     if "datetime_column_name" in input_parameters:
@@ -38,8 +40,8 @@ def data_ingestion(param_config):
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
     if verbose == 'yes':
-        print('data_ingestion: ' + 'data frame (df) creation completed!')
-        print('data_ingestion: summary of statistics *** ')
+        print('Data_ingestion: data frame (df) creation completed!')
+        print('Data_ingestion: summary of statistics *** ')
         print('                |-> number of rows: ' + str(len(df_ingestion)))
         print('                |-> number of columns: ' + str(len(df_ingestion.columns)))
         print('                |-> column names: ' + str(list(df_ingestion.columns)))

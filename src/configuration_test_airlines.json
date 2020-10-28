@@ -1,0 +1,21 @@
+{
+  "activity_title": "Airlines analysis",
+  "verbose": "yes",
+  "input_parameters": {
+      "source_data_url": "../demo_datasets/a10.csv",
+      "columns_to_load_from_url": "date,value",
+      "datetime_column_name": "date",
+      "index_column_name": "date",
+      "datetime_format": "%Y-%m-%d"
+  },
+  "output_parameters": {
+        "output_directory": "../result_directory",
+        "save_to_file_image": "yes"
+  },
+  "selection_parameters": {
+  },
+  "visualization_parameters": {
+        "periodic_plot_horizon": "month,week"
+  }
+}
+

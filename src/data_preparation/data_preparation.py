@@ -19,34 +19,40 @@ def data_selection(data_frame, param_config):
         Pandas' DataFrame after the selection phase.
     """
     verbose = param_config["verbose"]
+    selection_parameters = param_config["selection_parameters"]
+    input_parameters = param_config["input_parameters"]
+
     if verbose == 'yes':
-        print('data_selection: ' + 'starting the data selection phase')
-        print('data_selection: total amount of rows before the selection phase = ' + str(len(data_frame)))
+        print("------------------------------------------------------")
+        print('Data_selection: ' + 'starting the data selection phase')
+        print('Data_selection: total amount of rows before the selection phase = ' + str(len(data_frame)))
 
-    column_name = param_config['selection_parameters']['column_name_selection']
-    value = param_config['selection_parameters']['value_selection']
-    column_name_datetime = param_config['input_parameters']['datetime_column_name']
+    if "column_name_selection" in selection_parameters and "value" in selection_parameters:
+        column_name = param_config['selection_parameters']['column_name_selection']
+        value = param_config['selection_parameters']['value_selection']
 
-    datetime_format = param_config["input_parameters"]["datetime_format"]
-    init_datetime = datetime.strptime(param_config['selection_parameters']['init_datetime'],
-                                      datetime_format)
-    end_datetime = datetime.strptime(param_config['selection_parameters']['end_datetime'],
-                                         datetime_format)
-
-    if column_name and value:
-        print('data_selection: ' + 'selection over column = ' + column_name + ' - with value = ' + value)
+        print('Data_selection: ' + 'selection over column = ' + column_name + ' - with value = ' + str(value))
         data_frame = data_frame.loc[data_frame[column_name] == value]
 
-    if init_datetime and column_name_datetime:
+    if "init_datetime" in selection_parameters:
+        datetime_format = input_parameters["datetime_format"]
+
+        init_datetime = datetime.strptime(selection_parameters['init_datetime'], datetime_format)
+
+        print('Data_selection: ' + 'selection over date, data after ' + str(init_datetime))
         mask = (data_frame.index.to_series() >= init_datetime)
         data_frame = data_frame.loc[mask]
 
-    if end_datetime and column_name_datetime:
+    if "end_datetime" in selection_parameters:
+        datetime_format = input_parameters["datetime_format"]
+
+        end_datetime = datetime.strptime(selection_parameters['end_datetime'], datetime_format)
+
+        print('Data_selection: ' + 'selection over date, data before ' + str(end_datetime))
         mask = (data_frame.index.to_series() <= end_datetime)
         data_frame = data_frame.loc[mask]
 
-    print('data_selection: total amount of rows after the selection phase = ' + str(len(data_frame)))
-    print('data_selection:    from ' + str(init_datetime) + ' to ' + str(end_datetime))
+    print('Data_selection: total amount of rows after the selection phase = ' + str(len(data_frame)))
     return data_frame
 
 
@@ -74,8 +80,9 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
 
     """
     if verbose == 'yes':
-        print('adding_diff_column: ' + 'starting the diff  phase')
-        print('adding_diff_column: total number of rows before the adding phase = ' + str(len(data_frame)))
+        print('-------------------------------------------------')
+        print('Adding_diff_column: ' + 'starting the diff  phase')
+        print('Adding_diff_column: total number of rows before the adding phase = ' + str(len(data_frame)))
         print('                    total number of columns before the adding phase = ' + str(len(data_frame.columns)))
 
     tmp = data_frame[column_name_target_diff]
@@ -87,8 +94,8 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
     data_frame = data_frame.iloc[1:]
 
     if verbose == 'yes':
-        print('adding_diff_column: ' + 'completing the diff  phase')
-        print('adding_diff_column: total number of rows after the adding phase = ' + str(len(data_frame)))
+        print('Adding_diff_column: ' + 'completing the diff  phase')
+        print('Adding_diff_column: total number of rows after the adding phase = ' + str(len(data_frame)))
         print('                    total number of columns after the adding phase = ' + str(len(data_frame.columns)))
 
     return data_frame

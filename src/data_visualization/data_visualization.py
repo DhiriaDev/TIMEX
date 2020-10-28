@@ -11,6 +11,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 
+
 def data_description(data_frame, param_config):
     """Function which describes the data stored in data_frame.
 
@@ -22,7 +23,8 @@ def data_description(data_frame, param_config):
         Dictionary with the configuration parameters
     """
     if param_config["verbose"] == 'yes':
-        print('data_description: ' + 'starting the description of the data')
+        print('-----------------------------------------------------------')
+        print('Data_description: ' + 'starting the description of the data')
 
     # data_frame_visualization_plotly(data_frame, param_config)
     data_frame_visualization_dash(data_frame, param_config)

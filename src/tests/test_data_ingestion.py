@@ -8,7 +8,7 @@ from src.data_ingestion.data_ingestion import data_ingestion
 class MyTestCase(unittest.TestCase):
 
     def test_data_ingestion_univariate_1(self):
-
+        # Local load, with datetime.
         param_config = {
             "verbose": "no",
             "input_parameters": {
@@ -34,7 +34,7 @@ class MyTestCase(unittest.TestCase):
         print(df.iloc[[0]]["third_column"])
 
     def test_data_ingestion_univariate_2(self):
-
+        # Local load, with no datetime column.
         param_config = {
             "verbose": "no",
             "input_parameters": {
@@ -56,6 +56,23 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(df.iloc[0]["third_column"], 3)
         self.assertEqual(df.iloc[1]["third_column"], 6)
         self.assertEqual(df.iloc[2]["third_column"], 9)
+
+    def test_data_ingestion_univariate_3(self):
+        # Local load, with no datetime column. Check columns'order is maintained.
+        param_config = {
+            "verbose": "no",
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_1.csv",
+                "columns_to_load_from_url": "third_column,second_column,first_column",
+                "index_column_name": "second_column",
+            }
+        }
+
+        df = data_ingestion(param_config)
+
+        self.assertEqual(df.index.name, "second_column")
+        self.assertEqual(df.columns[0], "third_column")
+        self.assertEqual(df.columns[1], "first_column")
 
 
 if __name__ == '__main__':
