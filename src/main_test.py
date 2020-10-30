@@ -2,77 +2,55 @@ import src.data_ingestion.data_ingestion
 import src.data_preparation.data_preparation
 import src.data_visualization.data_visualization
 import json
+from src.data_prediction.prophet_predictor import FBProphet
 
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
 
 # CHANGE HERE TO CHANGE EXAMPLE
-# Can be: "covid19", "airlines"
-from src.data_prediction.prophet_predictor import FBProphet
+# Can be: "covid19italy", "airlines"
+from src.scenario.scenario import Scenario
 
-example = "covid19"
+example = "covid19italy"
 
-if example == "airlines":
-    # PARAMETERS
+if example == "covid19italy":
+    param_file_nameJSON = 'configuration_test_covid19italy.json'
+elif example == "airlines":
     param_file_nameJSON = 'configuration_test_airlines.json'
+else:
+    exit()
 
-    # Load parameters from config file.
-    with open(param_file_nameJSON) as json_file:  # opening the config_file_name
-        param_config = json.load(json_file)  # loading the json
+# Load parameters from config file.
+with open(param_file_nameJSON) as json_file:  # opening the config_file_name
+    param_config = json.load(json_file)  # loading the json
 
-    if param_config["verbose"] == 'yes':
-        print('data_ingestion: ' + 'json file loading completed!')
+if param_config["verbose"] == 'yes':
+    print('data_ingestion: ' + 'json file loading completed!')
 
-    # data ingestion
-    print('-> INGESTION')
-    ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)   # ingestion of data
+# data ingestion
+print('-> INGESTION')
+ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)  # ingestion of data
 
-    print('-> SELECTION')
-    ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
+# data selection
+print('-> SELECTION')
+ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
 
-    print('-> PREDICTION')
+# print('-> ADD DIFF COLUMN')
+# ingested_data = src.data_preparation.data_preparation.add_diff_column(ingested_data, ingested_data.columns[0], 'incremento_terapia')
+
+columns = ingested_data.columns
+scenarios = []
+for col in columns:
+    scenario_data = ingested_data[[col]]
+    model_results = []
+
+    print('-> PREDICTION FOR ' + str(col))
     predictor = FBProphet(param_config)
-    training_performance = predictor.train(ingested_data)
-    predicted_data = predictor.predict()
+    prophet_result = predictor.launch_model(scenario_data)
+    model_results.append(prophet_result)
 
-    if 'model_parameters' not in param_config:
-        param_config['model_parameters'] = predictor.get_training_parameters()
+    scenarios.append(
+        Scenario(scenario_data, model_results)
+    )
 
-    print('-> DESCRIPTION')
-    src.data_visualization.data_visualization.data_description(ingested_data, predicted_data, training_performance, param_config)
-
-if example == "covid19":
-    # PARAMETERS
-    param_file_nameJSON = 'configuration_test_covid19.json'
-
-    # Load parameters from config file.
-    with open(param_file_nameJSON) as json_file:  # opening the config_file_name
-        param_config = json.load(json_file)  # loading the json
-
-    if param_config["verbose"] == 'yes':
-        print('data_ingestion: ' + 'json file loading completed!')
-
-    # data ingestion
-    print('-> INGESTION')
-    ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)  # ingestion of data
-
-    # data selection
-    print('-> SELECTION')
-    ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
-
-    # print('-> ADD DIFF COLUMN')
-    # df = src.data_preparation.data_preparation.add_diff_column(df, df.columns[1], 'incremento_column')
-
-    print('-> PREDICTION')
-    predictor = FBProphet(param_config)
-    training_performance = predictor.train(ingested_data)
-    predicted_data = predictor.predict()
-
-    if 'model_parameters' not in param_config:
-        param_config['model_parameters'] = predictor.get_training_parameters()
-
-    print('-> DESCRIPTION')
-    src.data_visualization.data_visualization.data_description(ingested_data, predicted_data, training_performance, param_config)
-
-    # print('-> DESCRIPTION')
-    # src.data_visualization.data_visualization.data_frame_visualization_plotly(df, param_config, visualization_type="hist")
-    # src.data_visualization.data_visualization.data_frame_visualization_plotly(df, param_config, visualization_type="line", mode="stacked")
+print('-> DESCRIPTION')
+src.data_visualization.data_visualization.data_description_new(scenarios, param_config)

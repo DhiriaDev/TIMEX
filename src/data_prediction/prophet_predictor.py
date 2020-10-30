@@ -8,23 +8,20 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
-from src.data_prediction.data_prediction import get_training_stats
+from src.data_prediction.data_prediction import PredictionModel, TrainingPerformance
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 
 
-class FBProphet():
+class FBProphet(PredictionModel):
     """Facebook's Prophet prediction model."""
 
     def __init__(self, params: dict):
-        self.test_values = 0
-        self.freq = None
+        super().__init__()
+        self.model_characteristics["type"] = "FBProphet"
 
         # Stuff needed to make Prophet shut up during training.
         self.suppress_stdout_stderr = suppress_stdout_stderr
-
-        self.pre_transformation = None
-        self.post_transformation = None
 
         if params["verbose"] == "yes":
             print('-----------------------------------------------------------')
@@ -48,13 +45,13 @@ class FBProphet():
             self.pre_transformation = np.log
             self.post_transformation = np.exp
 
-    def train(self, df: DataFrame) -> dict:
+    def train(self, input_data: DataFrame) -> TrainingPerformance:
         """Overrides PredictionModel.train()"""
-        test_values = int(round(len(df) * (self.test_percentage / 100)))
+        test_values = int(round(len(input_data) * (self.test_percentage / 100)))
         self.test_values = test_values
-        self.freq = pd.infer_freq(df.index)
-        train_ts = df.iloc[:-test_values]
-        test_ts = df.iloc[-test_values:]
+        self.freq = pd.infer_freq(input_data.index)
+        train_ts = input_data.iloc[:-test_values]
+        test_ts = input_data.iloc[-test_values:]
 
         train_ts.reset_index(inplace=True)
         train_ts.columns = ['ds', 'y']
@@ -72,7 +69,9 @@ class FBProphet():
         forecast = self.predict()
         forecast = forecast.iloc[-self.prediction_lags-test_values:-self.prediction_lags]
 
-        return get_training_stats(test_ts["y"], forecast["yhat"])
+        tp = TrainingPerformance()
+        tp.set_training_stats(test_ts["y"], forecast["yhat"])
+        return tp
 
     def predict(self) -> DataFrame:
         """Overrides PredictionModel.predict()"""
@@ -88,14 +87,6 @@ class FBProphet():
         forecast.set_index('ds', inplace=True)
 
         return forecast
-
-    def get_training_parameters(self) -> dict:
-        """Overrides PredictionModel.get_training_parameters()"""
-        return {
-            'test_percentage': self.test_percentage,
-            'prediction_lags': self.prediction_lags,
-            'transformation': "log"
-        }
 
 
 class suppress_stdout_stderr(object):
