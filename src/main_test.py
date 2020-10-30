@@ -1,14 +1,15 @@
 import src.data_ingestion.data_ingestion
 import src.data_preparation.data_preparation
 import src.data_visualization.data_visualization
-from src import timex as tx
 import json
 
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
 
 # CHANGE HERE TO CHANGE EXAMPLE
 # Can be: "covid19", "airlines"
-example = "airlines"
+from src.data_prediction.prophet_predictor import FBProphet
+
+example = "covid19"
 
 if example == "airlines":
     # PARAMETERS
@@ -23,13 +24,21 @@ if example == "airlines":
 
     # data ingestion
     print('-> INGESTION')
-    df = src.data_ingestion.data_ingestion.data_ingestion(param_config)   # ingestion of data
+    ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)   # ingestion of data
 
     print('-> SELECTION')
-    df = src.data_preparation.data_preparation.data_selection(df, param_config)
+    ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
+
+    print('-> PREDICTION')
+    predictor = FBProphet(param_config)
+    training_performance = predictor.train(ingested_data)
+    predicted_data = predictor.predict()
+
+    if 'model_parameters' not in param_config:
+        param_config['model_parameters'] = predictor.get_training_parameters()
 
     print('-> DESCRIPTION')
-    src.data_visualization.data_visualization.data_description(df, param_config)
+    src.data_visualization.data_visualization.data_description(ingested_data, predicted_data, training_performance, param_config)
 
 if example == "covid19":
     # PARAMETERS
@@ -44,16 +53,25 @@ if example == "covid19":
 
     # data ingestion
     print('-> INGESTION')
-    df = src.data_ingestion.data_ingestion.data_ingestion(param_config)  # ingestion of data
+    ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)  # ingestion of data
 
+    # data selection
     print('-> SELECTION')
-    df = src.data_preparation.data_preparation.data_selection(df, param_config)
+    ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
 
-    print('-> ADD DIFF COLUMN')
-    df = src.data_preparation.data_preparation.add_diff_column(df, df.columns[1], 'incremento_column')
+    # print('-> ADD DIFF COLUMN')
+    # df = src.data_preparation.data_preparation.add_diff_column(df, df.columns[1], 'incremento_column')
+
+    print('-> PREDICTION')
+    predictor = FBProphet(param_config)
+    training_performance = predictor.train(ingested_data)
+    predicted_data = predictor.predict()
+
+    if 'model_parameters' not in param_config:
+        param_config['model_parameters'] = predictor.get_training_parameters()
 
     print('-> DESCRIPTION')
-    src.data_visualization.data_visualization.data_description(df, param_config)
+    src.data_visualization.data_visualization.data_description(ingested_data, predicted_data, training_performance, param_config)
 
     # print('-> DESCRIPTION')
     # src.data_visualization.data_visualization.data_frame_visualization_plotly(df, param_config, visualization_type="hist")

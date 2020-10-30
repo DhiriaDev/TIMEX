@@ -12,13 +12,16 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 
+import pandas as pd
 
-def data_description(data_frame, param_config):
+
+def data_description(ingested_data, prediction_data, training_performance, param_config):
     """Function which describes the data stored in data_frame.
 
     Parameters
     ----------
-    data_frame : DataFrame
+    prediction_data
+    ingested_data : DataFrame
         Pandas' dataframe containing the data to describe
     param_config : dict
         Dictionary with the configuration parameters
@@ -28,36 +31,37 @@ def data_description(data_frame, param_config):
         print('Data_description: ' + 'starting the description of the data')
 
     # data_frame_visualization_plotly(data_frame, param_config)
-    data_frame_visualization_dash(data_frame, param_config)
+    data_frame_visualization_dash(ingested_data, prediction_data, training_performance, param_config)
 
 
-def data_frame_visualization_dash(data_frame, param_config, visualization_type="line", mode="independent"):
+def data_frame_visualization_dash(ingested_data, predicted_data, training_performance, param_config, mode='independent'):
     visualization_parameters = param_config["visualization_parameters"]
 
     app = dash.Dash(__name__)
 
     children = [
         html.H1(children=param_config["activity_title"]),
+        html.H2("Data visualization")
     ]
 
     if mode == "independent":
-        for col in data_frame.columns:
+        for col in ingested_data.columns:
             children.append(
                 html.Div(children=col + " analysis")
             )
             # Simple plot
             children.append(
                 dcc.Graph(
-                    figure=go.Figure(data=go.Scatter(x=data_frame.index, y=data_frame[col], mode='lines+markers'))
+                    figure=go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data[col], mode='lines+markers'))
                 ))
             # Histogram
             children.append(
                 dcc.Graph(
-                    figure=px.histogram(data_frame, x=col)
+                    figure=px.histogram(ingested_data, x=col)
                 )
             )
             # Box plot
-            temp = data_frame[col]
+            temp = ingested_data[col]
             groups = temp.groupby(Grouper(freq=visualization_parameters["box_plot_frequency"]))
 
             boxes = []
@@ -73,10 +77,17 @@ def data_frame_visualization_dash(data_frame, param_config, visualization_type="
                 )
             )
 
+            # Autocorrelation plot
+            # children.append(
+            #     dcc.Graph(
+            #         figure=go.Figure(pd.plotting.autocorrelation_plot(data_frame[col]))
+            #     )
+            # )
+
     elif mode == "stacked":
         fig = go.Figure()
-        for col in data_frame.columns:
-            fig.add_trace(go.Scatter(x=data_frame.index, y=data_frame[col], mode='lines+markers', name=col))
+        for col in ingested_data.columns:
+            fig.add_trace(go.Scatter(x=ingested_data.index, y=ingested_data[col], mode='lines+markers', name=col))
 
         children.append(
             html.Div(children="stacked"),
@@ -85,6 +96,48 @@ def data_frame_visualization_dash(data_frame, param_config, visualization_type="
             dcc.Graph(
                 figure=fig)
         )
+
+    # Add prediction results
+    children.append(
+        html.H2("Training & Prediction results")
+    )
+
+    children.append(
+        html.Div("Training performance:")
+    )
+    children.append(
+        html.Ul([html.Li(key + ": " + str(value)) for key, value in training_performance.items()])
+    )
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
+                             mode='lines+markers',
+                             name='yhat'))
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+                             line=dict(color='lightgreen', dash='dash'),
+                             name='yhat_lower'))
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+                             line=dict(color='lightgreen', dash='dash'),
+                             name='yhat_upper'))
+
+    test_percentage = param_config['model_parameters']['test_percentage']
+    test_values = int(round(len(ingested_data) * (test_percentage / 100)))
+
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=ingested_data.iloc[:-test_values, 0],
+                             line=dict(color='black'),
+                             mode='markers',
+                             name='training data'))
+
+    fig.add_trace(go.Scatter(x=ingested_data.iloc[-test_values:].index, y=ingested_data.iloc[-test_values:, 0],
+                             line=dict(color='red'),
+                             mode='markers',
+                             name='test data'))
+    children.append(
+        dcc.Graph(
+            figure=fig
+        )
+    )
 
     app.layout = html.Div(children=children)
 

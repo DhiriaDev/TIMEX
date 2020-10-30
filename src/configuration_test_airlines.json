@@ -9,14 +9,19 @@
       "datetime_format": "%Y-%m-%d"
   },
   "output_parameters": {
-        "output_directory": "../result_directory",
-        "save_to_file_image": "yes"
+      "output_directory": "../result_directory",
+      "save_to_file_image": "yes"
   },
   "selection_parameters": {
   },
+  "model_parameters": {
+      "test_percentage": 10,
+      "prediction_lags": 10,
+      "transformation": "none"
+  },
   "visualization_parameters": {
-        "box_plot_frequency": "1Y",
-        "periodic_plot_horizon": "month,week"
+      "box_plot_frequency": "1Y",
+      "periodic_plot_horizon": "month,week"
   }
 }
 

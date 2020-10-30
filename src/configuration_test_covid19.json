@@ -3,24 +3,29 @@
   "verbose": "yes",
   "input_parameters": {
       "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
-      "columns_to_load_from_url": "data,nuovi_positivi,terapia_intensiva",
+      "columns_to_load_from_url": "data,nuovi_positivi",
       "datetime_column_name": "data",
       "index_column_name": "data",
       "datetime_format": "%Y-%m-%dT%H:%M:%S"
   },
   "output_parameters": {
-        "output_directory": "../result_directory",
-        "save_to_file_image": "yes"
+      "output_directory": "../result_directory",
+      "save_to_file_image": "yes"
   },
   "selection_parameters": {
-        "column_name_selection": "",
-        "value_selection": "",
-        "init_datetime": "2020-09-01T17:00:00",
-        "end_datetime": "2020-12-09T17:00:00"
+      "column_name_selection": "",
+      "value_selection": "",
+      "init_datetime": "2020-9-01T17:00:00",
+      "end_datetime": "2020-12-09T17:00:00"
+  },
+  "model_parameters": {
+      "test_percentage": 10,
+      "prediction_lags": 10,
+      "transformation": "log"
   },
   "visualization_parameters": {
-        "box_plot_frequency": "1W",
-        "periodic_plot_horizon": "month,week"
+      "box_plot_frequency": "1W",
+      "periodic_plot_horizon": "month,week"
   }
 }
 
