@@ -7,12 +7,13 @@ from src.data_prediction.prophet_predictor import FBProphet
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
 
 # CHANGE HERE TO CHANGE EXAMPLE
-# Can be: "covid19italy", "covid19switzerland", "airlines"
+# Can be: "covid19italy", "covid19switzerland", "airlines", "temperatures"
 from src.scenario.scenario import Scenario
 
-# example = "covid19italy"
+example = "covid19italy"
 # example = "airlines"
-example = "covid19switzerland"
+# example = "covid19switzerland"
+# example = "temperatures"
 
 if example == "covid19italy":
     param_file_nameJSON = 'configuration_test_covid19italy.json'
@@ -20,6 +21,8 @@ elif example == "airlines":
     param_file_nameJSON = 'configuration_test_airlines.json'
 elif example == "covid19switzerland":
     param_file_nameJSON = 'configuration_test_covid19switzerland.json'
+elif example == "temperatures":
+    param_file_nameJSON = 'configuration_test_daily_min_temperatures.json'
 else:
     exit()
 

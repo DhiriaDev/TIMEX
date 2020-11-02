@@ -1,0 +1,29 @@
+{
+  "activity_title": "Daily minimum temperatures in Melbourne",
+  "verbose": "yes",
+  "input_parameters": {
+      "source_data_url": "https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv",
+      "columns_to_load_from_url": "Date,Temp",
+      "datetime_column_name": "Date",
+      "index_column_name": "Date",
+      "datetime_format": "%Y-%m-%d"
+  },
+  "output_parameters": {
+      "output_directory": "../result_directory",
+      "save_to_file_image": "yes"
+  },
+  "selection_parameters": {
+  },
+  "model_parameters": {
+      "test_percentage": 1,
+      "delta_training_percentage": 99,
+      "prediction_lags": 10,
+      "transformation": "",
+      "main_accuracy_estimator": "mae"
+  },
+  "visualization_parameters": {
+      "box_plot_frequency": "1W",
+      "periodic_plot_horizon": "month,week"
+  }
+}
+

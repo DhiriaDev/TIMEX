@@ -1,13 +1,20 @@
 import webbrowser
 from threading import Timer
 
+import pandas
+import plotly
 from pandas import Grouper, DataFrame
 import plotly.graph_objects as go
+import numpy as np
+
+import matplotlib.pyplot as pyplot
 
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
+
+import statsmodels.api as sm
 
 from src.scenario.scenario import Scenario
 
@@ -42,15 +49,14 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
         ingested_data = s.ingested_data
         model_results = s.model_results
 
-        name = ingested_data.columns[0]
-
         # Data visualization with plots
         children.extend([
-            html.H2(children=name + " analysis"),
+            html.H2(children=ingested_data.columns[0] + " analysis"),
             html.H3("Data visualization"),
-            simple_plot(ingested_data),
-            histogram_plot(ingested_data, name),
-            box_plot(ingested_data, name, visualization_parameters["box_plot_frequency"])
+            line_plot(ingested_data),
+            histogram_plot(ingested_data),
+            box_plot(ingested_data, visualization_parameters["box_plot_frequency"]),
+            autocorrelation_plot(ingested_data)
         ])
 
         # Prediction results
@@ -84,22 +90,63 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
     app.run_server(debug=True, use_reloader=False)
 
 
-def simple_plot(ingested_data: DataFrame) -> dcc.Graph:
+def line_plot(ingested_data: DataFrame) -> dcc.Graph:
+    fig = go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data.iloc[:, 0], mode='lines+markers'))
+    fig.update_layout(title='Line plot', xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
+
     g = dcc.Graph(
-            figure=go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data.iloc[:, 0], mode='lines+markers'))
+            figure=fig
     )
     return g
 
 
-def histogram_plot(ingested_data: DataFrame, name: str) -> dcc.Graph:
+def histogram_plot(ingested_data: DataFrame) -> dcc.Graph:
+    fig = px.histogram(ingested_data, ingested_data.columns[0])
+    fig.update_layout(title='Histogram')
     g = dcc.Graph(
-            figure=px.histogram(ingested_data, x=name)
+            figure=fig
     )
     return g
 
 
-def box_plot(ingested_data: DataFrame, name: str, freq: str) -> dcc.Graph:
-    temp = ingested_data[name]
+def autocorrelation_plot(ingested_data: DataFrame) -> dcc.Graph:
+    # Code from https://github.com/pandas-dev/pandas/blob/v1.1.4/pandas/plotting/_matplotlib/misc.py
+    n = len(ingested_data)
+    data = np.asarray(ingested_data)
+    mean = np.mean(data)
+    c0 = np.sum((data - mean) ** 2) / float(n)
+
+    def r(h):
+        return ((data[: n - h] - mean) * (data[h:] - mean)).sum() / float(n) / c0
+
+    x = np.arange(n) + 1
+    y = [r(loc) for loc in x]
+
+    z95 = 1.959963984540054
+    z99 = 2.5758293035489004
+
+    c1 = z99 / np.sqrt(n)
+    c2 = z95 / np.sqrt(n)
+    c3 = -z95 / np.sqrt(n)
+    c4 = -z99 / np.sqrt(n)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name='autocorrelation'))
+    fig.add_trace(go.Scatter(x=x, y=np.full(n, c1), line=dict(color='gray', width=1), name='z99'))
+    fig.add_trace(go.Scatter(x=x, y=np.full(n, c2), line=dict(color='gray', width=1), name='z95'))
+    fig.add_trace(go.Scatter(x=x, y=np.full(n, c3), line=dict(color='gray', width=1), name='-z95'))
+    fig.add_trace(go.Scatter(x=x, y=np.full(n, c4), line=dict(color='gray', width=1), name='-z99'))
+    fig.update_layout(title='Autocorrelation plot', xaxis_title='Lag', yaxis_title='Autocorrelation')
+    fig.update_yaxes(tick0=-1.0, dtick=0.25)
+    fig.update_yaxes(range=[-1.2, 1.2])
+    g = dcc.Graph(
+            figure=fig
+    )
+    return g
+
+
+def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
+    temp = ingested_data.iloc[:, 0]
     groups = temp.groupby(Grouper(freq=freq))
 
     boxes = []
@@ -110,8 +157,11 @@ def box_plot(ingested_data: DataFrame, name: str, freq: str) -> dcc.Graph:
             y=group[1]
         ))
 
+    fig = go.Figure(data=boxes)
+    fig.update_layout(title='Box plot', xaxis_title=ingested_data.index.name, yaxis_title='Count')
+
     g = dcc.Graph(
-            figure=go.Figure(data=boxes)
+            figure=fig
         )
     return g
 
@@ -147,7 +197,7 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
                              line=dict(color='red'),
                              mode='markers',
                              name='test data'))
-    g= dcc.Graph(
+    g = dcc.Graph(
             figure=fig
         )
     return g

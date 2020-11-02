@@ -19,8 +19,8 @@
       "end_datetime": "2020-12-09T17:00:00"
   },
   "model_parameters": {
-      "test_percentage": 2,
-      "delta_training_percentage": 10,
+      "test_percentage": 1,
+      "delta_training_percentage": 5,
       "prediction_lags": 10,
       "transformation": "log",
       "main_accuracy_estimator": "mae"
