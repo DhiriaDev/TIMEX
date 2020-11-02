@@ -1,7 +1,7 @@
 import webbrowser
 from threading import Timer
 
-from pandas import Grouper
+from pandas import Grouper, DataFrame
 import plotly.graph_objects as go
 
 import dash
@@ -15,8 +15,8 @@ from src.scenario.scenario import Scenario
 def data_description_new(scenarios: [Scenario], param_config: dict):
     """
     Function which describes the data stored in each scenario, in a Dash application.
-    A scenario is a time series of interest; in a univariate environment,
-    each column of a starting dataframe corresponds to a different scenario.
+    A scenario is a time series of interest; in a univariate environment, each column
+    of a starting dataframe corresponds to a different scenario.
 
     Parameters
     ----------
@@ -44,88 +44,35 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
 
         name = ingested_data.columns[0]
 
+        # Data visualization with plots
         children.extend([
             html.H2(children=name + " analysis"),
-            html.H3("Data visualization")
+            html.H3("Data visualization"),
+            simple_plot(ingested_data),
+            histogram_plot(ingested_data, name),
+            box_plot(ingested_data, name, visualization_parameters["box_plot_frequency"])
         ])
 
-        # Plots
-        children.extend([
-            # Simple plot
-            dcc.Graph(
-                figure=go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data.iloc[:, 0], mode='lines+markers'))
-            ),
-            # Histogram
-            dcc.Graph(
-                figure=px.histogram(ingested_data, x=name)
-            )
-        ])
-
-        # Box plot
-        temp = ingested_data[name]
-        groups = temp.groupby(Grouper(freq=visualization_parameters["box_plot_frequency"]))
-
-        boxes = []
-        for group in groups:
-            boxes.append(go.Box(
-                name=str(group[0]),
-                y=group[1]
-            ))
-
-        children.append(
-            dcc.Graph(
-                figure=go.Figure(data=boxes)
-            )
-        )
-
-        # Add prediction results
+        # Prediction results
         children.append(
             html.H3("Training & Prediction results"),
         )
 
         for model in model_results:
             predicted_data = model.prediction
-            training_performance = model.training_performance.get_dict()
+            testing_performances = model.testing_performance.get_dict()
             model_characteristic = model.characteristics
-
-            children.extend([
-                html.Div("Model characteristics:"),
-                html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic])
-            ])
-            children.extend([
-                html.Div("Training performance:"),
-                html.Ul([html.Li(key + ": " + str(training_performance[key])) for key in training_performance])
-            ])
-
-            fig = go.Figure()
-
-            fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
-                                     mode='lines+markers',
-                                     name='yhat'))
-            fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
-                                     line=dict(color='lightgreen', dash='dash'),
-                                     name='yhat_lower'))
-            fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
-                                     line=dict(color='lightgreen', dash='dash'),
-                                     name='yhat_upper'))
 
             test_percentage = param_config['model_parameters']['test_percentage']
             test_values = int(round(len(ingested_data) * (test_percentage / 100)))
 
-            fig.add_trace(go.Scatter(x=predicted_data.index, y=ingested_data.iloc[:-test_values, 0],
-                                     line=dict(color='black'),
-                                     mode='markers',
-                                     name='training data'))
-
-            fig.add_trace(go.Scatter(x=ingested_data.iloc[-test_values:].index, y=ingested_data.iloc[-test_values:, 0],
-                                     line=dict(color='red'),
-                                     mode='markers',
-                                     name='test data'))
-            children.append(
-                dcc.Graph(
-                    figure=fig
-                )
-            )
+            children.extend([
+                html.Div("Model characteristics:"),
+                html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
+                html.Div("Testing performance:"),
+                html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
+                prediction_plot(ingested_data, predicted_data, test_values)
+            ])
 
     # That's all. Launch the app.
     app.layout = html.Div(children=children)
@@ -136,6 +83,74 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
     Timer(1, open_browser).start()
     app.run_server(debug=True, use_reloader=False)
 
+
+def simple_plot(ingested_data: DataFrame) -> dcc.Graph:
+    g = dcc.Graph(
+            figure=go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data.iloc[:, 0], mode='lines+markers'))
+    )
+    return g
+
+
+def histogram_plot(ingested_data: DataFrame, name: str) -> dcc.Graph:
+    g = dcc.Graph(
+            figure=px.histogram(ingested_data, x=name)
+    )
+    return g
+
+
+def box_plot(ingested_data: DataFrame, name: str, freq: str) -> dcc.Graph:
+    temp = ingested_data[name]
+    groups = temp.groupby(Grouper(freq=freq))
+
+    boxes = []
+
+    for group in groups:
+        boxes.append(go.Box(
+            name=str(group[0]),
+            y=group[1]
+        ))
+
+    g = dcc.Graph(
+            figure=go.Figure(data=boxes)
+        )
+    return g
+
+
+def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_values: int) -> dcc.Graph:
+    fig = go.Figure()
+
+    not_training_data = ingested_data.loc[:predicted_data.index[0]]
+    training_data = ingested_data.loc[predicted_data.index[0]:]
+    training_data = training_data.iloc[:-test_values]
+    test_data = ingested_data.iloc[-test_values:]
+
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
+                             mode='lines+markers',
+                             name='yhat'))
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+                             line=dict(color='lightgreen', dash='dash'),
+                             name='yhat_lower'))
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+                             line=dict(color='lightgreen', dash='dash'),
+                             name='yhat_upper'))
+
+    fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
+                             line=dict(color='black'),
+                             mode='markers',
+                             name='unused data'))
+    fig.add_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
+                             line=dict(color='green'),
+                             mode='markers',
+                             name='training data'))
+
+    fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
+                             line=dict(color='red'),
+                             mode='markers',
+                             name='test data'))
+    g= dcc.Graph(
+            figure=fig
+        )
+    return g
 
 # def data_description(ingested_data, prediction_data, training_performance, param_config):
 #     """Function which describes the data stored in data_frame.

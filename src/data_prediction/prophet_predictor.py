@@ -8,7 +8,8 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
-from src.data_prediction.data_prediction import PredictionModel, TrainingPerformance
+from src.data_prediction.data_prediction import PredictionModel, TestingPerformance, pre_transformation, \
+    post_transformation
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 
@@ -17,72 +18,30 @@ class FBProphet(PredictionModel):
     """Facebook's Prophet prediction model."""
 
     def __init__(self, params: dict):
-        super().__init__()
-        self.model_characteristics["type"] = "FBProphet"
+        super().__init__(params, "FBProphet")
 
         # Stuff needed to make Prophet shut up during training.
         self.suppress_stdout_stderr = suppress_stdout_stderr
+        self.fbmodel = Prophet()
 
-        if params["verbose"] == "yes":
-            print('-----------------------------------------------------------')
-            print('Model_training: creating Prophet model...')
-
-        if "model_parameters" not in params:
-            if params["verbose"] == "yes":
-                print("Model_training: loading default settings...")
-            parsed = pkgutil.get_data(__name__, "default_prediction_parameters/prophet.json")
-            model_parameters = json.loads(parsed)
-        else:
-            if params["verbose"] == "yes":
-                print("Model_training: loading user settings...")
-            model_parameters = params["model_parameters"]
-
-        self.model = Prophet()
-        self.test_percentage = model_parameters["test_percentage"]
-        self.prediction_lags = model_parameters["prediction_lags"]
-
-        if model_parameters["transformation"] == "log":
-            self.pre_transformation = np.log
-            self.post_transformation = np.exp
-
-    def train(self, input_data: DataFrame) -> TrainingPerformance:
+    def train(self, input_data: DataFrame):
         """Overrides PredictionModel.train()"""
-        test_values = int(round(len(input_data) * (self.test_percentage / 100)))
-        self.test_values = test_values
-        self.freq = pd.infer_freq(input_data.index)
-        train_ts = input_data.iloc[:-test_values]
-        test_ts = input_data.iloc[-test_values:]
+        self.fbmodel = Prophet()
 
-        train_ts.reset_index(inplace=True)
-        train_ts.columns = ['ds', 'y']
-        test_ts.reset_index(inplace=True)
-        test_ts.columns = ['ds', 'y']
-
-        if self.pre_transformation is not None:
-            with pd.option_context('mode.chained_assignment', None):
-                tr = self.pre_transformation
-                train_ts['y'] = tr(train_ts['y'])
+        input_data.reset_index(inplace=True)
+        input_data.columns = ['ds', 'y']
 
         with self.suppress_stdout_stderr():
-            self.model.fit(train_ts)
-
-        forecast = self.predict()
-        forecast = forecast.iloc[-self.prediction_lags-test_values:-self.prediction_lags]
-
-        tp = TrainingPerformance()
-        tp.set_training_stats(test_ts["y"], forecast["yhat"])
-        return tp
+            self.fbmodel.fit(input_data)
 
     def predict(self) -> DataFrame:
         """Overrides PredictionModel.predict()"""
-        future = self.model.make_future_dataframe(periods=self.prediction_lags+self.test_values, freq=self.freq)
-        forecast = self.model.predict(future)
+        future = self.fbmodel.make_future_dataframe(periods=self.prediction_lags + self.test_values, freq=self.freq)
+        forecast = self.fbmodel.predict(future)
 
-        if self.post_transformation is not None:
-            tr = self.post_transformation
-            forecast['yhat'] = tr(forecast['yhat'])
-            forecast['yhat_lower'] = tr(forecast['yhat_lower'])
-            forecast['yhat_upper'] = tr(forecast['yhat_upper'])
+        forecast.loc[:, 'yhat'] = post_transformation(forecast['yhat'], self.transformation)
+        forecast.loc[:, 'yhat_lower'] = post_transformation(forecast['yhat_lower'], self.transformation)
+        forecast.loc[:, 'yhat_upper'] = post_transformation(forecast['yhat_upper'], self.transformation)
 
         forecast.set_index('ds', inplace=True)
 

@@ -7,15 +7,19 @@ from src.data_prediction.prophet_predictor import FBProphet
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
 
 # CHANGE HERE TO CHANGE EXAMPLE
-# Can be: "covid19italy", "airlines"
+# Can be: "covid19italy", "covid19switzerland", "airlines"
 from src.scenario.scenario import Scenario
 
-example = "covid19italy"
+# example = "covid19italy"
+# example = "airlines"
+example = "covid19switzerland"
 
 if example == "covid19italy":
     param_file_nameJSON = 'configuration_test_covid19italy.json'
 elif example == "airlines":
     param_file_nameJSON = 'configuration_test_airlines.json'
+elif example == "covid19switzerland":
+    param_file_nameJSON = 'configuration_test_covid19switzerland.json'
 else:
     exit()
 
@@ -34,8 +38,11 @@ ingested_data = src.data_ingestion.data_ingestion.data_ingestion(param_config)  
 print('-> SELECTION')
 ingested_data = src.data_preparation.data_preparation.data_selection(ingested_data, param_config)
 
-# print('-> ADD DIFF COLUMN')
-# ingested_data = src.data_preparation.data_preparation.add_diff_column(ingested_data, ingested_data.columns[0], 'incremento_terapia')
+if "add_diff_column" in param_config["input_parameters"]:
+    print('-> ADD DIFF COLUMN')
+    target = param_config["input_parameters"]["add_diff_column"]
+    name = target + "_diff"
+    ingested_data = src.data_preparation.data_preparation.add_diff_column(ingested_data, target, name, "yes")
 
 columns = ingested_data.columns
 scenarios = []
@@ -45,7 +52,7 @@ for col in columns:
 
     print('-> PREDICTION FOR ' + str(col))
     predictor = FBProphet(param_config)
-    prophet_result = predictor.launch_model(scenario_data)
+    prophet_result = predictor.launch_model(scenario_data.copy())
     model_results.append(prophet_result)
 
     scenarios.append(

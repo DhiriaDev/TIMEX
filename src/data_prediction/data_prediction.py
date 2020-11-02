@@ -1,11 +1,15 @@
 import abc
+import json
+import pkgutil
 from math import sqrt
 
-from pandas import DataFrame
+import pandas as pd
+from pandas import DataFrame, Series
+import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
-class TrainingPerformance:
+class TestingPerformance:
     """
     Class for the summary of various statistical indexes relative
     to the performance of a prediction model.
@@ -25,7 +29,7 @@ class TrainingPerformance:
         self.RMSE = 0
         self.MAE = 0
 
-    def set_training_stats(self, actual: DataFrame, predicted: DataFrame):
+    def set_testing_stats(self, actual: DataFrame, predicted: DataFrame):
         """
         Set all the statistical indexes according do input data.
 
@@ -65,14 +69,15 @@ class ModelResult:
     ----------
     prediction : DataFrame
         DataFrame contained the values predicted by the trained model.
-    training_performance : TrainingPerformance
+    testing_performance : TestingPerformance
         Performance achieved by the model.
     characteristics : dict
         Model parameters, obtained by automatic tuning.
     """
-    def __init__(self, prediction: DataFrame, training_performance: TrainingPerformance, characteristics: dict):
+
+    def __init__(self, prediction: DataFrame, testing_performance: TestingPerformance, characteristics: dict):
         self.prediction = prediction
-        self.training_performance = training_performance
+        self.testing_performance = testing_performance
         self.characteristics = characteristics
 
 
@@ -88,10 +93,8 @@ class PredictionModel:
         Percentage of the time series to be used for the test set. Default 0
     test_values : int
         Absolute number of observations used for the test set. Default 0
-    pre_transformation : callable
+    transformation : str
         Transformation to apply to the time series before using it. Default None
-    post_transformation : callable
-        Inverse of pre_transformation. Default None
     prediction_lags : int
         Number of future lags for which the prediction has to be made. Default 0
     model_characteristics : dict
@@ -99,28 +102,48 @@ class PredictionModel:
         of the model. Default {}
     """
 
-    def __init__(self) -> None:
-        self.freq = None
-        self.test_percentage = 0
-        self.test_values = 0
-        self.pre_transformation = None
-        self.post_transformation = None
-        self.prediction_lags = 0
+    def __init__(self, params: dict, name: str) -> None:
+        self.name = name
+        self.verbose = params["verbose"]
+
+        if params["verbose"] == "yes":
+            print('-----------------------------------------------------------')
+            print('Model_training: creating ' + self.name + " model...")
+
+        if "model_parameters" not in params:
+            if params["verbose"] == "yes":
+                print("Model_training: loading default settings...")
+            parsed = pkgutil.get_data(__name__, "default_prediction_parameters/" + self.name + ".json")
+            model_parameters = json.loads(parsed)
+        else:
+            if params["verbose"] == "yes":
+                print("Model_training: loading user settings...")
+            model_parameters = params["model_parameters"]
+
+        self.test_percentage = model_parameters["test_percentage"]
+        self.prediction_lags = model_parameters["prediction_lags"]
+        self.transformation = model_parameters["transformation"]
+        self.delta_training_percentage = model_parameters["delta_training_percentage"]
+        self.main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+        self.delta_training_values = 0
         self.model_characteristics = {}
 
-    def train(self, input_data: DataFrame) -> TrainingPerformance:
+        self.test_values = 0
+        self.freq = ""
+
+    def train(self, ingested_data: DataFrame) -> TestingPerformance:
         """
-        Train the model on the input_data.
-        Returns the statistical performance of the training.
+        Train the model on the ingested_data.
+        Returns the statistical performance of the testing.
 
         Parameters
         ----------
-        input_data : DataFrame
+        ingested_data : DataFrame
             DataFrame which _HAS_ to be divided in training and test set.
 
         Returns
         -------
-        training_performance : TrainingPerformance
+        testing_performance : TestingPerformance
         """
         pass
 
@@ -137,34 +160,107 @@ class PredictionModel:
 
     def launch_model(self, ingested_data: DataFrame) -> ModelResult:
         """
-        Train the model on ingested_data and returns a model_result dict.
+        Train the model on ingested_data and returns a ModelResult object.
 
         Returns
         -------
         model_result : ModelResult
             Object containing the results of the model, trained on ingested_data.
         """
-        training_performance = self.train(ingested_data)
-        prediction = self.predict()
         model_characteristics = self.model_characteristics
 
-        return ModelResult(prediction, training_performance, model_characteristics)
+        self.delta_training_values = int(round(len(ingested_data) * self.delta_training_percentage / 100))
+
+        test_values = int(round(len(ingested_data) * (self.test_percentage / 100)))
+        self.test_values = test_values
+        self.freq = pd.infer_freq(ingested_data.index)
+
+        train_ts = ingested_data.iloc[:-test_values]
+        test_ts = ingested_data.iloc[-test_values:]
+
+        with pd.option_context('mode.chained_assignment', None):
+            train_ts.iloc[:, 0] = pre_transformation(train_ts.iloc[:, 0], self.transformation)
+
+        results = []
+
+        for i in range(1, round((100 - self.test_percentage) / self.delta_training_percentage) + 1):
+            tr = train_ts.iloc[-i * self.delta_training_values:]
+
+            if self.verbose == "yes":
+                print("Trying with last " + str(len(tr)) + " values as training set...")
+
+            self.train(tr.copy())
+
+            forecast = self.predict()
+            testing_prediction = forecast.iloc[-self.prediction_lags - test_values:-self.prediction_lags]
+
+            tp = TestingPerformance()
+            tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
+            results.append({
+                "testing_performances": tp,
+                "forecast": forecast,
+                "used_observations": len(tr)
+            })
+
+        results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
+
+        model_characteristics["name"] = self.name
+        model_characteristics["delta_training_percentage"] = str(self.delta_training_percentage) + "%"
+        model_characteristics["delta_training_values"] = str(self.delta_training_values)
+        model_characteristics["best_training_range"] = "last " + str(results[0]["used_observations"])
+
+        return ModelResult(prediction=results[0]["forecast"],
+                           testing_performance=results[0]["testing_performances"],
+                           characteristics=model_characteristics)
 
 
-class ARIMA:
-    """ARIMA prediction model."""
+def pre_transformation(data: Series, transformation: str) -> Series:
+    """
+    Applies a function (whose name is defined in transformation) to the input data.
+    Returns the transformed data.
 
-    def __init__(self):
-        pass
+    Parameters
+    ----------
+    data : Series
+        Pandas Series. Transformation will be applied to each value.
+    transformation : str
+        Name of the transformation which should be applied.
 
-    def train(self):
-        """Overrides PredictionModel.train()"""
-        pass
+    Returns
+    -------
+    transformed_data : Series
+        Series where the transformation has been applied.
+    """
+    if transformation == "log":
+        def f(x):
+            return np.log(x) if x > 0 else 0
+        return data.apply(f)
+    else:
+        return data
 
-    def predict(self):
-        """Overrides PredictionModel.predict()"""
-        pass
 
-    def get_training_parameters(self):
-        """Overrides PredictionModel.get_training_parameters()"""
-        pass
+def post_transformation(data: Series, transformation: str) -> Series:
+    """
+    Applies the inverse of a function (whose name is defined in transformation) to the input data.
+    Returns the transformed data.
+
+    Parameters
+    ----------
+    data : Series
+        Pandas Series. Transformation's inverse will be applied on each value.
+    transformation : str
+        Name of the transformation: the inverse will be applied on the data.
+
+    Returns
+    -------
+    transformed_data : Series
+        Pandas Series where the transformation has been applied.
+    """
+    if transformation == "log":
+        f = np.exp
+    else:
+        f = lambda x: x
+
+    return f(data)
+
+

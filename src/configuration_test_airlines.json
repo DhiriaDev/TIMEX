@@ -15,9 +15,11 @@
   "selection_parameters": {
   },
   "model_parameters": {
-      "test_percentage": 10,
-      "prediction_lags": 10,
-      "transformation": "none"
+    "test_percentage": 2,
+    "delta_training_percentage": 10,
+    "prediction_lags": 10,
+    "transformation": "log",
+    "main_accuracy_estimator": "mae"
   },
   "visualization_parameters": {
       "box_plot_frequency": "1Y",

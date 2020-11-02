@@ -1,12 +1,13 @@
 {
-  "activity_title": "Covid-19 Italy Analysis",
+  "activity_title": "Covid-19 Switzerland (TI) Analysis",
   "verbose": "yes",
   "input_parameters": {
-      "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
-      "columns_to_load_from_url": "data,nuovi_positivi",
-      "datetime_column_name": "data",
-      "index_column_name": "data",
-      "datetime_format": "%Y-%m-%dT%H:%M:%S"
+      "source_data_url": "https://raw.githubusercontent.com/openZH/covid_19/master/fallzahlen_kanton_total_csv_v2/COVID19_Fallzahlen_Kanton_TI_total.csv",
+      "columns_to_load_from_url": "date,ncumul_conf",
+      "datetime_column_name": "date",
+      "index_column_name": "date",
+      "datetime_format": "%Y-%m-%d",
+      "add_diff_column": "ncumul_conf"
   },
   "output_parameters": {
       "output_directory": "../result_directory",
@@ -15,11 +16,11 @@
   "selection_parameters": {
       "column_name_selection": "",
       "value_selection": "",
-      "init_datetime": "2020-01-15T17:00:00",
-      "end_datetime": "2020-12-09T17:00:00"
+      "init_datetime": "2020-05-01",
+      "end_datetime": "2020-12-09"
   },
   "model_parameters": {
-      "test_percentage": 2,
+      "test_percentage": 5,
       "delta_training_percentage": 10,
       "prediction_lags": 10,
       "transformation": "log",
