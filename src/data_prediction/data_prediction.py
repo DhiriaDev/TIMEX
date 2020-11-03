@@ -16,6 +16,9 @@ class TestingPerformance:
 
     Attributes
     ----------
+    first_used_index :
+        Index of the first value used in the time series to generate
+        these results.
     MSE : float
         Mean Squared Error. Default 0
     RMSE: float
@@ -24,7 +27,8 @@ class TestingPerformance:
         Mean Absolute Error. Default 0
     """
 
-    def __init__(self):
+    def __init__(self, first_used_index):
+        self.first_used_index = first_used_index
         self.MSE = 0
         self.RMSE = 0
         self.MAE = 0
@@ -69,15 +73,15 @@ class ModelResult:
     ----------
     prediction : DataFrame
         DataFrame contained the values predicted by the trained model.
-    testing_performance : TestingPerformance
+    testing_performances : [TestingPerformance]
         Performance achieved by the model.
     characteristics : dict
         Model parameters, obtained by automatic tuning.
     """
 
-    def __init__(self, prediction: DataFrame, testing_performance: TestingPerformance, characteristics: dict):
+    def __init__(self, prediction: DataFrame, testing_performances: [TestingPerformance], characteristics: dict):
         self.prediction = prediction
-        self.testing_performance = testing_performance
+        self.testing_performances = testing_performances
         self.characteristics = characteristics
 
 
@@ -194,23 +198,25 @@ class PredictionModel:
             forecast = self.predict()
             testing_prediction = forecast.iloc[-self.prediction_lags - test_values:-self.prediction_lags]
 
-            tp = TestingPerformance()
+            first_used_index = tr.index.values[0]
+
+            tp = TestingPerformance(first_used_index)
             tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
             results.append({
                 "testing_performances": tp,
                 "forecast": forecast,
-                "used_observations": len(tr)
             })
 
         results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
+        best_forecast = results[0]["forecast"]
+        testing_results = [x["testing_performances"] for x in results]
 
         model_characteristics["name"] = self.name
         model_characteristics["delta_training_percentage"] = str(self.delta_training_percentage) + "%"
         model_characteristics["delta_training_values"] = str(self.delta_training_values)
-        model_characteristics["best_training_range"] = "last " + str(results[0]["used_observations"])
 
-        return ModelResult(prediction=results[0]["forecast"],
-                           testing_performance=results[0]["testing_performances"],
+        return ModelResult(prediction=best_forecast,
+                           testing_performances=testing_results,
                            characteristics=model_characteristics)
 
 

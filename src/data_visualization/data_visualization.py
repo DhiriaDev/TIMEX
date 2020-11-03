@@ -13,9 +13,11 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 import statsmodels.api as sm
 
+from src.data_prediction.data_prediction import TestingPerformance
 from src.scenario.scenario import Scenario
 
 
@@ -66,7 +68,7 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
 
         for model in model_results:
             predicted_data = model.prediction
-            testing_performances = model.testing_performance.get_dict()
+            testing_performances = model.testing_performances
             model_characteristic = model.characteristics
 
             test_percentage = param_config['model_parameters']['test_percentage']
@@ -75,9 +77,10 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
             children.extend([
                 html.Div("Model characteristics:"),
                 html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
-                html.Div("Testing performance:"),
-                html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-                prediction_plot(ingested_data, predicted_data, test_values)
+                # html.Div("Testing performance:"),
+                # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
+                prediction_plot(ingested_data, predicted_data, test_values),
+                performance_plot(ingested_data, predicted_data, testing_performances, test_values)
             ])
 
     # That's all. Launch the app.
@@ -95,7 +98,7 @@ def line_plot(ingested_data: DataFrame) -> dcc.Graph:
     fig.update_layout(title='Line plot', xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
 
     g = dcc.Graph(
-            figure=fig
+        figure=fig
     )
     return g
 
@@ -104,7 +107,7 @@ def histogram_plot(ingested_data: DataFrame) -> dcc.Graph:
     fig = px.histogram(ingested_data, ingested_data.columns[0])
     fig.update_layout(title='Histogram')
     g = dcc.Graph(
-            figure=fig
+        figure=fig
     )
     return g
 
@@ -140,7 +143,7 @@ def autocorrelation_plot(ingested_data: DataFrame) -> dcc.Graph:
     fig.update_yaxes(tick0=-1.0, dtick=0.25)
     fig.update_yaxes(range=[-1.2, 1.2])
     g = dcc.Graph(
-            figure=fig
+        figure=fig
     )
     return g
 
@@ -161,8 +164,8 @@ def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
     fig.update_layout(title='Box plot', xaxis_title=ingested_data.index.name, yaxis_title='Count')
 
     g = dcc.Graph(
-            figure=fig
-        )
+        figure=fig
+    )
     return g
 
 
@@ -197,9 +200,56 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
                              line=dict(color='red'),
                              mode='markers',
                              name='test data'))
+    fig.update_layout(title='Best forecast', xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
     g = dcc.Graph(
-            figure=fig
-        )
+        figure=fig
+    )
+    return g
+
+
+def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testing_performances: [TestingPerformance],
+                     test_values: int) -> dcc.Graph:
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+    training_data = ingested_data.iloc[:-test_values]
+
+    data_performances = []
+
+    for tp in testing_performances:
+        data_performances.append([tp.first_used_index, tp.MAE, tp.MSE])
+
+    df_performances = pandas.DataFrame(data_performances, columns=['index', 'mae', 'mse'])
+    df_performances.set_index('index', drop=True, inplace=True)
+    df_performances.sort_index(inplace=True)
+
+    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['mae'],
+                                line=dict(color='red'),
+                                mode="lines+markers",
+                                name='MAE'), row=1, col=1)
+
+    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['mse'],
+                                line=dict(color='green'),
+                                mode="lines+markers",
+                                name='MSE'), row=2, col=1)
+    fig.append_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
+                                line=dict(color='black'),
+                                mode='markers',
+                                name='training data'), row=3, col=1)
+
+    # Small trick to make the x-axis have the same length of the "Prediction plot"
+    predicted_data.iloc[:, 0] = "nan"
+    fig.append_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
+                             mode='lines+markers',
+                             name='yhat', showlegend=False), row=3, col=1)
+
+    fig.update_yaxes(title_text="MAE", row=1, col=1)
+    fig.update_yaxes(title_text="MSE", row=2, col=1)
+    fig.update_yaxes(title_text=ingested_data.columns[0], row=3, col=1)
+
+    fig.update_layout(title='Performances with different training windows', height=700)
+    g = dcc.Graph(
+        figure=fig
+    )
     return g
 
 # def data_description(ingested_data, prediction_data, training_performance, param_config):
