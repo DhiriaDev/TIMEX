@@ -64,6 +64,24 @@ class TestingPerformance:
         return d
 
 
+class SingleResult:
+    """
+    Class for the result of a model trained on a specific training set.
+
+    Attributes
+    ----------
+    prediction : DataFrame
+        Estimated prediction, using this training set
+    testing_performances : TestingPerformance
+        Testing performance, on the test set, obtained using
+        this training set to train the model.
+    """
+
+    def __init__(self, prediction: DataFrame, testing_performances: TestingPerformance):
+        self.prediction = prediction
+        self.testing_performances = testing_performances
+
+
 class ModelResult:
     """
     Class for the result of a model trained on a time series.
@@ -72,17 +90,15 @@ class ModelResult:
 
     Attributes
     ----------
-    prediction : DataFrame
-        DataFrame contained the values predicted by the trained model.
-    testing_performances : [TestingPerformance]
-        Performance achieved by the model.
+    results : [SingleResult]
+        List of all the result obtained using all the possible training set
+        for this model, on the time series.
     characteristics : dict
         Model parameters, obtained by automatic tuning.
     """
 
-    def __init__(self, prediction: DataFrame, testing_performances: [TestingPerformance], characteristics: dict):
-        self.prediction = prediction
-        self.testing_performances = testing_performances
+    def __init__(self, results: [SingleResult], characteristics: dict):
+        self.results = results
         self.characteristics = characteristics
 
 
@@ -192,7 +208,8 @@ class PredictionModel:
 
         if self.verbose == "yes":
             print("Model will use " + str(train_sets_number) + " different training sets.")
-        for i in range(1, train_sets_number):
+
+        for i in range(1, train_sets_number+1):
             tr = train_ts.iloc[-i * self.delta_training_values:]
 
             if self.verbose == "yes":
@@ -207,22 +224,18 @@ class PredictionModel:
 
             tp = TestingPerformance(first_used_index)
             tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
-            results.append({
-                "testing_performances": tp,
-                "forecast": forecast,
-            })
+            results.append(SingleResult(forecast, tp))
 
-        results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
-        best_forecast = results[0]["forecast"]
-        testing_results = [x["testing_performances"] for x in results]
+        # results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
+        # best_forecast = results[0]["forecast"]
+        # testing_results = [x["testing_performances"] for x in results]
+        # testing_results = results
 
         model_characteristics["name"] = self.name
         model_characteristics["delta_training_percentage"] = str(self.delta_training_percentage) + "%"
         model_characteristics["delta_training_values"] = str(self.delta_training_values)
 
-        return ModelResult(prediction=best_forecast,
-                           testing_performances=testing_results,
-                           characteristics=model_characteristics)
+        return ModelResult(results=results, characteristics=model_characteristics)
 
 
 def pre_transformation(data: Series, transformation: str) -> Series:

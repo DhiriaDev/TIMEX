@@ -17,7 +17,7 @@ from plotly.subplots import make_subplots
 
 import statsmodels.api as sm
 
-from src.data_prediction.data_prediction import TestingPerformance
+from src.data_prediction.data_prediction import TestingPerformance, SingleResult
 from src.scenario.scenario import Scenario
 
 
@@ -39,6 +39,7 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
         print('Data_description: ' + 'starting the description of the data')
 
     visualization_parameters = param_config["visualization_parameters"]
+    model_parameters = param_config["model_parameters"]
 
     # Initialize Dash app.
     app = dash.Dash(__name__)
@@ -49,7 +50,7 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
 
     for s in scenarios:
         ingested_data = s.ingested_data
-        model_results = s.model_results
+        models = s.models
 
         # Data visualization with plots
         children.extend([
@@ -66,22 +67,31 @@ def data_description_new(scenarios: [Scenario], param_config: dict):
             html.H3("Training & Prediction results"),
         )
 
-        for model in model_results:
-            predicted_data = model.prediction
-            testing_performances = model.testing_performances
+        for model in models:
+            model_results = model.results
             model_characteristic = model.characteristics
 
-            test_percentage = param_config['model_parameters']['test_percentage']
+            test_percentage = model_parameters['test_percentage']
             test_values = int(round(len(ingested_data) * (test_percentage / 100)))
+
+            main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+            model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+
+            best_prediction = model_results[0].prediction
+            testing_performances = [x.testing_performances for x in model_results]
 
             children.extend([
                 html.Div("Model characteristics:"),
                 html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
                 # html.Div("Testing performance:"),
                 # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-                prediction_plot(ingested_data, predicted_data, test_values),
-                performance_plot(ingested_data, predicted_data, testing_performances, test_values)
+                prediction_plot(ingested_data, best_prediction, test_values),
+                performance_plot(ingested_data, best_prediction, testing_performances, test_values),
             ])
+
+            # EXTRA
+            # Warning: this will plot every model result, with every training set used!
+            # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
 
     # That's all. Launch the app.
     app.layout = html.Div(children=children)
@@ -200,7 +210,7 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
                              line=dict(color='red'),
                              mode='markers',
                              name='test data'))
-    fig.update_layout(title='Best forecast', xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
+    fig.update_layout(title="Best prediction", xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
     g = dcc.Graph(
         figure=fig
     )
@@ -251,6 +261,27 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
         figure=fig
     )
     return g
+
+
+def plot_every_prediction(ingested_data: DataFrame, model_results: [SingleResult],
+                          main_accuracy_estimator: str, test_values: int):
+
+    new_childrens = [html.Div("EXTRA: plot _EVERY_ prediction\n")]
+
+    model_results.sort(key=lambda x: len(x.prediction))
+
+    for r in model_results:
+        predicted_data = r.prediction
+        testing_performance = r.testing_performances
+        plot = prediction_plot(ingested_data, predicted_data, test_values)
+        plot.figure.update_layout(title="")
+        new_childrens.extend([
+            html.Div(main_accuracy_estimator.upper()
+                     + ": " + str(getattr(testing_performance, main_accuracy_estimator.upper()))),
+            plot
+        ])
+
+    return new_childrens
 
 # def data_description(ingested_data, prediction_data, training_performance, param_config):
 #     """Function which describes the data stored in data_frame.

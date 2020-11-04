@@ -6,7 +6,7 @@
       "columns_to_load_from_url": "data,nuovi_positivi",
       "datetime_column_name": "data",
       "index_column_name": "data",
-      "datetime_format": "%Y-%m-%dT%H:%M:%S"
+      "datetime_format": "%Y-%m-%dT%H:%M:%S",
   },
   "output_parameters": {
       "output_directory": "../result_directory",
@@ -20,7 +20,7 @@
   },
   "model_parameters": {
       "test_percentage": 5,
-      "delta_training_percentage": 1,
+      "delta_training_percentage": 5,
       "prediction_lags": 10,
       "transformation": "log",
       "main_accuracy_estimator": "mae"
