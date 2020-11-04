@@ -3,11 +3,10 @@
   "verbose": "yes",
   "input_parameters": {
       "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
-      "columns_to_load_from_url": "data,nuovi_positivi,terapia_intensiva",
+      "columns_to_load_from_url": "data,nuovi_positivi",
       "datetime_column_name": "data",
       "index_column_name": "data",
-      "datetime_format": "%Y-%m-%dT%H:%M:%S",
-      "add_diff_column": "terapia_intensiva"
+      "datetime_format": "%Y-%m-%dT%H:%M:%S"
   },
   "output_parameters": {
       "output_directory": "../result_directory",
@@ -21,7 +20,7 @@
   },
   "model_parameters": {
       "test_percentage": 5,
-      "delta_training_percentage": 3,
+      "delta_training_percentage": 1,
       "prediction_lags": 10,
       "transformation": "log",
       "main_accuracy_estimator": "mae"

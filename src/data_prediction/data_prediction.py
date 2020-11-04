@@ -1,5 +1,6 @@
 import abc
 import json
+import math
 import pkgutil
 from math import sqrt
 
@@ -182,12 +183,16 @@ class PredictionModel:
         train_ts = ingested_data.iloc[:-test_values]
         test_ts = ingested_data.iloc[-test_values:]
 
+        train_sets_number = math.floor(len(train_ts) / self.delta_training_values) + 1
+
         with pd.option_context('mode.chained_assignment', None):
             train_ts.iloc[:, 0] = pre_transformation(train_ts.iloc[:, 0], self.transformation)
 
         results = []
 
-        for i in range(1, round((100 - self.test_percentage) / self.delta_training_percentage) + 1):
+        if self.verbose == "yes":
+            print("Model will use " + str(train_sets_number) + " different training sets.")
+        for i in range(1, train_sets_number):
             tr = train_ts.iloc[-i * self.delta_training_values:]
 
             if self.verbose == "yes":
