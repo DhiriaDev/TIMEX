@@ -7,16 +7,15 @@
       "datetime_column_name": "date",
       "index_column_name": "date",
       "datetime_format": "%Y-%m-%d",
-      "add_diff_column": "ncumul_conf"
+      "add_diff_column": "ncumul_conf",
+      "frequency": "D"
   },
   "output_parameters": {
       "output_directory": "../result_directory",
       "save_to_file_image": "yes"
   },
   "selection_parameters": {
-      "column_name_selection": "",
-      "value_selection": "",
-      "init_datetime": "2020-05-01",
+      "init_datetime": "2020-01-01",
       "end_datetime": "2020-12-09"
   },
   "model_parameters": {

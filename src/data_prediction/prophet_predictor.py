@@ -34,7 +34,7 @@ class FBProphet(PredictionModel):
         with self.suppress_stdout_stderr():
             self.fbmodel.fit(input_data)
 
-    def predict(self) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame) -> DataFrame:
         """Overrides PredictionModel.predict()"""
         future = self.fbmodel.make_future_dataframe(periods=self.prediction_lags + self.test_values, freq=self.freq)
         forecast = self.fbmodel.predict(future)

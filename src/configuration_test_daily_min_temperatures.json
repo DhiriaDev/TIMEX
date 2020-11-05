@@ -6,7 +6,8 @@
       "columns_to_load_from_url": "Date,Temp",
       "datetime_column_name": "Date",
       "index_column_name": "Date",
-      "datetime_format": "%Y-%m-%d"
+      "datetime_format": "%Y-%m-%d",
+      "frequency": "D"
   },
   "output_parameters": {
       "output_directory": "../result_directory",

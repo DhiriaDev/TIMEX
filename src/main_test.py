@@ -2,6 +2,8 @@ import src.data_ingestion.data_ingestion
 import src.data_preparation.data_preparation
 import src.data_visualization.data_visualization
 import json
+
+from src.data_prediction.arima_predictor import ARIMA
 from src.data_prediction.prophet_predictor import FBProphet
 
 # data,stato,ricoverati_con_sintomi,terapia_intensiva,totale_ospedalizzati,isolamento_domiciliare,totale_positivi,variazione_totale_positivi,nuovi_positivi,dimessi_guariti,deceduti,casi_da_sospetto_diagnostico,casi_da_screening,totale_casi,tamponi,casi_testati,note
@@ -57,6 +59,10 @@ for col in columns:
     predictor = FBProphet(param_config)
     prophet_result = predictor.launch_model(scenario_data.copy())
     model_results.append(prophet_result)
+    #
+    predictor = ARIMA(param_config)
+    arima_result = predictor.launch_model(scenario_data.copy())
+    model_results.append(arima_result)
 
     scenarios.append(
         Scenario(scenario_data, model_results)

@@ -27,7 +27,7 @@ def data_selection(data_frame, param_config):
         print('Data_selection: ' + 'starting the data selection phase')
         print('Data_selection: total amount of rows before the selection phase = ' + str(len(data_frame)))
 
-    if "column_name_selection" in selection_parameters and "value" in selection_parameters:
+    if "column_name_selection" in selection_parameters and "value_selection" in selection_parameters:
         column_name = param_config['selection_parameters']['column_name_selection']
         value = param_config['selection_parameters']['value_selection']
 

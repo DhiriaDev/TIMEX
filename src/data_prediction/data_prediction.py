@@ -168,10 +168,10 @@ class PredictionModel:
         """
         pass
 
-    def predict(self) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame) -> DataFrame:
         """
-        Return a DataFrame with the length of the one used for training
-        plus self.prediction_lags, with predicted values.
+        Return a DataFrame with the shape of future_dataframe,
+        filled with predicted values.
 
         Returns
         -------
@@ -209,7 +209,7 @@ class PredictionModel:
         if self.verbose == "yes":
             print("Model will use " + str(train_sets_number) + " different training sets.")
 
-        for i in range(1, train_sets_number+1):
+        for i in range(1, train_sets_number + 1):
             tr = train_ts.iloc[-i * self.delta_training_values:]
 
             if self.verbose == "yes":
@@ -217,7 +217,12 @@ class PredictionModel:
 
             self.train(tr.copy())
 
-            forecast = self.predict()
+            future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
+                                                         start=tr.index.values[0],
+                                                         periods=len(tr) + self.test_values + self.prediction_lags),
+                                     columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
+
+            forecast = self.predict(future_df)
             testing_prediction = forecast.iloc[-self.prediction_lags - test_values:-self.prediction_lags]
 
             first_used_index = tr.index.values[0]
@@ -258,6 +263,7 @@ def pre_transformation(data: Series, transformation: str) -> Series:
     if transformation == "log":
         def f(x):
             return np.log(x) if x > 0 else 0
+
         return data.apply(f)
     else:
         return data
@@ -286,5 +292,3 @@ def post_transformation(data: Series, transformation: str) -> Series:
         f = lambda x: x
 
     return f(data)
-
-

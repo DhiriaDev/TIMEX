@@ -1,4 +1,7 @@
+from warnings import warn
+
 import pandas as pd
+from pandas import Series
 
 
 def data_ingestion(param_config):
@@ -22,6 +25,10 @@ def data_ingestion(param_config):
     columns_to_load_from_url = input_parameters["columns_to_load_from_url"]
     source_data_url = input_parameters["source_data_url"]
     index_column_name = input_parameters["index_column_name"]
+    try:
+        freq = input_parameters["frequency"]
+    except KeyError:
+        freq = None
 
     if verbose == 'yes':
         print('------------------------------------------------------')
@@ -35,9 +42,13 @@ def data_ingestion(param_config):
     if "datetime_column_name" in input_parameters:
         datetime_column_name = input_parameters["datetime_column_name"]
         datetime_format = input_parameters["datetime_format"]
+        # datetime_column = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
+        # datetime_column = add_freq(datetime_column)
         df_ingestion[datetime_column_name] = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+    df_ingestion = add_freq(df_ingestion, freq)
+    # df_ingestion.set_index(add_freq(df_ingestion.index, freq=freq))
 
     if verbose == 'yes':
         print('Data_ingestion: data frame (df) creation completed!')
@@ -49,3 +60,45 @@ def data_ingestion(param_config):
 
     return df_ingestion
 
+
+def add_freq(df, freq=None) -> Series:
+    """Add a frequency attribute to idx, through inference or directly.
+
+    Returns a copy.  If `freq` is None, it is inferred.
+    """
+    # TODO reorder this mess
+
+    df = df.copy()
+
+    try:
+        i = df.index.freq
+    except:
+        return df
+
+    # Df has already a freq. Don't do anything.
+    if df.index.freq is not None:
+        return df
+
+    if freq is not None:
+        if freq == 'D':
+            df.index = df.index.normalize()
+
+        df = df.asfreq(freq=freq)
+        return df
+
+    if freq is None:
+        freq = pd.infer_freq(df.index)
+
+        if freq is None:
+            df.index = df.index.normalize()
+            freq = pd.infer_freq(df.index)
+
+        if freq is None:
+            warn('no discernible frequency found for input data.')
+            return df
+        else:
+            if freq == "D":
+                df.index = df.index.normalize()
+
+            df = df.asfreq(freq=freq)
+            return df

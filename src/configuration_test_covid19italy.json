@@ -7,20 +7,19 @@
       "datetime_column_name": "data",
       "index_column_name": "data",
       "datetime_format": "%Y-%m-%dT%H:%M:%S",
+      "frequency": "D"
   },
   "output_parameters": {
       "output_directory": "../result_directory",
       "save_to_file_image": "yes"
   },
   "selection_parameters": {
-      "column_name_selection": "",
-      "value_selection": "",
-      "init_datetime": "2020-01-15T17:00:00",
+      "init_datetime": "2020-01-01T17:00:00",
       "end_datetime": "2020-12-09T17:00:00"
   },
   "model_parameters": {
       "test_percentage": 5,
-      "delta_training_percentage": 5,
+      "delta_training_percentage": 3,
       "prediction_lags": 10,
       "transformation": "log",
       "main_accuracy_estimator": "mae"
