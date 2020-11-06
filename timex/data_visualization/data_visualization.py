@@ -17,8 +17,8 @@ from plotly.subplots import make_subplots
 
 import statsmodels.api as sm
 
-from src.data_prediction.data_prediction import TestingPerformance, SingleResult
-from src.scenario.scenario import Scenario
+from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
+from timex.scenario.scenario import Scenario
 
 
 def data_description_new(scenarios: [Scenario], param_config: dict):

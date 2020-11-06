@@ -3,10 +3,10 @@ import unittest
 from pandas import Series
 import numpy as np
 
-from src.data_prediction.arima_predictor import ARIMA
-from src.data_prediction.data_prediction import pre_transformation
-from src.data_prediction.prophet_predictor import FBProphet
-from src.tests.utilities import get_fake_df
+from timex.data_prediction.arima_predictor import ARIMA
+from timex.data_prediction.data_prediction import pre_transformation
+from timex.data_prediction.prophet_predictor import FBProphet
+from timex.tests.utilities import get_fake_df
 
 
 class MyTestCase(unittest.TestCase):

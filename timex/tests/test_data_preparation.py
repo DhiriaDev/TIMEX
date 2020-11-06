@@ -2,9 +2,9 @@ import unittest
 
 from pandas._libs.tslibs.timestamps import Timestamp
 
-from src.data_ingestion.data_ingestion import data_ingestion
-from src.data_preparation.data_preparation import data_selection, add_diff_column
-from src.tests.utilities import get_fake_df
+from timex.data_ingestion.data_ingestion import data_ingestion
+from timex.data_preparation.data_preparation import data_selection, add_diff_column
+from timex.tests.utilities import get_fake_df
 
 
 class MyTestCase(unittest.TestCase):

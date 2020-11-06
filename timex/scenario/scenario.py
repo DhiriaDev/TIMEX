@@ -1,6 +1,6 @@
 from pandas import DataFrame
 
-from src.data_prediction.data_prediction import ModelResult
+from timex.data_prediction.data_prediction import ModelResult
 
 
 class Scenario:

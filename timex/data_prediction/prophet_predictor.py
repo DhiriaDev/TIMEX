@@ -8,7 +8,7 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
-from src.data_prediction.data_prediction import PredictionModel, TestingPerformance, pre_transformation, \
+from timex.data_prediction.data_prediction import PredictionModel, TestingPerformance, pre_transformation, \
     post_transformation
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)

@@ -2,7 +2,7 @@ import unittest
 
 from pandas._libs.tslibs.timestamps import Timestamp
 
-from src.data_ingestion.data_ingestion import data_ingestion
+from timex.data_ingestion.data_ingestion import data_ingestion
 
 
 class MyTestCase(unittest.TestCase):
