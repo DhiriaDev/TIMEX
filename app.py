@@ -67,6 +67,25 @@ def update_scenarios():
 
 def make_layout():
     children = []
+    children.append(
+        html.Div(
+            html.P(['The data contained in this page is an example of the capabilities of TIMEX, '
+                    'a work-in-progress framework for automatic time series analysis.', html.Br(),
+                    'The forecasts provided in this page are relative to the evolution of Covid-19 in Italy, '
+                    'built with the ', html.A("data", href='https://github.com/pcm-dpc/COVID-19', target="_blank"),
+                    ' provided by Italian Protezione Civile.', html.Br(), html.Br(),
+                    'The information on this site is not intended or implied to be a substitute for '
+                    'professional medical advice, diagnosis or treatment. All content, including text, '
+                    'graphics, images and information, contained on or available through this web site is for '
+                    'general information purposes only.', html.Br(), 'We make no representation and assume no '
+                    'responsibility for the accuracy of information contained on or available through this web '
+                    'site, and such information is subject to change without notice. You are encouraged to '
+                    'confirm any information obtained from or through this web site with other sources.', html.Br(),
+                    html.Br(),
+                    'For suggestions and questions contact us at manuel.roveri (at) polimi.it or alessandro.falcetta '
+                    '(at) mail.polimi.it '
+                    ])))
+
     for s in scenarios:
         ingested_data = s.ingested_data
         models = s.models
@@ -132,7 +151,6 @@ elif example == "temperatures":
 else:
     exit()
 
-
 # Load parameters from config file.
 with open(param_file_nameJSON) as json_file:  # opening the config_file_name
     param_config = json.load(json_file)  # loading the json
@@ -143,6 +161,7 @@ model_parameters = param_config["model_parameters"]
 # Get initial data
 update_scenarios()
 
+print("Serving the layout...")
 app.layout = make_layout
 
 # schedule.every().day.at("18:30").do(update_scenarios, 'It is 18:30')
@@ -159,5 +178,3 @@ app.layout = make_layout
 
 if __name__ == '__main__':
     app.run_server()
-
-
