@@ -1,4 +1,7 @@
 import json
+import pickle
+import webbrowser
+from threading import Timer
 
 import dash
 import dash_html_components as html
@@ -71,6 +74,18 @@ server = app.server
 
 print("Serving the layout...")
 app.layout = html.Div(children=children)
+
+
+# with open('children.pkl', 'wb') as input_file:
+#     pickle.dump(children, input_file)
+
+
+def open_browser():
+    webbrowser.open("http://127.0.0.1:8050")
+
+
+Timer(1, open_browser).start()
+
 
 if __name__ == '__main__':
     app.run_server()
