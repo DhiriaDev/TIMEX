@@ -33,6 +33,7 @@ class TestingPerformance:
         self.MSE = 0
         self.RMSE = 0
         self.MAE = 0
+        self.AM = 0
 
     def set_testing_stats(self, actual: DataFrame, predicted: DataFrame):
         """
@@ -48,6 +49,7 @@ class TestingPerformance:
         self.MSE = mean_squared_error(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
         self.RMSE = sqrt(self.MSE)
+        self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
 
     def get_dict(self) -> dict:
         """
@@ -141,7 +143,12 @@ class PredictionModel:
                 print("Model_training: loading user settings...")
             model_parameters = params["model_parameters"]
 
-        self.test_percentage = model_parameters["test_percentage"]
+        if "test_values" in model_parameters:
+            self.test_values = model_parameters["test_values"]
+        else:
+            self.test_percentage = model_parameters["test_percentage"]
+            self.test_values = -1
+
         self.prediction_lags = model_parameters["prediction_lags"]
         self.transformation = model_parameters["transformation"]
         self.delta_training_percentage = model_parameters["delta_training_percentage"]
@@ -149,7 +156,6 @@ class PredictionModel:
         self.delta_training_values = 0
         self.model_characteristics = {}
 
-        self.test_values = 0
         self.freq = ""
 
     def train(self, ingested_data: DataFrame) -> TestingPerformance:
@@ -192,12 +198,13 @@ class PredictionModel:
 
         self.delta_training_values = int(round(len(ingested_data) * self.delta_training_percentage / 100))
 
-        test_values = int(round(len(ingested_data) * (self.test_percentage / 100)))
-        self.test_values = test_values
+        if self.test_values == -1:
+            self.test_values = int(round(len(ingested_data) * (self.test_percentage / 100)))
+
         self.freq = pd.infer_freq(ingested_data.index)
 
-        train_ts = ingested_data.iloc[:-test_values]
-        test_ts = ingested_data.iloc[-test_values:]
+        train_ts = ingested_data.iloc[:-self.test_values]
+        test_ts = ingested_data.iloc[-self.test_values:]
 
         train_sets_number = math.floor(len(train_ts) / self.delta_training_values) + 1
 
@@ -223,7 +230,7 @@ class PredictionModel:
                                      columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
             forecast = self.predict(future_df)
-            testing_prediction = forecast.iloc[-self.prediction_lags - test_values:-self.prediction_lags]
+            testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
             first_used_index = tr.index.values[0]
 
@@ -237,8 +244,9 @@ class PredictionModel:
         # testing_results = results
 
         model_characteristics["name"] = self.name
-        model_characteristics["delta_training_percentage"] = str(self.delta_training_percentage) + "%"
-        model_characteristics["delta_training_values"] = str(self.delta_training_values)
+        model_characteristics["delta_training_percentage"] = self.delta_training_percentage
+        model_characteristics["delta_training_values"] = self.delta_training_values
+        model_characteristics["test_values"] = self.test_values
 
         return ModelResult(results=results, characteristics=model_characteristics)
 

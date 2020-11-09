@@ -35,7 +35,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(res[0], 2)
 
-    def test_launch_model_fbprophet(self):
+    def test_launch_model_fbprophet_1(self):
         param_config = {
             "verbose": "no",
             "model_parameters": {
@@ -66,6 +66,36 @@ class MyTestCase(unittest.TestCase):
             used_training_set = used_training_set.iloc[:-10]
             self.assertEqual(len(prediction), len(used_training_set) + 10 + 10)
 
+    def test_launch_model_fbprophet_2(self):
+        param_config = {
+            "verbose": "no",
+            "model_parameters": {
+                "test_values": 5,
+                "delta_training_percentage": 20,
+                "prediction_lags": 10,
+                "transformation": "none",
+                "main_accuracy_estimator": "mae"
+            },
+        }
+
+        df = get_fake_df(100)
+        predictor = FBProphet(param_config)
+        model_result = predictor.launch_model(df.copy())
+
+        self.assertEqual(predictor.test_values, 5)
+        self.assertEqual(predictor.delta_training_values, 20)
+        self.assertEqual(predictor.main_accuracy_estimator, "mae")
+
+        self.assertEqual(len(model_result.results), 5)
+
+        for r in model_result.results:
+            prediction = r.prediction
+            testing_performances = r.testing_performances
+            first_used_index = testing_performances.first_used_index
+
+            used_training_set = df.loc[first_used_index:]
+            used_training_set = used_training_set.iloc[:-5]
+            self.assertEqual(len(prediction), len(used_training_set) + 5 + 10)
 
     def test_launch_model_arima(self):
         param_config = {

@@ -6,13 +6,11 @@ from pandas import Grouper, DataFrame
 import plotly.graph_objects as go
 import numpy as np
 
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 from plotly.subplots import make_subplots
-
 
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
@@ -31,9 +29,9 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
                     'professional medical advice, diagnosis or treatment. All content, including text, '
                     'graphics, images and information, contained on or available through this web site is for '
                     'general information purposes only.', html.Br(), 'We make no representation and assume no '
-                    'responsibility for the accuracy of information contained on or available through this web '
-                    'site, and such information is subject to change without notice. You are encouraged to '
-                    'confirm any information obtained from or through this web site with other sources.',
+                                                                     'responsibility for the accuracy of information contained on or available through this web '
+                                                                     'site, and such information is subject to change without notice. You are encouraged to '
+                                                                     'confirm any information obtained from or through this web site with other sources.',
                     html.Br(),
                     html.Br(),
                     'For suggestions and questions contact us at manuel.roveri (at) polimi.it or alessandro.falcetta '
@@ -67,9 +65,7 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
             model_results = model.results
             model_characteristic = model.characteristics
 
-            test_percentage = model_parameters['test_percentage']
-            test_values = int(round(len(ingested_data) * (test_percentage / 100)))
-
+            test_values = model_characteristic["test_values"]
             main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
             model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
 
@@ -77,8 +73,7 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
             testing_performances = [x.testing_performances for x in model_results]
 
             children.extend([
-                html.Div("Model characteristics:"),
-                html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
+                characteristics_list(model_characteristic, testing_performances),
                 # html.Div("Testing performance:"),
                 # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
                 prediction_plot(ingested_data, best_prediction, test_values),
@@ -92,86 +87,86 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
     return children
 
 
-def data_description_new(scenarios: [Scenario], param_config: dict):
-    """
-    Function which describes the data stored in each scenario, in a Dash application.
-    A scenario is a time series of interest; in a univariate environment, each column
-    of a starting dataframe corresponds to a different scenario.
-
-    Parameters
-    ----------
-    scenarios : [Scenario]
-        List of scenario objects.
-    param_config : dict
-        Dictionary with the configuration parameters
-    """
-    if param_config["verbose"] == 'yes':
-        print('-----------------------------------------------------------')
-        print('Data_description: ' + 'starting the description of the data')
-
-    visualization_parameters = param_config["visualization_parameters"]
-    model_parameters = param_config["model_parameters"]
-
-    # Initialize Dash app.
-    app = dash.Dash(__name__)
-
-    children = [
-        html.H1(children=param_config["activity_title"]),
-    ]
-
-    for s in scenarios:
-        ingested_data = s.ingested_data
-        models = s.models
-
-        # Data visualization with plots
-        children.extend([
-            html.H2(children=ingested_data.columns[0] + " analysis"),
-            html.H3("Data visualization"),
-            line_plot(ingested_data),
-            histogram_plot(ingested_data),
-            box_plot(ingested_data, visualization_parameters["box_plot_frequency"]),
-            autocorrelation_plot(ingested_data)
-        ])
-
-        # Prediction results
-        children.append(
-            html.H3("Training & Prediction results"),
-        )
-
-        for model in models:
-            model_results = model.results
-            model_characteristic = model.characteristics
-
-            test_percentage = model_parameters['test_percentage']
-            test_values = int(round(len(ingested_data) * (test_percentage / 100)))
-
-            main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
-            model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
-
-            best_prediction = model_results[0].prediction
-            testing_performances = [x.testing_performances for x in model_results]
-
-            children.extend([
-                html.Div("Model characteristics:"),
-                html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
-                # html.Div("Testing performance:"),
-                # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-                prediction_plot(ingested_data, best_prediction, test_values),
-                performance_plot(ingested_data, best_prediction, testing_performances, test_values),
-            ])
-
-            # EXTRA
-            # Warning: this will plot every model result, with every training set used!
-            # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
-
-    # That's all. Launch the app.
-    app.layout = html.Div(children=children)
-
-    def open_browser():
-        webbrowser.open("http://127.0.0.1:8050")
-
-    Timer(1, open_browser).start()
-    app.run_server(debug=True, use_reloader=False)
+# def data_description_new(scenarios: [Scenario], param_config: dict):
+#     """
+#     Function which describes the data stored in each scenario, in a Dash application.
+#     A scenario is a time series of interest; in a univariate environment, each column
+#     of a starting dataframe corresponds to a different scenario.
+#
+#     Parameters
+#     ----------
+#     scenarios : [Scenario]
+#         List of scenario objects.
+#     param_config : dict
+#         Dictionary with the configuration parameters
+#     """
+#     if param_config["verbose"] == 'yes':
+#         print('-----------------------------------------------------------')
+#         print('Data_description: ' + 'starting the description of the data')
+#
+#     visualization_parameters = param_config["visualization_parameters"]
+#     model_parameters = param_config["model_parameters"]
+#
+#     # Initialize Dash app.
+#     app = dash.Dash(__name__)
+#
+#     children = [
+#         html.H1(children=param_config["activity_title"]),
+#     ]
+#
+#     for s in scenarios:
+#         ingested_data = s.ingested_data
+#         models = s.models
+#
+#         # Data visualization with plots
+#         children.extend([
+#             html.H2(children=ingested_data.columns[0] + " analysis"),
+#             html.H3("Data visualization"),
+#             line_plot(ingested_data),
+#             histogram_plot(ingested_data),
+#             box_plot(ingested_data, visualization_parameters["box_plot_frequency"]),
+#             autocorrelation_plot(ingested_data)
+#         ])
+#
+#         # Prediction results
+#         children.append(
+#             html.H3("Training & Prediction results"),
+#         )
+#
+#         for model in models:
+#             model_results = model.results
+#             model_characteristic = model.characteristics
+#
+#             test_percentage = model_parameters['test_percentage']
+#             test_values = int(round(len(ingested_data) * (test_percentage / 100)))
+#
+#             main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+#             model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+#
+#             best_prediction = model_results[0].prediction
+#             testing_performances = [x.testing_performances for x in model_results]
+#
+#             children.extend([
+#                 html.Div("Model characteristics:"),
+#                 html.Ul([html.Li(key + ": " + str(model_characteristic[key])) for key in model_characteristic]),
+#                 # html.Div("Testing performance:"),
+#                 # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
+#                 prediction_plot(ingested_data, best_prediction, test_values),
+#                 performance_plot(ingested_data, best_prediction, testing_performances, test_values),
+#             ])
+#
+#             # EXTRA
+#             # Warning: this will plot every model result, with every training set used!
+#             # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
+#
+#     # That's all. Launch the app.
+#     app.layout = html.Div(children=children)
+#
+#     def open_browser():
+#         webbrowser.open("http://127.0.0.1:8050")
+#
+#     Timer(1, open_browser).start()
+#     app.run_server(debug=True, use_reloader=False)
 
 
 def line_plot(ingested_data: DataFrame) -> dcc.Graph:
@@ -284,7 +279,8 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
                              line=dict(color='red'),
                              mode='markers',
                              name='test data'))
-    fig.update_layout(title="Best prediction", xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
+    fig.update_layout(title="Best prediction", xaxis_title=ingested_data.index.name,
+                      yaxis_title=ingested_data.columns[0])
     g = dcc.Graph(
         figure=fig
     )
@@ -323,8 +319,8 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
     # Small trick to make the x-axis have the same length of the "Prediction plot"
     predicted_data.iloc[:, 0] = "nan"
     fig.append_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
-                             mode='lines+markers',
-                             name='yhat', showlegend=False), row=3, col=1)
+                                mode='lines+markers',
+                                name='yhat', showlegend=False), row=3, col=1)
 
     fig.update_yaxes(title_text="MAE", row=1, col=1)
     fig.update_yaxes(title_text="MSE", row=2, col=1)
@@ -339,7 +335,6 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
 
 def plot_every_prediction(ingested_data: DataFrame, model_results: [SingleResult],
                           main_accuracy_estimator: str, test_values: int):
-
     new_childrens = [html.Div("EXTRA: plot _EVERY_ prediction\n")]
 
     model_results.sort(key=lambda x: len(x.prediction))
@@ -356,6 +351,38 @@ def plot_every_prediction(ingested_data: DataFrame, model_results: [SingleResult
         ])
 
     return new_childrens
+
+
+def characteristics_list(model_characteristics: dict, testing_performances: [TestingPerformance]):
+    def get_text_char(key: str, value: any) -> str:
+        switcher = {
+            "name": "Model name: " + str(value),
+            "test_values": "The last " + str(value) + " values have been used for testing.",
+            "delta_training_percentage": "The length of the training windows is the " + str(value) + "% of the time "
+                                                                                                     "series' length.",
+            "delta_training_values": "Training windows are composed of " + str(value) + " values."
+        }
+        return switcher.get(key, "Invalid choice!")
+
+    def get_text_perf(key: str, value: any) -> str:
+        switcher = {
+            "MAE": "MAE: " + str(round(value, 2)),
+            "RMSE": "RMSE: " + str(round(value, 2)),
+            "MSE": "MSE: " + str(round(value, 2)),
+            "AM": "Arithmetic mean of errors: " + str(round(value, 2))
+        }
+        return switcher.get(key, "Invalid choice!")
+
+    best_testing_performances = testing_performances[0].get_dict()
+    del best_testing_performances["first_used_index"]
+
+    elems = [html.Div("Model characteristics:"),
+             html.Ul([html.Li(get_text_char(key, model_characteristics[key])) for key in model_characteristics]),
+             html.Div("This model, using the best training window, reaches these performances:"),
+             html.Ul(
+                 [html.Li(get_text_perf(key, best_testing_performances[key])) for key in best_testing_performances])]
+
+    return html.Div(elems)
 
 # def data_description(ingested_data, prediction_data, training_performance, param_config):
 #     """Function which describes the data stored in data_frame.
