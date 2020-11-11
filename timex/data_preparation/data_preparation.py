@@ -67,8 +67,8 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
     ----------
     data_frame : DataFrame
         Pandas dataframe storing the data loaded from the url in config_file_name
-    column_name_target_diff : str
-        Column used to compute the 1-step diff
+    column_name_target_diff : [str]
+        Columns used to compute the 1-step diff
     name_diff_column : str, optional
         The column where the selection with 'value' is applied
     verbose : str, optional
@@ -85,11 +85,13 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
         print('Adding_diff_column: total number of rows before the adding phase = ' + str(len(data_frame)))
         print('                    total number of columns before the adding phase = ' + str(len(data_frame.columns)))
 
-    tmp = data_frame[column_name_target_diff]
-    if name_diff_column:
-        data_frame[name_diff_column] = tmp.diff()
-    else:
-        data_frame[column_name_target_diff] = tmp.diff()
+    for target in column_name_target_diff:
+        tmp = data_frame[target]
+        # if name_diff_column:
+        #     data_frame[name_diff_column] = tmp.diff()
+        # else:
+        name = target + "_diff"
+        data_frame[name] = tmp.diff()
 
     data_frame = data_frame.iloc[1:]
 
