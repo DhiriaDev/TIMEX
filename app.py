@@ -1,23 +1,29 @@
 import json
 import pickle
 import webbrowser
+from datetime import datetime, timezone
 from threading import Timer
 
 import dash
 import dash_html_components as html
+import dash_core_components as dcc
+
 
 from timex.data_ingestion import data_ingestion
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
-from timex.data_visualization.data_visualization import create_dash_children
+from timex.data_visualization.data_visualization import create_scenario_children
 from timex.scenario.scenario import Scenario
+from dash.dependencies import Input, Output
 
 
 example = "covid19italy"
 
 if example == "covid19italy":
     param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy.json'
+# elif example == "covid19italyregions":
+#     param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_regions.json'
 elif example == "airlines":
     param_file_nameJSON = 'demo_configurations/configuration_test_airlines.json'
 elif example == "covid19switzerland":
@@ -41,9 +47,15 @@ ingested_data = data_selection(ingested_data, param_config)
 
 if "add_diff_column" in param_config["input_parameters"]:
     print('-> ADD DIFF COLUMN')
-    target = param_config["input_parameters"]["add_diff_column"]
-    name = target + "_diff"
-    ingested_data = add_diff_column(ingested_data, target, name, "yes")
+    targets = list(param_config["input_parameters"]["add_diff_column"].split(','))
+    ingested_data = add_diff_column(ingested_data, targets, "yes")
+
+# Rename columns
+mappings = param_config["input_parameters"]["scenarios_names"]
+ingested_data.rename(columns=mappings, inplace=True)
+
+# Custom columns
+ingested_data["Ratio New cases/tests"] = [100*(np/tamp) for np, tamp in zip(ingested_data['New daily cases'], ingested_data['Daily tests difference'])]
 
 # data prediction
 columns = ingested_data.columns
@@ -57,27 +69,91 @@ for col in columns:
     prophet_result = predictor.launch_model(scenario_data.copy())
     model_results.append(prophet_result)
     #
-    predictor = ARIMA(param_config)
-    arima_result = predictor.launch_model(scenario_data.copy())
-    model_results.append(arima_result)
+    # predictor = ARIMA(param_config)
+    # arima_result = predictor.launch_model(scenario_data.copy())
+    # model_results.append(arima_result)
 
     scenarios.append(
         Scenario(scenario_data, model_results)
     )
 
 # data visualization
-children = create_dash_children(scenarios, param_config)
+children_for_each_scenario = [{
+    'name': s.ingested_data.columns[0],
+    'children': create_scenario_children(s, param_config)
+} for s in scenarios]
 
 # # Initialize Dash app.
 app = dash.Dash(__name__)
 server = app.server
 
-print("Serving the layout...")
-app.layout = html.Div(children=children)
+now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+disclaimer = [html.Div([
+    html.H1("COVID-19 pandemic in Italy: monitoring and forecasting", style={'text-align': 'center'}),
+    html.Hr(),
+    html.Div(html.Img(src=app.get_asset_url('poli.png'), style={'width': 256}), style={'text-align': 'center'}),
+    html.H3(
+        "Dashboard by the Intelligent Embedded Systems (IES) research group of the Politecnico di Milano, Italy"),
+    html.Hr(),
+    dcc.Markdown('''
+        *Welcome to the monitoring and forecasting dashboard of the Coronavirus (COVID-19) pandemic in Italy provided by the Intelligent Embedded Systems (IES) research group of Politecnico di Milano, Italy.*
+
+        The dashboard relies on *TIMEX*, a Python-based framework for automatic time series analysis developed by the IES research group.
+
+        The dashboard is fed with the [data](https://github.com/pcm-dpc/COVID-19) provided by Italian Civil Protection from Feb. 21 2020. 
+        In particular, the following COVID-19 Data are considered:
+        - **New daily cases**: New cases found in that day. This is the common number reported by media.
+        - **Total intensive care**: Total number of patients in intensive care.
+        - **Total hospitalisations**: Total number of patients in hospitals.
+        - **Total deaths**: Total number of deaths due to Covid-19.
+        - **Daily intensive care difference**: Difference, w.r.t the previous day, in the number of intensive care patients.
+        - **Daily hospitalisations difference**: Difference, w.r.t the previous day, in the number of hospitalisations.
+        - **Daily deaths difference**: Difference, w.r.t the previous day, in the number of deaths.
+        - **Ratio New cases/tests**: Daily ratio of positive tests.
+
+        You can select the visualized data from the selector at the bottom of the page.
+
+        For suggestions and questions contact:
+        - Prof. Manuel Roveri - manuel.roveri (at) polimi.it
+        - Ing. Alessandro Falcetta - alessandro.falcetta (at) mail.polimi.it
+
+        *DISCLAIMER: The information on this site is not intended or implied to be a substitute for professional medical advice, diagnosis or treatment. All content, including text, graphics, images and information, contained on or available through this web site is for general information purposes only.
+        We make no representation and assume no responsibility for the accuracy of information contained on or available through this web site, and such information is subject to change without notice. You are encouraged to confirm any information obtained from or through this web site with other sources.*
+        '''),
+    html.Div("Last updated at (yyyy-mm-dd, UTC time): " + str(now)),
+    html.Br(),
+    html.H2("Please select the data of interest:")
+], style={'width': '80%', 'margin': 'auto'}
+), dcc.Dropdown(
+    id='scenario_selector',
+    options=[{'label': i['name'], 'value': i['name']} for i in children_for_each_scenario],
+    value='Scenario'
+), html.Div(id="scenario_wrapper"), html.Div(dcc.Graph(), style={'display': 'none'})]
+
+tree = html.Div(children=disclaimer, style={'width': '80%', 'margin': 'auto'})
+
+app.layout = tree
 
 
-# with open('children.pkl', 'wb') as input_file:
-#     pickle.dump(children, input_file)
+@app.callback(
+    Output(component_id='scenario_wrapper', component_property='children'),
+    [Input(component_id='scenario_selector', component_property='value')]
+)
+def update_scenario_wrapper(input_value):
+    try:
+        children = next(x['children'] for x in children_for_each_scenario if x['name'] == input_value)
+    except StopIteration:
+        return html.Div(style={'padding': 200})
+
+    return children
+
+
+# Save the children; these are the plots relatives to all the scenarios.
+# They can be loaded by "app_load_from_dump.py" to start the app
+# without re-computing all the plots.
+with open('children_for_each_scenario.pkl', 'wb') as input_file:
+    pickle.dump(children_for_each_scenario, input_file)
 
 
 def open_browser():

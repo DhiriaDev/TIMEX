@@ -16,6 +16,57 @@ from timex.data_prediction.data_prediction import TestingPerformance, SingleResu
 from timex.scenario.scenario import Scenario
 
 
+def create_scenario_children(scenario: Scenario, param_config: dict):
+    children = []
+
+    visualization_parameters = param_config["visualization_parameters"]
+    model_parameters = param_config["model_parameters"]
+
+    ingested_data = scenario.ingested_data
+    models = scenario.models
+    name = ingested_data.columns[0]
+
+    # Data visualization with plots
+    children.extend([
+        html.H2(children=name + " analysis", id=name),
+        html.H3("Data visualization"),
+        line_plot(ingested_data),
+        histogram_plot(ingested_data),
+        box_plot(ingested_data, visualization_parameters["box_plot_frequency"]),
+        autocorrelation_plot(ingested_data)
+    ])
+
+    # Prediction results
+    children.append(
+        html.H3("Training & Prediction results"),
+    )
+
+    for model in models:
+        model_results = model.results
+        model_characteristic = model.characteristics
+
+        test_values = model_characteristic["test_values"]
+        main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+        model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+
+        best_prediction = model_results[0].prediction
+        testing_performances = [x.testing_performances for x in model_results]
+
+        children.extend([
+            characteristics_list(model_characteristic, testing_performances),
+            # html.Div("Testing performance:"),
+            # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
+            prediction_plot(ingested_data, best_prediction, test_values),
+            performance_plot(ingested_data, best_prediction, testing_performances, test_values),
+        ])
+
+        # EXTRA
+        # Warning: this will plot every model result, with every training set used!
+        # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
+
+    return children
+
+
 def create_dash_children(scenarios: [Scenario], param_config: dict):
     children = []
 
