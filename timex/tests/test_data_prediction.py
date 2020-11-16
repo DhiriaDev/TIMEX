@@ -36,8 +36,9 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(res[0], 2)
 
     def test_launch_model_fbprophet_1(self):
+        # Percentages' sum is not 100%; adapt the windows.
         param_config = {
-            "verbose": "no",
+            "verbose": "yes",
             "model_parameters": {
                 "test_percentage": 10,
                 "delta_training_percentage": 20,
@@ -67,6 +68,7 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(len(prediction), len(used_training_set) + 10 + 10)
 
     def test_launch_model_fbprophet_2(self):
+        # Percentages' sum is not 100%; adapt the windows.
         param_config = {
             "verbose": "no",
             "model_parameters": {
@@ -85,6 +87,32 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(predictor.test_values, 5)
         self.assertEqual(predictor.delta_training_values, 20)
         self.assertEqual(predictor.main_accuracy_estimator, "mae")
+
+        self.assertEqual(len(model_result.results), 5)
+
+        for r in model_result.results:
+            prediction = r.prediction
+            testing_performances = r.testing_performances
+            first_used_index = testing_performances.first_used_index
+
+            used_training_set = df.loc[first_used_index:]
+            used_training_set = used_training_set.iloc[:-5]
+            self.assertEqual(len(prediction), len(used_training_set) + 5 + 10)
+
+    def test_launch_model_fbprophet_3(self):
+        # Check default parameters.
+        param_config = {
+            "verbose": "no",
+        }
+
+        df = get_fake_df(100)
+        predictor = FBProphet(param_config)
+        model_result = predictor.launch_model(df.copy())
+
+        self.assertEqual(predictor.test_values, 10)
+        self.assertEqual(predictor.delta_training_values, 20)
+        self.assertEqual(predictor.main_accuracy_estimator, "mae")
+        self.assertEqual(predictor.transformation, "log")
 
         self.assertEqual(len(model_result.results), 5)
 

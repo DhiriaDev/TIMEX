@@ -134,7 +134,7 @@ class MyTestCase(unittest.TestCase):
     def test_add_diff_column_2(self):
         # Add a multiple diff column.
         param_config = {
-            "verbose": "no",
+            "verbose": "yes",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_2.csv",
                 "columns_to_load_from_url": "first_column,second_column,third_column",

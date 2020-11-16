@@ -64,41 +64,41 @@ def data_ingestion(param_config):
 def add_freq(df, freq=None) -> Series:
     """Add a frequency attribute to idx, through inference or directly.
 
-    Returns a copy.  If `freq` is None, it is inferred.
+    If `freq` is None, it is inferred.
     """
     # TODO reorder this mess
 
-    df = df.copy()
+    local_df = df.copy()
 
     try:
-        i = df.index.freq
+        i = local_df.index.freq
     except:
-        return df
+        return local_df
 
     # Df has already a freq. Don't do anything.
-    if df.index.freq is not None:
-        return df
+    if local_df.index.freq is not None:
+        return local_df
 
     if freq is not None:
         if freq == 'D':
-            df.index = df.index.normalize()
+            local_df.index = local_df.index.normalize()
 
-        df = df.asfreq(freq=freq)
-        return df
+        local_df = local_df.asfreq(freq=freq)
+        return local_df
 
     if freq is None:
-        freq = pd.infer_freq(df.index)
+        freq = pd.infer_freq(local_df.index)
 
         if freq is None:
-            df.index = df.index.normalize()
-            freq = pd.infer_freq(df.index)
+            local_df.index = local_df.index.normalize()
+            freq = pd.infer_freq(local_df.index)
 
         if freq is None:
             warn('no discernible frequency found for input data.')
             return df
         else:
             if freq == "D":
-                df.index = df.index.normalize()
+                local_df.index = local_df.index.normalize()
 
-            df = df.asfreq(freq=freq)
-            return df
+            local_df = local_df.asfreq(freq=freq)
+            return local_df
