@@ -7,13 +7,15 @@ from threading import Timer
 import dash
 import dash_html_components as html
 import dash_core_components as dcc
-
+from pandas import read_csv
+import pandas as pd
 
 from timex.data_ingestion import data_ingestion
+from timex.data_ingestion.data_ingestion import add_freq
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
-from timex.data_visualization.data_visualization import create_scenario_children
+from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
 from timex.scenario.scenario import Scenario
 from dash.dependencies import Input, Output
 
@@ -48,7 +50,7 @@ ingested_data = data_selection(ingested_data, param_config)
 if "add_diff_column" in param_config["input_parameters"]:
     print('-> ADD DIFF COLUMN')
     targets = list(param_config["input_parameters"]["add_diff_column"].split(','))
-    ingested_data = add_diff_column(ingested_data, targets, "yes")
+    ingested_data = add_diff_column(ingested_data, targets, verbose="yes")
 
 # Rename columns
 mappings = param_config["input_parameters"]["scenarios_names"]
@@ -83,7 +85,69 @@ children_for_each_scenario = [{
     'children': create_scenario_children(s, param_config)
 } for s in scenarios]
 
-# # Initialize Dash app.
+#######################################################################################################################
+# Custom scenario #########
+regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
+                   header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
+regions.reset_index(inplace=True)
+regions['data'] = pd.to_datetime(regions['data'], format=param_config['input_parameters']['datetime_format'])
+regions.set_index(['data', 'denominazione_regione'], inplace=True, drop=True)
+
+regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
+
+regions.rename(columns={'nuovi_positivi': 'New daily cases', 'tamponi': 'Tests',
+                        "tamponi_diff": "Daily tests difference"}, inplace=True)
+
+regions["Ratio New cases/tests"] = [100*(ndc/tamp) if tamp > ndc > 0 else "nan" for ndc, tamp in
+                                    zip(regions['New daily cases'], regions['Daily tests difference'])]
+
+regions_children = [
+    html.H2(children='Regions' + " analysis", id='Regions'),
+    html.Em("You can select a specific region by doucle-clicking on its label (in the right list); clicking "
+            "on other regions, you can select only few of them."),
+    html.H3("Data visualization"),
+    line_plot_multiIndex(regions[['New daily cases']]),
+    line_plot_multiIndex(regions[['Ratio New cases/tests']])
+]
+
+# Append "Regioni" scenario
+children_for_each_scenario.append({'name': 'Regions', 'children': regions_children})
+
+regions_scenarios = []
+
+# Prediction of "New daily cases" for every region
+for region in regions.index.get_level_values(1).unique():
+    region_data = regions.loc[(regions.index.get_level_values('denominazione_regione') == region)]
+    region_data.reset_index(inplace=True)
+    region_data.set_index('data', inplace=True)
+    region_data = add_freq(region_data, 'D')
+    region_data = region_data[['New daily cases']]
+
+    # region_data.drop(columns=['denominazione_regione'], inplace=True)
+
+    model_results = []
+
+    print('-> PREDICTION FOR ' + str(region))
+    predictor = FBProphet(param_config)
+    prophet_result = predictor.launch_model(region_data.copy())
+    model_results.append(prophet_result)
+    #
+    # predictor = ARIMA(param_config)
+    # arima_result = predictor.launch_model(scenario_data.copy())
+    # model_results.append(arima_result)
+
+    s = Scenario(region_data, model_results)
+
+    children_for_each_scenario.append({
+        'name': region,
+        'children': create_scenario_children(s, param_config)
+    })
+
+    regions_scenarios.append(s)
+
+#######################################################################################################################
+
+# Initialize Dash app.
 app = dash.Dash(__name__)
 server = app.server
 
@@ -111,6 +175,7 @@ disclaimer = [html.Div([
         - **Daily hospitalisations difference**: Difference, w.r.t the previous day, in the number of hospitalisations.
         - **Daily deaths difference**: Difference, w.r.t the previous day, in the number of deaths.
         - **Ratio New cases/tests**: Daily ratio of positive tests.
+        - **Regions**: Mixed information about single regions.
 
         You can select the visualized data from the selector at the bottom of the page.
 

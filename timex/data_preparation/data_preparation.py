@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from pandas import DataFrame
+
 
 def data_selection(data_frame, param_config):
     """This allows the user to select only a part of a time series in DataFrame, according to some criteria.
@@ -56,27 +58,28 @@ def data_selection(data_frame, param_config):
     return data_frame
 
 
-def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, verbose='yes', ):
+def add_diff_column(data_frame: DataFrame, column_name_target_diff: [str], group_by: str = None, verbose: str = 'yes'):
     """Function for adding a 1-step diff column computed on the column_name_target_diff of the data frame.
 
-    The function automatically removes the first row of the data_frame since the diff value is nan
-    If the name_diff_column parameter is specified, it is used as name of the new column.
-    Otherwise, the name 'diff' is used
+    The function automatically removes the first row of the data_frame since the diff value is NaN.
+    If the group_by parameter is specified, the data is grouped by that sub-index and then the diff
+    is applied.
 
     Parameters
     ----------
+    group_by
     data_frame : DataFrame
-        Pandas dataframe storing the data loaded from the url in config_file_name
+        Pandas dataframe to add the diff column on.
     column_name_target_diff : [str]
         Columns used to compute the 1-step diff
-    name_diff_column : str, optional
-        The column where the selection with 'value' is applied
+    group_by : str, optional
+        If specified, data is grouped by this index and then the diff is applied.
     verbose : str, optional
         Print details on the activities of the function (default is yes).
 
     Returns
     -------
-    df: Pandas dataframe with the new diff column and without the first row
+    df: Pandas dataframe with the new diff columns (name of the new columns is 'name_diff') and without the first row
 
     """
     if verbose == 'yes':
@@ -87,11 +90,11 @@ def add_diff_column(data_frame, column_name_target_diff, name_diff_column=None, 
 
     for target in column_name_target_diff:
         tmp = data_frame[target]
-        # if name_diff_column:
-        #     data_frame[name_diff_column] = tmp.diff()
-        # else:
         name = target + "_diff"
-        data_frame[name] = tmp.diff()
+        if group_by:
+            data_frame[name] = tmp.groupby(group_by).diff()
+        else:
+            data_frame[name] = tmp.diff()
 
     data_frame = data_frame.iloc[1:]
 
