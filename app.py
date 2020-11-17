@@ -113,14 +113,15 @@ def create_children():
     children_for_each_scenario.append({'name': 'Regions', 'children': regions_children})
 
     # Prediction of "New daily cases" for every region
-    for region in regions.index.get_level_values(1).unique():
+    regions_names = regions.index.get_level_values(1).unique()
+    regions_names = regions_names.sort_values()
+
+    for region in regions_names:
         region_data = regions.loc[(regions.index.get_level_values('denominazione_regione') == region)]
         region_data.reset_index(inplace=True)
         region_data.set_index('data', inplace=True)
         region_data = add_freq(region_data, 'D')
         region_data = region_data[['New daily cases']]
-
-        # region_data.drop(columns=['denominazione_regione'], inplace=True)
 
         model_results = []
 
