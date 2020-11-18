@@ -12,7 +12,7 @@ from timex.data_prediction.data_prediction import TestingPerformance, SingleResu
 from timex.scenario.scenario import Scenario
 
 
-def create_scenario_children(scenario: Scenario, param_config: dict):
+def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot: bool = True):
     """
     Creates the Dash children for a specific scenario. They include a line plot,
     histogram, box plot and autocorrelation plot. For each model on the scenario
@@ -23,6 +23,9 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
     scenario: Scenario
     
     param_config : dict
+    
+    xcorr_plot : bool
+    True to display the cross-correlation plot. Default True.
 
     Returns
     -------
@@ -45,7 +48,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         histogram_plot(scenario_data),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
         autocorrelation_plot(scenario_data),
-        cross_correlation_plot(name, scenario.ingested_data)
+        cross_correlation_plot(name, scenario.ingested_data) if xcorr_plot else None
     ])
 
     # Prediction results
@@ -221,13 +224,13 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def cross_correlation_plot(target: str, ingested_data: DataFrame) -> dcc.Graph:
+def cross_correlation_plot(target: str, ingested_data: DataFrame):
     """
     Create and return the cross-correlation graph for all the columns in the dataframe.
     The scenario column is used as target; the correlation is computed against all
     lags of all the other columns which include numbers.
 
-    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'
+    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'.
 
     Parameters
     ----------

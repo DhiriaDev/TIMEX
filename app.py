@@ -135,11 +135,11 @@ def create_children():
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
 
-        s = Scenario(region_data, model_results)
+        s = Scenario(region_data, model_results, ingested_data)
 
         children_for_each_scenario.append({
             'name': region,
-            'children': create_scenario_children(s, param_config)
+            'children': create_scenario_children(s, param_config, xcorr_plot=False)
         })
 
     ####################################################################################################################
@@ -160,6 +160,6 @@ if __name__ == '__main__':
         webbrowser.open("http://127.0.0.1:" + str(port))
 
 
-    Timer(1, open_browser).start()
-    app_load_from_dump.app.run_server(port=port)
+    Timer(20, open_browser).start()
+    Timer(10, app_load_from_dump.app.run_server(port=port)).start()
 
