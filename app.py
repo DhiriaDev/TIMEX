@@ -74,17 +74,18 @@ def create_children():
         # model_results.append(arima_result)
 
         scenarios.append(
-            Scenario(scenario_data, model_results)
+            Scenario(scenario_data, model_results, ingested_data)
         )
 
     # data visualization
     children_for_each_scenario = [{
-        'name': s.ingested_data.columns[0],
+        'name': s.scenario_data.columns[0],
         'children': create_scenario_children(s, param_config)
     } for s in scenarios]
 
     ####################################################################################################################
     # Custom scenario #########
+
     regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
                        header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
     regions.reset_index(inplace=True)

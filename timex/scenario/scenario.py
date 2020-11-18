@@ -10,11 +10,14 @@ class Scenario:
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    scenario_data : DataFrame
         Initial time series, in the form of a DataFrame with a index and a single data column.
     models : [ModelResult]
         List of ModelResult objects, all trained on this scenario.
+    ingested_data : DataFrame
+        The entire DataFrame parsed starting from the CSV. Useful for cross-correlation diagrams.
     """
-    def __init__(self, ingested_data: DataFrame, models: [ModelResult]):
-        self.ingested_data = ingested_data
+    def __init__(self, scenario_data: DataFrame, models: [ModelResult], ingested_data : DataFrame):
+        self.scenario_data = scenario_data
         self.models = models
+        self.ingested_data = ingested_data

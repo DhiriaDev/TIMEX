@@ -33,18 +33,19 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
     visualization_parameters = param_config["visualization_parameters"]
     model_parameters = param_config["model_parameters"]
 
-    ingested_data = scenario.ingested_data
+    scenario_data = scenario.scenario_data
     models = scenario.models
-    name = ingested_data.columns[0]
+    name = scenario_data.columns[0]
 
     # Data visualization with plots
     children.extend([
         html.H2(children=name + " analysis", id=name),
         html.H3("Data visualization"),
-        line_plot(ingested_data),
-        histogram_plot(ingested_data),
-        box_plot(ingested_data, visualization_parameters["box_plot_frequency"]),
-        autocorrelation_plot(ingested_data)
+        line_plot(scenario_data),
+        histogram_plot(scenario_data),
+        box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
+        autocorrelation_plot(scenario_data),
+        cross_correlation_plot(name, scenario.ingested_data)
     ])
 
     # Prediction results
@@ -67,8 +68,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
             characteristics_list(model_characteristic, testing_performances),
             # html.Div("Testing performance:"),
             # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-            prediction_plot(ingested_data, best_prediction, test_values),
-            performance_plot(ingested_data, best_prediction, testing_performances, test_values),
+            prediction_plot(scenario_data, best_prediction, test_values),
+            performance_plot(scenario_data, best_prediction, testing_performances, test_values),
         ])
 
         # EXTRA
@@ -99,21 +100,21 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
     return children
 
 
-def line_plot(ingested_data: DataFrame) -> dcc.Graph:
+def line_plot(df: DataFrame) -> dcc.Graph:
     """
     Create and return the line plot for a dataframe.
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Dataframe to plot.
 
     Returns
     -------
     g : dcc.Graph
     """
-    fig = go.Figure(data=go.Scatter(x=ingested_data.index, y=ingested_data.iloc[:, 0], mode='lines+markers'))
-    fig.update_layout(title='Line plot', xaxis_title=ingested_data.index.name, yaxis_title=ingested_data.columns[0])
+    fig = go.Figure(data=go.Scatter(x=df.index, y=df.iloc[:, 0], mode='lines+markers'))
+    fig.update_layout(title='Line plot', xaxis_title=df.index.name, yaxis_title=df.columns[0])
 
     g = dcc.Graph(
         figure=fig
@@ -121,7 +122,7 @@ def line_plot(ingested_data: DataFrame) -> dcc.Graph:
     return g
 
 
-def line_plot_multiIndex(ingested_data: DataFrame) -> dcc.Graph:
+def line_plot_multiIndex(df: DataFrame) -> dcc.Graph:
     """
     Returns a line plot for a dataframe with a MultiIndex.
     It is assumed that the first-level index is the real index,
@@ -129,7 +130,7 @@ def line_plot_multiIndex(ingested_data: DataFrame) -> dcc.Graph:
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Dataframe to plot. It is a multiIndex dataframe.
 
     Returns
@@ -137,25 +138,25 @@ def line_plot_multiIndex(ingested_data: DataFrame) -> dcc.Graph:
     g : dcc.Graph
     """
     fig = go.Figure()
-    for region in ingested_data.index.get_level_values(1).unique():
-        fig.add_trace(go.Scatter(x=ingested_data.index.get_level_values(0).unique(), y=ingested_data.loc[
-            (ingested_data.index.get_level_values(1) == region), ingested_data.columns[0]], name=region))
+    for region in df.index.get_level_values(1).unique():
+        fig.add_trace(go.Scatter(x=df.index.get_level_values(0).unique(), y=df.loc[
+            (df.index.get_level_values(1) == region), df.columns[0]], name=region))
 
-    fig.update_layout(title='Line plot', xaxis_title=ingested_data.index.get_level_values(0).name,
-                      yaxis_title=ingested_data.columns[0])
+    fig.update_layout(title='Line plot', xaxis_title=df.index.get_level_values(0).name,
+                      yaxis_title=df.columns[0])
     g = dcc.Graph(
         figure=fig
     )
     return g
 
 
-def histogram_plot(ingested_data: DataFrame) -> dcc.Graph:
+def histogram_plot(df: DataFrame) -> dcc.Graph:
     """
     Create and return the histogram plot for a dataframe.
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Dataframe to plot.
 
     Returns
@@ -163,7 +164,7 @@ def histogram_plot(ingested_data: DataFrame) -> dcc.Graph:
     g : dcc.Graph
     """
 
-    fig = px.histogram(ingested_data, ingested_data.columns[0])
+    fig = px.histogram(df, df.columns[0])
     fig.update_layout(title='Histogram')
     g = dcc.Graph(
         figure=fig
@@ -171,13 +172,13 @@ def histogram_plot(ingested_data: DataFrame) -> dcc.Graph:
     return g
 
 
-def autocorrelation_plot(ingested_data: DataFrame) -> dcc.Graph:
+def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     """
     Create and return the autocorrelation plot for a dataframe.
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Dataframe to use in the autocorrelation plot.
 
     Returns
@@ -186,8 +187,8 @@ def autocorrelation_plot(ingested_data: DataFrame) -> dcc.Graph:
     """
 
     # Code from https://github.com/pandas-dev/pandas/blob/v1.1.4/pandas/plotting/_matplotlib/misc.py
-    n = len(ingested_data)
-    data = np.asarray(ingested_data)
+    n = len(df)
+    data = np.asarray(df)
     mean = np.mean(data)
     c0 = np.sum((data - mean) ** 2) / float(n)
 
@@ -220,13 +221,79 @@ def autocorrelation_plot(ingested_data: DataFrame) -> dcc.Graph:
     return g
 
 
-def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
+def cross_correlation_plot(target: str, ingested_data: DataFrame) -> dcc.Graph:
+    """
+    Create and return the cross-correlation graph for all the columns in the dataframe.
+    The scenario column is used as target; the correlation is computed against all
+    lags of all the other columns which include numbers.
+
+    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'
+
+    Parameters
+    ----------
+    target : str
+    Column which should be used as target for the cross correlation.
+
+    ingested_data : DataFrame
+    Entire dataframe parsed from app
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+    def df_shifted(df, _target=None, lag=0):
+        if not lag and not _target:
+            return df
+        new = {}
+        for c in df.columns:
+            if c == _target:
+                new[c] = df[_target]
+            else:
+                new[c] = df[c].shift(periods=lag)
+        return pandas.DataFrame(data=new)
+
+    fig = go.Figure()
+    lags = len(ingested_data)
+
+    columns = ingested_data.columns.tolist()
+    columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
+
+    result = DataFrame(columns=columns)
+
+    for i in range(0, lags):
+        shifted = df_shifted(ingested_data, target, -i)
+        corr = [shifted[target].corr(other=shifted[col]) for col in columns]
+        #     corr = [display(shifted[col]) for col in columns]
+        result.loc[i] = corr
+
+    for col in result.columns:
+        fig.add_trace(go.Scatter(x=result.index, y=result[col],
+                                 mode='lines',
+                                 name=col))
+
+    # Formula from https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/time-series/how-to/cross-correlation/interpret-the-results/all-statistics-and-graphs/
+    significance_level = DataFrame(data={'Value': [2/np.sqrt(lags - k) for k in range(0, lags)]})
+
+    fig.add_trace(go.Scatter(x=result.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
+    fig.add_trace(go.Scatter(x=result.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
+
+    fig.update_layout(title="Cross-correlation (Pearson)", xaxis_title="Lags", yaxis_title="Correlation")
+    fig.update_yaxes(tick0=-1.0, dtick=0.25)
+    fig.update_yaxes(range=[-1.2, 1.2])
+
+    g = dcc.Graph(
+        figure=fig
+    )
+    return g
+
+
+def box_plot(df: DataFrame, freq: str) -> dcc.Graph:
     """
     Create and return the box plot for a dataframe.
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Dataframe to use in the box plot.
 
     freq : str
@@ -237,7 +304,7 @@ def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
     -------
     g : dcc.Graph
     """
-    temp = ingested_data.iloc[:, 0]
+    temp = df.iloc[:, 0]
     groups = temp.groupby(Grouper(freq=freq))
 
     boxes = []
@@ -249,7 +316,7 @@ def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
         ))
 
     fig = go.Figure(data=boxes)
-    fig.update_layout(title='Box plot', xaxis_title=ingested_data.index.name, yaxis_title='Count')
+    fig.update_layout(title='Box plot', xaxis_title=df.index.name, yaxis_title='Count')
 
     g = dcc.Graph(
         figure=fig
@@ -257,7 +324,7 @@ def box_plot(ingested_data: DataFrame, freq: str) -> dcc.Graph:
     return g
 
 
-def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_values: int) -> dcc.Graph:
+def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) -> dcc.Graph:
     """
     Create and return a plot which contains the prediction for a dataframe.
     The plot is built using two dataframe: ingested_data and predicted_data.
@@ -274,7 +341,7 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Raw values ingested by the app.
 
     predicted_data : DataFrame
@@ -289,10 +356,10 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
     """
     fig = go.Figure()
 
-    not_training_data = ingested_data.loc[:predicted_data.index[0]]
-    training_data = ingested_data.loc[predicted_data.index[0]:]
+    not_training_data = df.loc[:predicted_data.index[0]]
+    training_data = df.loc[predicted_data.index[0]:]
     training_data = training_data.iloc[:-test_values]
-    test_data = ingested_data.iloc[-test_values:]
+    test_data = df.iloc[-test_values:]
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
                              mode='lines+markers',
@@ -320,15 +387,15 @@ def prediction_plot(ingested_data: DataFrame, predicted_data: DataFrame, test_va
                              line=dict(color='red'),
                              mode='markers',
                              name='test data'))
-    fig.update_layout(title="Best prediction", xaxis_title=ingested_data.index.name,
-                      yaxis_title=ingested_data.columns[0])
+    fig.update_layout(title="Best prediction", xaxis_title=df.index.name,
+                      yaxis_title=df.columns[0])
     g = dcc.Graph(
         figure=fig
     )
     return g
 
 
-def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testing_performances: [TestingPerformance],
+def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [TestingPerformance],
                      test_values: int) -> dcc.Graph:
     """
     Create and return the performance plot of the model; for every error kind (i.e. MSE, MAE, etc)
@@ -337,7 +404,7 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
 
     Parameters
     ----------
-    ingested_data : DataFrame
+    df : DataFrame
     Raw values ingested by the app.
 
     predicted_data : DataFrame
@@ -356,7 +423,7 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
     """
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
-    training_data = ingested_data.iloc[:-test_values]
+    training_data = df.iloc[:-test_values]
 
     data_performances = []
 
@@ -389,7 +456,7 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
 
     fig.update_yaxes(title_text="MAE", row=1, col=1)
     fig.update_yaxes(title_text="MSE", row=2, col=1)
-    fig.update_yaxes(title_text=ingested_data.columns[0], row=3, col=1)
+    fig.update_yaxes(title_text=df.columns[0], row=3, col=1)
 
     fig.update_layout(title='Performances with different training windows', height=700)
     g = dcc.Graph(
@@ -398,7 +465,7 @@ def performance_plot(ingested_data: DataFrame, predicted_data: DataFrame, testin
     return g
 
 
-def plot_every_prediction(ingested_data: DataFrame, model_results: [SingleResult],
+def plot_every_prediction(df: DataFrame, model_results: [SingleResult],
                           main_accuracy_estimator: str, test_values: int):
     new_childrens = [html.Div("EXTRA: plot _EVERY_ prediction\n")]
 
@@ -407,7 +474,7 @@ def plot_every_prediction(ingested_data: DataFrame, model_results: [SingleResult
     for r in model_results:
         predicted_data = r.prediction
         testing_performance = r.testing_performances
-        plot = prediction_plot(ingested_data, predicted_data, test_values)
+        plot = prediction_plot(df, predicted_data, test_values)
         plot.figure.update_layout(title="")
         new_childrens.extend([
             html.Div(main_accuracy_estimator.upper()
