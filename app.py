@@ -55,7 +55,7 @@ def create_children():
     ingested_data.rename(columns=mappings, inplace=True)
 
     # Custom columns
-    ingested_data["Ratio New cases/tests"] = [100*(np/tamp) for np, tamp in zip(ingested_data['New daily cases'], ingested_data['Daily tests difference'])]
+    ingested_data["Positive cases/test ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # data prediction
     columns = ingested_data.columns

@@ -30,25 +30,26 @@ disclaimer = [html.Div([
         The dashboard relies on *TIMEX*, a Python-based framework for automatic time series analysis developed by the IES research group.
 
         The dashboard is fed with the [data](https://github.com/pcm-dpc/COVID-19) provided by Italian Civil Protection from Feb. 21 2020. 
-        In particular, the following COVID-19 Data are considered:
-        - **New daily cases**: New cases found in that day. This is the common number reported by media.
+        In particular, the following COVID-19 data are considered:
+        - **Daily cases**: New positive cases. This is the typical number reported by media.
         - **Total intensive care**: Total number of patients in intensive care.
-        - **Total hospitalisations**: Total number of patients in hospitals.
+        - **Total hospitalized**: Total number of patients in hospitals.
         - **Total deaths**: Total number of deaths due to Covid-19.
-        - **Daily intensive care difference**: Difference, w.r.t the previous day, in the number of intensive care patients.
-        - **Daily hospitalisations difference**: Difference, w.r.t the previous day, in the number of hospitalisations.
-        - **Daily deaths difference**: Difference, w.r.t the previous day, in the number of deaths.
-        - **Ratio New cases/tests**: Daily ratio of positive tests.
+        - **Daily intensive care**: New intensive care patients.
+        - **Daily hospitalized**: New patients in hospital.
+        - **Daily deaths**: Daily deaths.
+        - **Daily tests**: Daily tests.
+        - **Positive cases/test ratio**: Daily ratio of positive tests.
         - **Regions**: Mixed information about single regions.
 
-        You can select the visualized data from the selector at the bottom of the page.
+        You can select the data to be visualized from the selector at the bottom of the page.
 
         For suggestions and questions contact:
         - Prof. Manuel Roveri - manuel.roveri (at) polimi.it
         - Ing. Alessandro Falcetta - alessandro.falcetta (at) mail.polimi.it
 
-        *DISCLAIMER: The information on this site is not intended or implied to be a substitute for professional medical advice, diagnosis or treatment. All content, including text, graphics, images and information, contained on or available through this web site is for general information purposes only.
-        We make no representation and assume no responsibility for the accuracy of information contained on or available through this web site, and such information is subject to change without notice. You are encouraged to confirm any information obtained from or through this web site with other sources.*
+        *DISCLAIMER: The information on this site is not intended or implied to be a substitute for professional medical advice, diagnosis or treatment. Contents, including text, graphics, images and information, presented in or available on this web site are meant to help in advancing the understanding of the virus and informing the public.
+         Information is subject to change without notice. You are encouraged to confirm any information obtained from or through this web site with other sources.*
         '''),
     html.Div("Last updated at (yyyy-mm-dd, UTC time): " + str(now)),
     html.Br(),

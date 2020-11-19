@@ -11,15 +11,15 @@
       "add_diff_column": "terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
       "scenarios_names":
         {
-          "nuovi_positivi": "New daily cases",
+          "nuovi_positivi": "Daily cases",
           "terapia_intensiva": "Total intensive care",
-          "totale_ospedalizzati": "Total hospitalisations",
+          "totale_ospedalizzati": "Total hospitalized",
           "deceduti": "Total deaths",
           "tamponi": "Tests",
-          "terapia_intensiva_diff": "Daily intensive care difference",
-          "totale_ospedalizzati_diff": "Daily hospitalisations difference",
-          "deceduti_diff": "Daily deaths difference",
-          "tamponi_diff": "Daily tests difference"
+          "terapia_intensiva_diff": "Daily intensive care",
+          "totale_ospedalizzati_diff": "Daily hospitalized",
+          "deceduti_diff": "Daily deaths",
+          "tamponi_diff": "Daily tests"
         }
   },
   "selection_parameters": {
@@ -34,6 +34,7 @@
       "main_accuracy_estimator": "mae"
   },
   "visualization_parameters": {
+      "xcorr_max_lags": 120,
       "box_plot_frequency": "1W",
       "periodic_plot_horizon": "month,week"
   }
