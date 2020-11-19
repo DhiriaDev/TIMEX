@@ -9,12 +9,13 @@ from timex.data_prediction.data_prediction import PredictionModel, post_transfor
 
 class ARIMA(PredictionModel):
     """ARIMA prediction model."""
+
     # NOT WORKING
 
     def __init__(self, params: dict):
         super().__init__(params, "ARIMA")
 
-    def train(self, input_data: DataFrame):
+    def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):
         p = d = q = range(0, 2)
         pdq = list(itertools.product(p, d, q))
         seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))]
@@ -26,7 +27,7 @@ class ARIMA(PredictionModel):
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         mod = sm.tsa.statespace.SARIMAX(input_data, order=param, seasonal_order=param_seasonal,
-                                                    enforce_stationarity=False, enforce_invertibility=False)
+                                                        enforce_stationarity=False, enforce_invertibility=False)
                         result = mod.fit(disp=0)
                         results.append((param, param_seasonal, result.aic))
                 except:
@@ -44,8 +45,7 @@ class ARIMA(PredictionModel):
             warnings.simplefilter("ignore")
             self.model = mod.fit(disp=0)
 
-
-    def predict(self, future_dataframe: DataFrame) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
         pred = self.model.forecast(future_dataframe.index.values[-1])
 
@@ -56,4 +56,3 @@ class ARIMA(PredictionModel):
         future_dataframe.loc[:, 'yhat'] = post_transformation(future_dataframe['yhat'], self.transformation)
 
         return future_dataframe
-
