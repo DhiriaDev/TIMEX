@@ -158,7 +158,7 @@ class PredictionModel:
 
         self.freq = ""
 
-    def train(self, ingested_data: DataFrame) -> TestingPerformance:
+    def train(self, ingested_data: DataFrame, extra_regressor: DataFrame = None) -> TestingPerformance:
         """
         Train the model on the ingested_data.
         Returns the statistical performance of the testing.
@@ -168,13 +168,16 @@ class PredictionModel:
         ingested_data : DataFrame
             DataFrame which _HAS_ to be divided in training and test set.
 
+        extra_regressor : DataFrame
+            Additional time series to use for better predictions.
+
         Returns
         -------
         testing_performance : TestingPerformance
         """
         pass
 
-    def predict(self, future_dataframe: DataFrame) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
         """
         Return a DataFrame with the shape of future_dataframe,
         filled with predicted values.
@@ -185,7 +188,7 @@ class PredictionModel:
         """
         pass
 
-    def launch_model(self, ingested_data: DataFrame) -> ModelResult:
+    def launch_model(self, ingested_data: DataFrame, extra_regressor: DataFrame = None) -> ModelResult:
         """
         Train the model on ingested_data and returns a ModelResult object.
 
@@ -222,14 +225,14 @@ class PredictionModel:
             if self.verbose == "yes":
                 print("Trying with last " + str(len(tr)) + " values as training set...")
 
-            self.train(tr.copy())
+            self.train(tr.copy(), extra_regressor)
 
             future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                          start=tr.index.values[0],
                                                          periods=len(tr) + self.test_values + self.prediction_lags),
                                      columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
-            forecast = self.predict(future_df)
+            forecast = self.predict(future_df, extra_regressor)
             testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
             first_used_index = tr.index.values[0]

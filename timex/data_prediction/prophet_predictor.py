@@ -24,19 +24,33 @@ class FBProphet(PredictionModel):
         self.suppress_stdout_stderr = suppress_stdout_stderr
         self.fbmodel = Prophet()
 
-    def train(self, input_data: DataFrame):
+    def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):
         """Overrides PredictionModel.train()"""
         self.fbmodel = Prophet()
 
-        input_data.reset_index(inplace=True)
-        input_data.columns = ['ds', 'y']
+        if extra_regressor:
+            input_data = pd.concat([input_data, extra_regressor], axis=1, join='inner', sort=False)
+            input_data.reset_index(inplace=True)
+            input_data.columns = ['ds', 'y', 'extra']
+            self.fbmodel.add_regressor('extra')
+
+        else:
+            input_data.reset_index(inplace=True)
+            input_data.columns = ['ds', 'y']
 
         with self.suppress_stdout_stderr():
             self.fbmodel.fit(input_data)
 
-    def predict(self, future_dataframe: DataFrame) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
         future = self.fbmodel.make_future_dataframe(periods=self.prediction_lags + self.test_values, freq=self.freq)
+
+        if extra_regressor:
+            future.set_index('ds', inplace=True)
+            future = pd.concat([future, extra_regressor], axis=1, join='inner', sort=False)
+            future.reset_index(inplace=True)
+            future.columns = ['ds', 'extra']
+
         forecast = self.fbmodel.predict(future)
 
         forecast.loc[:, 'yhat'] = post_transformation(forecast['yhat'], self.transformation)
