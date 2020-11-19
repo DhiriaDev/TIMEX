@@ -7,6 +7,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 from plotly.subplots import make_subplots
+import networkx as nx
 
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
@@ -40,6 +41,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
     models = scenario.models
     name = scenario_data.columns[0]
 
+    xcorr = calc_xcorr(name, scenario.ingested_data, visualization_parameters["xcorr_max_lags"]) if xcorr_plot else None
+
     # Data visualization with plots
     children.extend([
         html.H2(children=name + " analysis", id=name),
@@ -48,7 +51,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
         histogram_plot(scenario_data),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
         autocorrelation_plot(scenario_data),
-        cross_correlation_plot(name, scenario.ingested_data) if xcorr_plot else None
+        cross_correlation_plot(xcorr) if xcorr_plot else None,
+        cross_correlation_graph(name, xcorr, visualization_parameters["xcorr_graph_threshold"]) if xcorr_plot else None
     ])
 
     # Prediction results
@@ -224,13 +228,11 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def cross_correlation_plot(target: str, ingested_data: DataFrame):
+def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int) -> DataFrame:
     """
-    Create and return the cross-correlation graph for all the columns in the dataframe.
-    The scenario column is used as target; the correlation is computed against all
-    lags of all the other columns which include numbers.
-
-    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'.
+    Calculate the cross-correlation for the ingested data.
+    Use the scenario column as target; the correlation is computed against
+    all lags of all other columns which include numbers.
 
     Parameters
     ----------
@@ -240,9 +242,13 @@ def cross_correlation_plot(target: str, ingested_data: DataFrame):
     ingested_data : DataFrame
     Entire dataframe parsed from app
 
+    max_lags : int
+    Limit the analysis to max_lags.
+
     Returns
     -------
-    g : dcc.Graph
+    result : DataFrame
+    DataFrame having the lags as index and the correlation value for each column.
     """
     def df_shifted(df, _target=None, lag=0):
         if not lag and not _target:
@@ -255,8 +261,7 @@ def cross_correlation_plot(target: str, ingested_data: DataFrame):
                 new[c] = df[c].shift(periods=lag)
         return pandas.DataFrame(data=new)
 
-    fig = go.Figure()
-    lags = len(ingested_data)
+    lags = max_lags
 
     columns = ingested_data.columns.tolist()
     columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
@@ -269,20 +274,147 @@ def cross_correlation_plot(target: str, ingested_data: DataFrame):
         #     corr = [display(shifted[col]) for col in columns]
         result.loc[i] = corr
 
-    for col in result.columns:
-        fig.add_trace(go.Scatter(x=result.index, y=result[col],
+    return result
+
+
+def cross_correlation_plot(xcorr: DataFrame):
+    """
+    Create and return the cross-correlation plot for all the columns in the dataframe.
+    The scenario column is used as target; the correlation is computed against all
+    lags of all the other columns which include numbers.
+
+
+    Parameters
+    ----------
+    xcorr : DataFrame
+    Cross-correlation values.
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+
+    fig = go.Figure()
+    lags = len(xcorr)
+
+    for col in xcorr.columns:
+        fig.add_trace(go.Scatter(x=xcorr.index, y=xcorr[col],
                                  mode='lines',
                                  name=col))
 
     # Formula from https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/time-series/how-to/cross-correlation/interpret-the-results/all-statistics-and-graphs/
-    significance_level = DataFrame(data={'Value': [2/np.sqrt(lags - k) for k in range(0, lags)]})
+    significance_level = DataFrame(data={'Value': [2 / np.sqrt(lags - k) for k in range(0, lags)]})
 
-    fig.add_trace(go.Scatter(x=result.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
-    fig.add_trace(go.Scatter(x=result.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
+    fig.add_trace(
+        go.Scatter(x=xcorr.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
+    fig.add_trace(
+        go.Scatter(x=xcorr.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
 
     fig.update_layout(title="Cross-correlation (Pearson)", xaxis_title="Lags", yaxis_title="Correlation")
     fig.update_yaxes(tick0=-1.0, dtick=0.25)
     fig.update_yaxes(range=[-1.2, 1.2])
+
+    g = dcc.Graph(
+        figure=fig
+    )
+    return g
+
+
+def cross_correlation_graph(name: str, xcorr: DataFrame, threshold: int) -> dcc.Graph:
+    """
+    Create and return the cross-correlation graph for all the columns in the dataframe.
+    The scenario column is used as target; the correlation is computed against all
+    lags of all the other columns which include numbers.
+
+    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'.
+
+    Parameters
+    ----------
+    name : str
+    Name of the target.
+
+    xcorr : DataFrame
+    Cross-correlation dataframe.
+
+    threshold : int
+    Minimum value of correlation for which a edge should be drawn.
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+    G = nx.DiGraph()
+    G.add_nodes_from(xcorr.columns)
+    G.add_node(name)
+
+    for col in xcorr.columns:
+        index_of_max = xcorr[col].idxmax()
+        corr = xcorr.loc[index_of_max, col]
+        if abs(corr) > threshold:
+            G.add_edge(name, col, corr=corr, lag=index_of_max)
+
+    pos = nx.layout.spring_layout(G)
+
+    # Create Edges
+    edge_trace = go.Scatter(
+        x=[],
+        y=[],
+        line=dict(color='black'),
+        mode='lines',
+        hoverinfo='skip',
+    )
+
+    for edge in G.edges():
+        start = edge[0]
+        end = edge[1]
+        x0, y0 = pos.get(start)
+        x1, y1 = pos.get(end)
+        edge_trace['x'] += tuple([x0, x1, None])
+        edge_trace['y'] += tuple([y0, y1, None])
+
+    # Create Nodes
+    node_trace = go.Scatter(
+        x=[],
+        y=[],
+        mode='markers+text',
+        text=[node for node in G.nodes],
+        textposition="bottom center",
+        hoverinfo='skip',
+        marker=dict(
+            color='green',
+            size=15)
+    )
+
+    for node in G.nodes():
+        x, y = pos.get(node)
+        node_trace['x'] += tuple([x])
+        node_trace['y'] += tuple([y])
+
+    # Annotations to support arrows
+    edges_positions = [e for e in G.edges]
+    annotateArrows = [dict(showarrow=True, arrowsize=1.0, arrowwidth=2, arrowhead=2, standoff=2, startstandoff=2,
+                           ax=pos[arrow[0]][0], ay=pos[arrow[0]][1], axref='x', ayref='y',
+                           x=pos[arrow[1]][0], y=pos[arrow[1]][1], xref='x', yref='y',
+                           text="bla") for arrow in edges_positions]
+
+    fig = go.Figure(data=[node_trace, edge_trace],
+                    layout=go.Layout(title="Cross-correlation graph",
+                                     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                     showlegend=False,
+                                     annotations=annotateArrows,
+                                     height=500))
+
+    # Add annotations on edges
+    for e in G.edges:
+        lag = str(G.edges[e]['lag'])
+        corr = str(round(G.edges[e]['corr'], 3))
+
+        end = e[1]
+        x, y = pos.get(end)
+
+        fig.add_annotation(x=x, y=y, text="Lag: " + lag + ", corr: " + corr, yshift=20, showarrow=False,
+                           bgcolor='white')
 
     g = dcc.Graph(
         figure=fig
@@ -505,6 +637,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
     -------
     html.Div()
     """
+
     def get_text_char(key: str, value: any) -> str:
         switcher = {
             "name": "Model name: " + str(value),

@@ -1,7 +1,7 @@
 from warnings import warn
 
 import pandas as pd
-from pandas import Series
+from pandas import Series, DataFrame
 
 
 def data_ingestion(param_config):
@@ -61,7 +61,7 @@ def data_ingestion(param_config):
     return df_ingestion
 
 
-def add_freq(df, freq=None) -> Series:
+def add_freq(df, freq=None) -> DataFrame:
     """Add a frequency attribute to idx, through inference or directly.
 
     If `freq` is None, it is inferred.

@@ -1,11 +1,16 @@
 import json
+import os
 import pickle
+import runpy
 import webbrowser
 from threading import Timer
 
 import dash_html_components as html
-from pandas import read_csv
+import gunicorn
+import numpy
+from pandas import read_csv, DataFrame
 import pandas as pd
+import numpy as np
 
 import app_load_from_dump
 from timex.data_ingestion import data_ingestion
@@ -55,7 +60,7 @@ def create_children():
     ingested_data.rename(columns=mappings, inplace=True)
 
     # Custom columns
-    ingested_data["Positive cases/test ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
+    ingested_data["New cases/tests ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # data prediction
     columns = ingested_data.columns
@@ -94,52 +99,68 @@ def create_children():
 
     regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
 
-    regions.rename(columns={'nuovi_positivi': 'New daily cases', 'tamponi': 'Tests',
-                            "tamponi_diff": "Daily tests difference"}, inplace=True)
+    regions.rename(columns={'nuovi_positivi': 'Daily cases', 'tamponi': 'Tests',
+                            "tamponi_diff": "Daily tests"}, inplace=True)
 
-    regions["Ratio New cases/tests"] = [100*(ndc/tamp) if tamp > ndc > 0 else "nan" for ndc, tamp in
-                                        zip(regions['New daily cases'], regions['Daily tests difference'])]
+    regions["New cases/tests ratio"] = [100*(ndc/tamp) if tamp > ndc > 0 else "nan" for ndc, tamp in
+                                        zip(regions['Daily cases'], regions['Daily tests'])]
 
     regions_children = [
         html.H2(children='Regions' + " analysis", id='Regions'),
         html.Em("You can select a specific region by doucle-clicking on its label (in the right list); clicking "
                 "on other regions, you can select only few of them."),
         html.H3("Data visualization"),
-        line_plot_multiIndex(regions[['New daily cases']]),
-        line_plot_multiIndex(regions[['Daily tests difference']]),
-        line_plot_multiIndex(regions[['Ratio New cases/tests']])
+        line_plot_multiIndex(regions[['Daily cases']]),
+        line_plot_multiIndex(regions[['Daily tests']]),
+        line_plot_multiIndex(regions[['New cases/tests ratio']])
     ]
 
     # Append "Regioni" scenario
     children_for_each_scenario.append({'name': 'Regions', 'children': regions_children})
 
     # Prediction of "New daily cases" for every region
+    # We also want to plot cross-correlation with other regions.
+    # So, create a dataFrame with only daily cases and regions as columns.
     regions_names = regions.index.get_level_values(1).unique()
     regions_names = regions_names.sort_values()
 
-    for region in regions_names:
-        region_data = regions.loc[(regions.index.get_level_values('denominazione_regione') == region)]
-        region_data.reset_index(inplace=True)
-        region_data.set_index('data', inplace=True)
-        region_data = add_freq(region_data, 'D')
-        region_data = region_data[['New daily cases']]
+    datas = regions.index.get_level_values(0).unique().to_list()
+    datas = datas[1:]  # Abruzzo is missing the first day.
+
+    cols = regions_names.to_list()
+    cols = ['data'] + cols
+
+    daily_cases_regions = DataFrame(columns=cols, dtype=numpy.float64)
+    daily_cases_regions['data'] = datas
+
+    daily_cases_regions['data'] = pd.to_datetime(daily_cases_regions['data'], format=param_config['input_parameters']['datetime_format'])
+    daily_cases_regions.set_index(['data'], inplace=True, drop=True)
+
+    for col in daily_cases_regions.columns:
+        for i in daily_cases_regions.index:
+            daily_cases_regions.loc[i][col] = regions.loc[i, col]['Daily cases']
+
+    daily_cases_regions = add_freq(daily_cases_regions, 'D')
+
+    for region in daily_cases_regions.columns:
+        scenario_data = daily_cases_regions[[region]]
 
         model_results = []
 
         print('-> PREDICTION FOR ' + str(region))
         predictor = FBProphet(param_config)
-        prophet_result = predictor.launch_model(region_data.copy())
+        prophet_result = predictor.launch_model(scenario_data.copy())
         model_results.append(prophet_result)
         #
         # predictor = ARIMA(param_config)
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
 
-        s = Scenario(region_data, model_results, ingested_data)
+        s = Scenario(scenario_data, model_results, daily_cases_regions)
 
         children_for_each_scenario.append({
             'name': region,
-            'children': create_scenario_children(s, param_config, xcorr_plot=False)
+            'children': create_scenario_children(s, param_config)
         })
 
     ####################################################################################################################
@@ -154,12 +175,9 @@ def create_children():
 if __name__ == '__main__':
     create_children()
 
-    port = 10000
-
     def open_browser():
-        webbrowser.open("http://127.0.0.1:" + str(port))
+        webbrowser.open("http://127.0.0.1:8000")
 
-
-    Timer(20, open_browser).start()
-    Timer(10, app_load_from_dump.app.run_server(port=port)).start()
+    # Timer(6, open_browser).start()
+    os.system("gunicorn app_load_from_dump:server")
 
