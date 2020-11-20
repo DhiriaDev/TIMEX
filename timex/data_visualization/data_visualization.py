@@ -51,7 +51,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
         histogram_plot(scenario_data),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
         autocorrelation_plot(scenario_data),
-        cross_correlation_plot(xcorr) if xcorr_plot else None,
+        cross_correlation_plot(xcorr, visualization_parameters["xcorr_max_lags"]) if xcorr_plot else None,
         cross_correlation_graph(name, xcorr, visualization_parameters["xcorr_graph_threshold"]) if xcorr_plot else None
     ])
 
@@ -228,7 +228,7 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int) -> DataFrame:
+def calc_xcorr(target: str, ingested_data: DataFrame, lags: int) -> DataFrame:
     """
     Calculate the cross-correlation for the ingested data.
     Use the scenario column as target; the correlation is computed against
@@ -242,8 +242,8 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int) -> DataFram
     ingested_data : DataFrame
     Entire dataframe parsed from app
 
-    max_lags : int
-    Limit the analysis to max_lags.
+    lags : int
+    Limit the analysis to max lags.
 
     Returns
     -------
@@ -261,23 +261,25 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int) -> DataFram
                 new[c] = df[c].shift(periods=lag)
         return pandas.DataFrame(data=new)
 
-    lags = max_lags
-
     columns = ingested_data.columns.tolist()
     columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
 
     result = DataFrame(columns=columns)
 
-    for i in range(0, lags):
-        shifted = df_shifted(ingested_data, target, -i)
+    for i in range(-lags, lags):
+        shifted = df_shifted(ingested_data, target, i)
+        if i <= 0:
+            shifted = shifted.iloc[:-lags]
+        else:
+            shifted = shifted.iloc[lags:]
+
         corr = [shifted[target].corr(other=shifted[col]) for col in columns]
-        #     corr = [display(shifted[col]) for col in columns]
         result.loc[i] = corr
 
     return result
 
 
-def cross_correlation_plot(xcorr: DataFrame):
+def cross_correlation_plot(xcorr: DataFrame, lags: int):
     """
     Create and return the cross-correlation plot for all the columns in the dataframe.
     The scenario column is used as target; the correlation is computed against all
@@ -289,13 +291,15 @@ def cross_correlation_plot(xcorr: DataFrame):
     xcorr : DataFrame
     Cross-correlation values.
 
+    lags : int
+    Max number of lags to plot.
+
     Returns
     -------
     g : dcc.Graph
     """
 
     fig = go.Figure()
-    lags = len(xcorr)
 
     for col in xcorr.columns:
         fig.add_trace(go.Scatter(x=xcorr.index, y=xcorr[col],
@@ -303,14 +307,20 @@ def cross_correlation_plot(xcorr: DataFrame):
                                  name=col))
 
     # Formula from https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/time-series/how-to/cross-correlation/interpret-the-results/all-statistics-and-graphs/
-    significance_level = DataFrame(data={'Value': [2 / np.sqrt(lags - k) for k in range(0, lags)]})
+    significance_level = DataFrame(columns=['Value'], dtype=np.float64)
+    for i in range(-lags, lags):
+        significance_level.loc[i] = 2 / np.sqrt(lags - abs(i))
 
     fig.add_trace(
-        go.Scatter(x=xcorr.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
+        go.Scatter(x=significance_level.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
     fig.add_trace(
-        go.Scatter(x=xcorr.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
+        go.Scatter(x=significance_level.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
 
-    fig.update_layout(title="Cross-correlation (Pearson)", xaxis_title="Lags", yaxis_title="Correlation")
+    fig.update_layout(title="Cross-correlation (Pearson)<br><sub>"
+                            "Negative lags (left part) show the correlation between this scenario and the future of the others.<br>"
+                            "Meanwhile, positive lags (right part) shows the correlation between this scenario and the past of the others.<br>"
+                            "</sub>", xaxis_title="Lags",
+                      yaxis_title="Correlation")
     fig.update_yaxes(tick0=-1.0, dtick=0.25)
     fig.update_yaxes(range=[-1.2, 1.2])
 
