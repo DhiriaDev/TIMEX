@@ -1,0 +1,11 @@
+h1,h2,h3 {
+  margin-top: 10px;
+}
+
+h4 {
+  margin-top: 15px;
+}
+
+hr {
+  border-top: 1px solid grey;
+}

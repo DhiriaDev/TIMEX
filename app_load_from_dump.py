@@ -5,6 +5,7 @@ import dash_html_components as html
 from datetime import datetime, timezone
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
+import dash_bootstrap_components as dbc
 
 
 # Initialize Dash app.
@@ -21,8 +22,9 @@ disclaimer = [html.Div([
     html.H1("COVID-19 pandemic in Italy: monitoring and forecasting", style={'text-align': 'center'}),
     html.Hr(),
     html.Div(html.Img(src=app.get_asset_url('poli.png'), style={'width': 256}), style={'text-align': 'center'}),
-    html.H3(
-        "Dashboard by the Intelligent Embedded Systems (IES) research group of the Politecnico di Milano, Italy"),
+    html.H4(
+        "Dashboard by the Intelligent Embedded Systems (IES) research group of the Politecnico di Milano, Italy",
+        style={'text-align': 'center', 'top-margin': '25px'}),
     html.Hr(),
     dcc.Markdown('''
         *Welcome to the monitoring and forecasting dashboard of the Coronavirus (COVID-19) pandemic in Italy provided by the Intelligent Embedded Systems (IES) research group of Politecnico di Milano, Italy.*

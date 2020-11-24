@@ -10,7 +10,6 @@ import gunicorn
 import numpy
 from pandas import read_csv, DataFrame
 import pandas as pd
-import numpy as np
 
 import app_load_from_dump
 from timex.data_ingestion import data_ingestion
@@ -179,5 +178,5 @@ if __name__ == '__main__':
         webbrowser.open("http://127.0.0.1:8000")
 
     # Timer(6, open_browser).start()
-    os.system("gunicorn app_load_from_dump:server")
+    os.system("gunicorn -b 0.0.0.0:8000 app_load_from_dump:server")
 

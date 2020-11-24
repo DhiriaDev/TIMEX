@@ -8,6 +8,10 @@ import dash_html_components as html
 import plotly.express as px
 from plotly.subplots import make_subplots
 import networkx as nx
+from matplotlib import pyplot
+import dash_bootstrap_components as dbc
+
+from colorhash import ColorHash
 
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
@@ -41,8 +45,6 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
     models = scenario.models
     name = scenario_data.columns[0]
 
-    xcorr = calc_xcorr(name, scenario.ingested_data, visualization_parameters["xcorr_max_lags"]) if xcorr_plot else None
-
     # Data visualization with plots
     children.extend([
         html.H2(children=name + " analysis", id=name),
@@ -51,9 +53,27 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
         histogram_plot(scenario_data),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
         autocorrelation_plot(scenario_data),
-        cross_correlation_plot(xcorr, visualization_parameters["xcorr_max_lags"]) if xcorr_plot else None,
-        cross_correlation_graph(name, xcorr, visualization_parameters["xcorr_graph_threshold"]) if xcorr_plot else None
     ])
+
+    # Plot cross-correlation plot and graphs, if requested.
+    if xcorr_plot:
+        max_lags = visualization_parameters["xcorr_max_lags"] if "xcorr_max_lags" in visualization_parameters else None
+        modes = [
+            *visualization_parameters["xcorr_mode"].split(",")] if "xcorr_mode" in visualization_parameters else None
+        graph_corr_threshold = visualization_parameters[
+            "xcorr_graph_threshold"] if "xcorr_graph_threshold" in visualization_parameters else None
+
+        xcorr = calc_xcorr(name, scenario.ingested_data, max_lags, modes)
+        children.extend([
+            html.H3("Cross-correlation"),
+            html.Div("Negative lags (left part) show the correlation between this scenario and the future of the "
+                     "others."),
+            html.Div("Meanwhile, positive lags (right part) shows the correlation between this scenario "
+                     "and the past of the others."),
+            cross_correlation_plot(xcorr),
+            html.Div("The peaks found using each cross-correlation modality are shown in the graphs:"),
+            cross_correlation_graph(name, xcorr, graph_corr_threshold)
+        ])
 
     # Prediction results
     children.append(
@@ -228,28 +248,37 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def calc_xcorr(target: str, ingested_data: DataFrame, lags: int) -> DataFrame:
+def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
     """
     Calculate the cross-correlation for the ingested data.
-    Use the scenario column as target; the correlation is computed against
-    all lags of all other columns which include numbers.
+    Use the scenario column as target; the correlation is computed against all lags of all the other columns which
+    include numbers. NaN values, introduced by the various shifts, are replaced with 0.
 
     Parameters
     ----------
     target : str
-    Column which should be used as target for the cross correlation.
+    Column which is used as target for the cross correlation.
 
     ingested_data : DataFrame
     Entire dataframe parsed from app
 
-    lags : int
+    max_lags : int
     Limit the analysis to max lags.
+
+    modes : [str]
+    Cross-correlation can be computed with different algorithms. The available choices are:
+        `matlab_normalized`: same as using the MatLab function xcorr(x, y, 'normalized')
+        `pearson` : use Pearson formula (NaN values are fillled to 0)
+        `kendall`: use Kendall formula (NaN values are filled to 0)
+        `spearman`: use Spearman formula (NaN values are filled to 0)
 
     Returns
     -------
-    result : DataFrame
-    DataFrame having the lags as index and the correlation value for each column.
+    result : dict
+    Dictionary with a Pandas DataFrame set for every indicated mode.
+    Each DataFrame has the lags as index and the correlation value for each column.
     """
+
     def df_shifted(df, _target=None, lag=0):
         if not lag and not _target:
             return df
@@ -264,65 +293,91 @@ def calc_xcorr(target: str, ingested_data: DataFrame, lags: int) -> DataFrame:
     columns = ingested_data.columns.tolist()
     columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
 
-    result = DataFrame(columns=columns)
+    results = {}
+    for mode in modes:
+        result = DataFrame(columns=columns, dtype=np.float64)
+        if mode == 'matlab_normalized':
+            for col in columns:
+                x = ingested_data[target]
+                y = ingested_data[col]
 
-    for i in range(-lags, lags):
-        shifted = df_shifted(ingested_data, target, i)
-        if i <= 0:
-            shifted = shifted.iloc[:-lags]
+                c = np.correlate(x, y, mode="full")
+
+                # This is needed to obtain the same result of the MatLab `xcorr` function with normalized results.
+                # You can find the formula in the function pyplot.xcorr; however, here the property
+                # sqrt(x*y) = sqrt(x) * sqrt(y)
+                # is applied in order to avoid overflows if the ingested values are particularly high.
+                den = np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y))
+                c = np.divide(c, den)
+
+                # This assigns the correct indexes to the results.
+                c = c[len(ingested_data) - 1 - max_lags:len(ingested_data) + max_lags]
+
+                result[col] = c
+
+            result.index -= max_lags
+
         else:
-            shifted = shifted.iloc[lags:]
+            for i in range(-max_lags, max_lags + 1):
+                shifted = df_shifted(ingested_data, target, i)
+                shifted.fillna(0, inplace=True)
 
-        corr = [shifted[target].corr(other=shifted[col]) for col in columns]
-        result.loc[i] = corr
+                corr = [shifted[target].corr(other=shifted[col], method=mode) for col in columns]
+                result.loc[i] = corr
 
-    return result
+        results[mode] = result
+
+    return results
 
 
-def cross_correlation_plot(xcorr: DataFrame, lags: int):
+def cross_correlation_plot(xcorr: dict):
     """
     Create and return the cross-correlation plot for all the columns in the dataframe.
-    The scenario column is used as target; the correlation is computed against all
-    lags of all the other columns which include numbers.
-
+    The scenario column is used as target; the correlation is shown in a subplot for every modality used to compute the
+    x-correlation.
 
     Parameters
     ----------
-    xcorr : DataFrame
+    xcorr : dict
     Cross-correlation values.
-
-    lags : int
-    Max number of lags to plot.
 
     Returns
     -------
     g : dcc.Graph
     """
+    subplots = len(xcorr)
+    combs = [(1, 1), (1, 2), (2, 1), (2, 2)]
 
-    fig = go.Figure()
+    rows = 1 if subplots < 3 else 2
+    cols = 1 if subplots < 2 else 2
 
-    for col in xcorr.columns:
-        fig.add_trace(go.Scatter(x=xcorr.index, y=xcorr[col],
-                                 mode='lines',
-                                 name=col))
+    fig = make_subplots(
+        rows=rows, cols=cols,
+        subplot_titles=([*xcorr.keys()]))
+
+    i = 0
+    for mode in xcorr:
+        for col in xcorr[mode].columns:
+            fig.add_trace(go.Scatter(x=xcorr[mode].index, y=xcorr[mode][col],
+                                     mode='lines',
+                                     name=col, legendgroup=col, line=dict(color=ColorHash(col).hex),
+                                     showlegend=True if i == 0 else False),
+                          row=combs[i][0], col=combs[i][1])
+        i += 1
 
     # Formula from https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/time-series/how-to/cross-correlation/interpret-the-results/all-statistics-and-graphs/
-    significance_level = DataFrame(columns=['Value'], dtype=np.float64)
-    for i in range(-lags, lags):
-        significance_level.loc[i] = 2 / np.sqrt(lags - abs(i))
+    # significance_level = DataFrame(columns=['Value'], dtype=np.float64)
+    # for i in range(-lags, lags):
+    #     significance_level.loc[i] = 2 / np.sqrt(lags - abs(i))
 
-    fig.add_trace(
-        go.Scatter(x=significance_level.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
-    fig.add_trace(
-        go.Scatter(x=significance_level.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
+    # fig.add_trace(
+    #     go.Scatter(x=significance_level.index, y=significance_level['Value'], line=dict(color='gray', width=1), name='z95'))
+    # fig.add_trace(
+    #     go.Scatter(x=significance_level.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
 
-    fig.update_layout(title="Cross-correlation (Pearson)<br><sub>"
-                            "Negative lags (left part) show the correlation between this scenario and the future of the others.<br>"
-                            "Meanwhile, positive lags (right part) shows the correlation between this scenario and the past of the others.<br>"
-                            "</sub>", xaxis_title="Lags",
-                      yaxis_title="Correlation")
-    fig.update_yaxes(tick0=-1.0, dtick=0.25)
-    fig.update_yaxes(range=[-1.2, 1.2])
+    fig.update_layout(title="Cross-correlation using different algorithms")
+    fig.update_xaxes(title_text="Lags")
+    fig.update_yaxes(tick0=-1.0, dtick=0.25, range=[-1.2, 1.2], title_text="Correlation")
 
     g = dcc.Graph(
         figure=fig
@@ -330,105 +385,138 @@ def cross_correlation_plot(xcorr: DataFrame, lags: int):
     return g
 
 
-def cross_correlation_graph(name: str, xcorr: DataFrame, threshold: int) -> dcc.Graph:
+def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.Graph:
     """
-    Create and return the cross-correlation graph for all the columns in the dataframe.
-    The scenario column is used as target; the correlation is computed against all
-    lags of all the other columns which include numbers.
-
-    Correlation can be computed with algorithms ‘pearson’, ‘kendall’, ‘spearman'.
+    Create and return the cross-correlation graphs for all the columns in the dataframe.
+    A graph is created for each mode used to compute the x-correlation.
 
     Parameters
     ----------
     name : str
     Name of the target.
 
-    xcorr : DataFrame
+    xcorr : dict
     Cross-correlation dataframe.
 
     threshold : int
-    Minimum value of correlation for which a edge should be drawn.
+    Minimum value of correlation for which a edge should be drawn. Default 0.
 
     Returns
     -------
     g : dcc.Graph
     """
-    G = nx.DiGraph()
-    G.add_nodes_from(xcorr.columns)
-    G.add_node(name)
+    figures = []
 
-    for col in xcorr.columns:
-        index_of_max = xcorr[col].idxmax()
-        corr = xcorr.loc[index_of_max, col]
-        if abs(corr) > threshold:
-            G.add_edge(name, col, corr=corr, lag=index_of_max)
+    i = 0
+    for mode in xcorr:
+        G = nx.DiGraph()
+        G.add_nodes_from(xcorr[mode].columns)
+        G.add_node(name)
 
-    pos = nx.layout.spring_layout(G)
+        for col in xcorr[mode].columns:
+            index_of_max = xcorr[mode][col].idxmax()
+            corr = xcorr[mode].loc[index_of_max, col]
+            if abs(corr) > threshold:
+                G.add_edge(name, col, corr=corr, lag=index_of_max)
 
-    # Create Edges
-    edge_trace = go.Scatter(
-        x=[],
-        y=[],
-        line=dict(color='black'),
-        mode='lines',
-        hoverinfo='skip',
-    )
+        pos = nx.layout.spring_layout(G)
 
-    for edge in G.edges():
-        start = edge[0]
-        end = edge[1]
-        x0, y0 = pos.get(start)
-        x1, y1 = pos.get(end)
-        edge_trace['x'] += tuple([x0, x1, None])
-        edge_trace['y'] += tuple([y0, y1, None])
+        # Create Edges
+        edge_trace = go.Scatter(
+            x=[],
+            y=[],
+            line=dict(color='black'),
+            mode='lines',
+            hoverinfo='skip',
+        )
 
-    # Create Nodes
-    node_trace = go.Scatter(
-        x=[],
-        y=[],
-        mode='markers+text',
-        text=[node for node in G.nodes],
-        textposition="bottom center",
-        hoverinfo='skip',
-        marker=dict(
-            color='green',
-            size=15)
-    )
+        for edge in G.edges():
+            start = edge[0]
+            end = edge[1]
+            x0, y0 = pos.get(start)
+            x1, y1 = pos.get(end)
+            edge_trace['x'] += tuple([x0, x1, None])
+            edge_trace['y'] += tuple([y0, y1, None])
 
-    for node in G.nodes():
-        x, y = pos.get(node)
-        node_trace['x'] += tuple([x])
-        node_trace['y'] += tuple([y])
+        # Create Nodes
+        node_trace = go.Scatter(
+            x=[],
+            y=[],
+            mode='markers+text',
+            text=[node for node in G.nodes],
+            textposition="bottom center",
+            hoverinfo='skip',
+            marker=dict(
+                color='green',
+                size=15)
+        )
 
-    # Annotations to support arrows
-    edges_positions = [e for e in G.edges]
-    annotateArrows = [dict(showarrow=True, arrowsize=1.0, arrowwidth=2, arrowhead=2, standoff=2, startstandoff=2,
-                           ax=pos[arrow[0]][0], ay=pos[arrow[0]][1], axref='x', ayref='y',
-                           x=pos[arrow[1]][0], y=pos[arrow[1]][1], xref='x', yref='y',
-                           text="bla") for arrow in edges_positions]
+        for node in G.nodes():
+            x, y = pos.get(node)
+            node_trace['x'] += tuple([x])
+            node_trace['y'] += tuple([y])
 
-    fig = go.Figure(data=[node_trace, edge_trace],
-                    layout=go.Layout(title="Cross-correlation graph",
-                                     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                                     showlegend=False,
-                                     annotations=annotateArrows,
-                                     height=500))
+        # Annotations to support arrows
+        edges_positions = [e for e in G.edges]
+        annotateArrows = [dict(showarrow=True, arrowsize=1.0, arrowwidth=2, arrowhead=2, standoff=2, startstandoff=2,
+                               ax=pos[arrow[0]][0], ay=pos[arrow[0]][1], axref='x', ayref='y',
+                               x=pos[arrow[1]][0], y=pos[arrow[1]][1], xref='x', yref='y',
+                               text="bla") for arrow in edges_positions]
 
-    # Add annotations on edges
-    for e in G.edges:
-        lag = str(G.edges[e]['lag'])
-        corr = str(round(G.edges[e]['corr'], 3))
+        graph = go.Figure(data=[node_trace, edge_trace],
+                          layout=go.Layout(title=str(mode),
+                                           xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                           yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                           showlegend=False,
+                                           annotations=annotateArrows,
+                                           height=400, margin=dict(l=10, r=10, t=50, b=30)))
 
-        end = e[1]
-        x, y = pos.get(end)
+        # Add annotations on edges
+        for e in G.edges:
+            lag = str(G.edges[e]['lag'])
+            corr = str(round(G.edges[e]['corr'], 3))
 
-        fig.add_annotation(x=x, y=y, text="Lag: " + lag + ", corr: " + corr, yshift=20, showarrow=False,
-                           bgcolor='white')
+            end = e[1]
+            x, y = pos.get(end)
 
-    g = dcc.Graph(
-        figure=fig
-    )
+            graph.add_annotation(x=x, y=y, text="Lag: " + lag + ", corr: " + corr, yshift=20, showarrow=False,
+                                 bgcolor='white')
+
+        figures.append(graph)
+        i += 1
+
+    n_graphs = len(figures)
+    if n_graphs == 1:
+        g = dcc.Graph(figure=figures[0])
+    elif n_graphs == 2:
+        g = html.Div(dbc.Row([
+            dbc.Col(dcc.Graph(figure=figures[0])),
+            dbc.Col(dcc.Graph(figure=figures[1]))
+        ]))
+    elif n_graphs == 3:
+        g = html.Div([
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=figures[0])),
+                dbc.Col(dcc.Graph(figure=figures[1]))
+            ]),
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=figures[2]))
+            ])
+        ])
+    elif n_graphs == 4:
+        g = html.Div([
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=figures[0])),
+                dbc.Col(dcc.Graph(figure=figures[1])),
+            ]),
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=figures[2])),
+                dbc.Col(dcc.Graph(figure=figures[3]))
+            ])
+        ])
+    else:
+        g = html.Div()
+
     return g
 
 
