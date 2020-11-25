@@ -34,6 +34,8 @@ disclaimer = [html.Div([
         The dashboard is fed with the [data](https://github.com/pcm-dpc/COVID-19) provided by Italian Civil Protection from Feb. 21 2020. 
         In particular, the following COVID-19 data are considered:
         - **Daily cases**: New positive cases. This is the typical number reported by media.
+        - **Total positives**: The total number of persons positive to Covid, in that time instant.
+        - **Total positives variation**: Daily variation of the number of persons positive to Covid.
         - **Total intensive care**: Total number of patients in intensive care.
         - **Total hospitalized**: Total number of patients in hospitals.
         - **Total deaths**: Total number of deaths due to Covid-19.

@@ -3,7 +3,7 @@
   "verbose": "yes",
   "input_parameters": {
       "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
-      "columns_to_load_from_url": "data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
+      "columns_to_load_from_url": "data,nuovi_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
       "datetime_column_name": "data",
       "index_column_name": "data",
       "datetime_format": "%Y-%m-%dT%H:%M:%S",
@@ -12,8 +12,6 @@
       "scenarios_names":
         {
           "nuovi_positivi": "Daily cases",
-          "totale_positivi": "Total positives",
-          "variazione_totale_positivi": "Total positives variation",
           "terapia_intensiva": "Total intensive care",
           "totale_ospedalizzati": "Total hospitalized",
           "deceduti": "Total deaths",
@@ -30,7 +28,7 @@
   },
   "model_parameters": {
       "test_values": 5,
-      "delta_training_percentage": 5,
+      "delta_training_percentage": 90,
       "prediction_lags": 10,
       "transformation": "log",
       "main_accuracy_estimator": "mae"

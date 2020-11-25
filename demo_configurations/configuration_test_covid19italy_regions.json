@@ -1,0 +1,38 @@
+{
+  "activity_title": "Covid-19 Italy Analysis",
+  "verbose": "yes",
+  "input_parameters": {
+      "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
+      "columns_to_load_from_url": "data,denominazione_regione,nuovi_positivi",
+      "datetime_column_name": "data",
+      "index_column_name": "data,denominazione_regione",
+      "datetime_format": "%Y-%m-%dT%H:%M:%S",
+      "frequency": "D",
+      "scenarios_names":
+        {
+          "nuovi_positivi": "New daily cases",
+          "terapia_intensiva": "Total intensive care",
+          "totale_ospedalizzati": "Total hospitalisations",
+          "deceduti": "Total deaths",
+          "tamponi": "Tests",
+          "terapia_intensiva_diff": "Daily intensive care difference",
+          "totale_ospedalizzati_diff": "Daily hospitalisations difference",
+          "deceduti_diff": "Daily deaths difference",
+          "tamponi_diff": "Daily tests difference"
+        }
+  },
+  "selection_parameters": {
+  },
+  "model_parameters": {
+      "test_values": 5,
+      "delta_training_percentage": 90,
+      "prediction_lags": 10,
+      "transformation": "log",
+      "main_accuracy_estimator": "mae"
+  },
+  "visualization_parameters": {
+      "box_plot_frequency": "1W",
+      "periodic_plot_horizon": "month,week"
+  }
+}
+
