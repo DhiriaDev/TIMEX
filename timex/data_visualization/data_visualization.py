@@ -56,23 +56,19 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
     ])
 
     # Plot cross-correlation plot and graphs, if requested.
-    if xcorr_plot:
-        max_lags = visualization_parameters["xcorr_max_lags"] if "xcorr_max_lags" in visualization_parameters else None
-        modes = [
-            *visualization_parameters["xcorr_mode"].split(",")] if "xcorr_mode" in visualization_parameters else None
+    if scenario.xcorr is not None:
         graph_corr_threshold = visualization_parameters[
             "xcorr_graph_threshold"] if "xcorr_graph_threshold" in visualization_parameters else None
 
-        xcorr = calc_xcorr(name, scenario.ingested_data, max_lags, modes)
         children.extend([
             html.H3("Cross-correlation"),
             html.Div("Negative lags (left part) show the correlation between this scenario and the future of the "
                      "others."),
             html.Div("Meanwhile, positive lags (right part) shows the correlation between this scenario "
                      "and the past of the others."),
-            cross_correlation_plot(xcorr),
+            cross_correlation_plot(scenario.xcorr),
             html.Div("The peaks found using each cross-correlation modality are shown in the graphs:"),
-            cross_correlation_graph(name, xcorr, graph_corr_threshold)
+            cross_correlation_graph(name, scenario.xcorr, graph_corr_threshold)
         ])
 
     # Prediction results
@@ -248,88 +244,6 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
-    """
-    Calculate the cross-correlation for the ingested data.
-    Use the scenario column as target; the correlation is computed against all lags of all the other columns which
-    include numbers. NaN values, introduced by the various shifts, are replaced with 0.
-
-    Parameters
-    ----------
-    target : str
-    Column which is used as target for the cross correlation.
-
-    ingested_data : DataFrame
-    Entire dataframe parsed from app
-
-    max_lags : int
-    Limit the analysis to max lags.
-
-    modes : [str]
-    Cross-correlation can be computed with different algorithms. The available choices are:
-        `matlab_normalized`: same as using the MatLab function xcorr(x, y, 'normalized')
-        `pearson` : use Pearson formula (NaN values are fillled to 0)
-        `kendall`: use Kendall formula (NaN values are filled to 0)
-        `spearman`: use Spearman formula (NaN values are filled to 0)
-
-    Returns
-    -------
-    result : dict
-    Dictionary with a Pandas DataFrame set for every indicated mode.
-    Each DataFrame has the lags as index and the correlation value for each column.
-    """
-
-    def df_shifted(df, _target=None, lag=0):
-        if not lag and not _target:
-            return df
-        new = {}
-        for c in df.columns:
-            if c == _target:
-                new[c] = df[_target]
-            else:
-                new[c] = df[c].shift(periods=lag)
-        return pandas.DataFrame(data=new)
-
-    columns = ingested_data.columns.tolist()
-    columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
-
-    results = {}
-    for mode in modes:
-        result = DataFrame(columns=columns, dtype=np.float64)
-        if mode == 'matlab_normalized':
-            for col in columns:
-                x = ingested_data[target]
-                y = ingested_data[col]
-
-                c = np.correlate(x, y, mode="full")
-
-                # This is needed to obtain the same result of the MatLab `xcorr` function with normalized results.
-                # You can find the formula in the function pyplot.xcorr; however, here the property
-                # sqrt(x*y) = sqrt(x) * sqrt(y)
-                # is applied in order to avoid overflows if the ingested values are particularly high.
-                den = np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y))
-                c = np.divide(c, den)
-
-                # This assigns the correct indexes to the results.
-                c = c[len(ingested_data) - 1 - max_lags:len(ingested_data) + max_lags]
-
-                result[col] = c
-
-            result.index -= max_lags
-
-        else:
-            for i in range(-max_lags, max_lags + 1):
-                shifted = df_shifted(ingested_data, target, i)
-                shifted.fillna(0, inplace=True)
-
-                corr = [shifted[target].corr(other=shifted[col], method=mode) for col in columns]
-                result.loc[i] = corr
-
-        results[mode] = result
-
-    return results
-
-
 def cross_correlation_plot(xcorr: dict):
     """
     Create and return the cross-correlation plot for all the columns in the dataframe.
@@ -414,7 +328,7 @@ def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.G
         G.add_node(name)
 
         for col in xcorr[mode].columns:
-            index_of_max = xcorr[mode][col].idxmax()
+            index_of_max = xcorr[mode][col].abs().idxmax()
             corr = xcorr[mode].loc[index_of_max, col]
             if abs(corr) > threshold:
                 G.add_edge(name, col, corr=corr, lag=index_of_max)
@@ -738,11 +652,11 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
 
     def get_text_char(key: str, value: any) -> str:
         switcher = {
-            "name": "Model name: " + str(value),
-            "test_values": "The last " + str(value) + " values have been used for testing.",
-            "delta_training_percentage": "The length of the training windows is the " + str(value) + "% of the time "
-                                                                                                     "series' length.",
-            "delta_training_values": "Training windows are composed of " + str(value) + " values."
+            "name": f"Model type: {value}",
+            "test_values": f"The last {value} values have been used for testing.",
+            "delta_training_percentage": f"The length of the training windows is the {value}% of the time series' length.",
+            "delta_training_values": f"Training windows are composed of {value} values.",
+            "extra_regressors": f"The model has used {value} as extra-regressor(s) to improve the training."
         }
         return switcher.get(key, "Invalid choice!")
 

@@ -24,15 +24,18 @@ class FBProphet(PredictionModel):
         self.suppress_stdout_stderr = suppress_stdout_stderr
         self.fbmodel = Prophet()
 
-    def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):
+    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
         self.fbmodel = Prophet()
 
-        if extra_regressor:
-            input_data = pd.concat([input_data, extra_regressor], axis=1, join='inner', sort=False)
+        if extra_regressors is not None:
+            input_data = input_data.join(extra_regressors)
             input_data.reset_index(inplace=True)
-            input_data.columns = ['ds', 'y', 'extra']
-            self.fbmodel.add_regressor('extra')
+            column_indices = [0, 1]
+            new_names = ['ds', 'y']
+            old_names = input_data.columns[column_indices]
+            input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+            [self.fbmodel.add_regressor(col) for col in extra_regressors.columns]
 
         else:
             input_data.reset_index(inplace=True)
@@ -41,15 +44,14 @@ class FBProphet(PredictionModel):
         with self.suppress_stdout_stderr():
             self.fbmodel.fit(input_data)
 
-    def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
+    def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
         future = self.fbmodel.make_future_dataframe(periods=self.prediction_lags + self.test_values, freq=self.freq)
 
-        if extra_regressor:
+        if extra_regressors is not None:
             future.set_index('ds', inplace=True)
-            future = pd.concat([future, extra_regressor], axis=1, join='inner', sort=False)
+            future = future.join(extra_regressors.copy())
             future.reset_index(inplace=True)
-            future.columns = ['ds', 'extra']
 
         forecast = self.fbmodel.predict(future)
 

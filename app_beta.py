@@ -1,21 +1,19 @@
 import json
 import os
 import pickle
-import runpy
 import webbrowser
-from threading import Timer
+from functools import reduce
 
-import dash_html_components as html
-import gunicorn
 import numpy
-from pandas import read_csv, DataFrame
 import pandas as pd
+from pandas import read_csv, DataFrame
+import dash_html_components as html
 
-import app_load_from_dump
+
 from timex.data_ingestion import data_ingestion
 from timex.data_ingestion.data_ingestion import add_freq
-from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_xcorr
+from timex.utils.utils import prepare_extra_regressor
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
 from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
@@ -60,11 +58,15 @@ def create_children():
     ingested_data.rename(columns=mappings, inplace=True)
 
     # Custom columns
-    ingested_data["New cases/tests ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
+    ingested_data["New cases/tests ratio"] = [100 * (np / tamp) for np, tamp in
+                                              zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
-    # data prediction
+    # Predict the data as usual.
     max_lags = param_config['model_parameters']['xcorr_max_lags']
     modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
+    xcorr_threshold = param_config['model_parameters']['xcorr_extra_regressor_threshold']
+    xcorr_mode_target = param_config['model_parameters']['xcorr_mode_target']
+    main_accuracy_estimator = param_config['model_parameters']['main_accuracy_estimator']
 
     columns = ingested_data.columns
     scenarios = []
@@ -75,11 +77,11 @@ def create_children():
         print('-> Calculate the cross-correlation...')
         xcorr = calc_xcorr(col, ingested_data, max_lags, modes)
 
-        print('-> PREDICTION FOR ' + str(col))
+        print(f"-> PREDICTION FOR {col} without extra-regressors...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy())
         model_results.append(prophet_result)
-        #
+
         # predictor = ARIMA(param_config)
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
@@ -87,6 +89,41 @@ def create_children():
         scenarios.append(
             Scenario(scenario_data, model_results, ingested_data, xcorr)
         )
+
+    print(f"-> Look for extra regressors.")
+    for col in columns:
+        local_xcorr_all_modes = next(filter(lambda x: x.scenario_data.columns[0] == col, scenarios)).xcorr
+        local_xcorr = local_xcorr_all_modes[xcorr_mode_target]
+
+        useful_extra_regressors = []
+
+        for extra_regressor in local_xcorr.columns:
+            # Look only in correlation with future lags.
+            index_of_max = local_xcorr.loc[0:, extra_regressor].idxmax()
+            corr = local_xcorr.loc[index_of_max, extra_regressor]
+            if abs(corr) > xcorr_threshold:
+                print(f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
+                useful_extra_regressors.append(extra_regressor)
+
+        if len(useful_extra_regressors) == 0:
+            print(f"No useful extra-regressor found for {col}: skipping...")
+        else:
+            print(f"Found useful extra-regressors. Prepare them and re-compute the prediction for {col}")
+            useful_extra_regressors = [
+                prepare_extra_regressor(next(filter(lambda x: x.scenario_data.columns[0] == s, scenarios)),
+                                        main_accuracy_estimator) for s in useful_extra_regressors]
+
+            useful_extra_regressors = reduce(lambda x, y: x.join(y), useful_extra_regressors)
+
+            scenario_data = ingested_data[[col]]
+            model_results = []
+
+            predictor = FBProphet(param_config)
+            prophet_result = predictor.launch_model(scenario_data.copy(), extra_regressors=useful_extra_regressors)
+            model_results.append(prophet_result)
+
+            new_scenario = Scenario(scenario_data, model_results, ingested_data, local_xcorr_all_modes)
+            scenarios = [new_scenario if x.scenario_data.columns[0] == col else x for x in scenarios]
 
     # data visualization
     children_for_each_scenario = [{
@@ -177,16 +214,19 @@ def create_children():
     # Save the children; these are the plots relatives to all the scenarios.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the plots.
-    with open('children_for_each_scenario.pkl', 'wb') as input_file:
+    with open('children_for_each_scenario_beta.pkl', 'wb') as input_file:
         pickle.dump(children_for_each_scenario, input_file)
 
 
 if __name__ == '__main__':
     create_children()
 
+
     def open_browser():
-        webbrowser.open("http://127.0.0.1:8000")
+        webbrowser.open("http://127.0.0.1:8001")
+
 
     # Timer(6, open_browser).start()
-    os.system("gunicorn -b 0.0.0.0:8000 app_load_from_dump:server")
+    os.system("gunicorn -b 0.0.0.0:8001 app_load_from_dump_beta:server")
+
 

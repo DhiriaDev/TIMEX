@@ -1,4 +1,3 @@
-import abc
 import json
 import math
 import pkgutil
@@ -188,7 +187,7 @@ class PredictionModel:
         """
         pass
 
-    def launch_model(self, ingested_data: DataFrame, extra_regressor: DataFrame = None) -> ModelResult:
+    def launch_model(self, ingested_data: DataFrame, extra_regressors: DataFrame = None) -> ModelResult:
         """
         Train the model on ingested_data and returns a ModelResult object.
 
@@ -225,14 +224,14 @@ class PredictionModel:
             if self.verbose == "yes":
                 print("Trying with last " + str(len(tr)) + " values as training set...")
 
-            self.train(tr.copy(), extra_regressor)
+            self.train(tr.copy(), extra_regressors)
 
             future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                          start=tr.index.values[0],
                                                          periods=len(tr) + self.test_values + self.prediction_lags),
                                      columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
-            forecast = self.predict(future_df, extra_regressor)
+            forecast = self.predict(future_df, extra_regressors)
             testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
             first_used_index = tr.index.values[0]
@@ -245,6 +244,9 @@ class PredictionModel:
         # best_forecast = results[0]["forecast"]
         # testing_results = [x["testing_performances"] for x in results]
         # testing_results = results
+
+        if extra_regressors is not None:
+            model_characteristics["extra_regressors"] = [*extra_regressors.columns]
 
         model_characteristics["name"] = self.name
         model_characteristics["delta_training_percentage"] = self.delta_training_percentage
@@ -303,3 +305,85 @@ def post_transformation(data: Series, transformation: str) -> Series:
         f = lambda x: x
 
     return f(data)
+
+
+def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
+    """
+    Calculate the cross-correlation for the ingested data.
+    Use the scenario column as target; the correlation is computed against all lags of all the other columns which
+    include numbers. NaN values, introduced by the various shifts, are replaced with 0.
+
+    Parameters
+    ----------
+    target : str
+    Column which is used as target for the cross correlation.
+
+    ingested_data : DataFrame
+    Entire dataframe parsed from app
+
+    max_lags : int
+    Limit the analysis to max lags.
+
+    modes : [str]
+    Cross-correlation can be computed with different algorithms. The available choices are:
+        `matlab_normalized`: same as using the MatLab function xcorr(x, y, 'normalized')
+        `pearson` : use Pearson formula (NaN values are fillled to 0)
+        `kendall`: use Kendall formula (NaN values are filled to 0)
+        `spearman`: use Spearman formula (NaN values are filled to 0)
+
+    Returns
+    -------
+    result : dict
+    Dictionary with a Pandas DataFrame set for every indicated mode.
+    Each DataFrame has the lags as index and the correlation value for each column.
+    """
+
+    def df_shifted(df, _target=None, lag=0):
+        if not lag and not _target:
+            return df
+        new = {}
+        for c in df.columns:
+            if c == _target:
+                new[c] = df[_target]
+            else:
+                new[c] = df[c].shift(periods=lag)
+        return pd.DataFrame(data=new)
+
+    columns = ingested_data.columns.tolist()
+    columns = [elem for elem in columns if ingested_data[elem].dtype != str and elem != target]
+
+    results = {}
+    for mode in modes:
+        result = DataFrame(columns=columns, dtype=np.float64)
+        if mode == 'matlab_normalized':
+            for col in columns:
+                x = ingested_data[target]
+                y = ingested_data[col]
+
+                c = np.correlate(x, y, mode="full")
+
+                # This is needed to obtain the same result of the MatLab `xcorr` function with normalized results.
+                # You can find the formula in the function pyplot.xcorr; however, here the property
+                # sqrt(x*y) = sqrt(x) * sqrt(y)
+                # is applied in order to avoid overflows if the ingested values are particularly high.
+                den = np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y))
+                c = np.divide(c, den)
+
+                # This assigns the correct indexes to the results.
+                c = c[len(ingested_data) - 1 - max_lags:len(ingested_data) + max_lags]
+
+                result[col] = c
+
+            result.index -= max_lags
+
+        else:
+            for i in range(-max_lags, max_lags + 1):
+                shifted = df_shifted(ingested_data, target, i)
+                shifted.fillna(0, inplace=True)
+
+                corr = [shifted[target].corr(other=shifted[col], method=mode) for col in columns]
+                result.loc[i] = corr
+
+        results[mode] = result
+
+    return results
