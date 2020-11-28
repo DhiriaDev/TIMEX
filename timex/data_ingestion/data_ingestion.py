@@ -3,9 +3,13 @@ from warnings import warn
 import pandas as pd
 from pandas import Series, DataFrame
 
+from timex.data_preparation.data_preparation import add_diff_column
+
+
 
 def data_ingestion(param_config):
     """Retrieve the data at the URL in config_file_name and return it in a Pandas' DataFrame.
+    Add diff columns and rename the columns if specified in the configuration.
 
     Parameters
     ----------
@@ -15,7 +19,8 @@ def data_ingestion(param_config):
     Returns
     -------
     df_ingestion : DataFrame
-        Pandas dataframe storing the data loaded from the url in config_file_name.
+        Pandas dataframe storing the data loaded from the url in config_file_name, with optional diff columns and the
+        correct names.
     """
 
     verbose = param_config["verbose"]
@@ -49,6 +54,20 @@ def data_ingestion(param_config):
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
     df_ingestion = add_freq(df_ingestion, freq)
     # df_ingestion.set_index(add_freq(df_ingestion.index, freq=freq))
+
+    if "add_diff_column" in input_parameters:
+        print('-> ADD DIFF COLUMN') if verbose == "yes" else None
+        targets = list(input_parameters["add_diff_column"].split(','))
+        df_ingestion = add_diff_column(df_ingestion, targets, verbose="yes")
+
+    if "scenarios_names" in input_parameters:
+        mappings = input_parameters["scenarios_names"]
+        df_ingestion.reset_index(inplace=True)
+        df_ingestion.rename(columns=mappings, inplace=True)
+        try:
+            df_ingestion.set_index(mappings.get(index_column_name), inplace=True)
+        except KeyError:
+            df_ingestion.set_index(index_column_name, inplace=True)
 
     if verbose == 'yes':
         print('Data_ingestion: data frame (df) creation completed!')

@@ -387,3 +387,37 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
         results[mode] = result
 
     return results
+
+
+def calc_all_xcorr(ingested_data: DataFrame, max_lags: int, modes: [str]) -> dict:
+    """
+    Compute, for every column in ingested_data (excluding the index) the cross-correlation of that series with respect
+    to all others columns in ingested data.
+
+    Parameters
+    ----------
+    ingested_data : DataFrame
+        Pandas DataFrame for which the cross-correlation of all columns should be computed.
+
+    max_lags : int
+        Limit the cross-correlation to at maximum max_lags in the past and future (from -max_lags to max_lags)
+
+    modes : [str]
+        Compute the cross-correlation using different algorithms. The available choices are:
+            `matlab_normalized`: same as using the MatLab function xcorr(x, y, 'normalized')
+            `pearson` : use Pearson formula (NaN values are fillled to 0)
+            `kendall`: use Kendall formula (NaN values are filled to 0)
+            `spearman`: use Spearman formula (NaN values are filled to 0)
+
+    Returns
+    -------
+    dict
+        Python dict with a key for every data column in ingested_data.
+    """
+    d = {}
+    for col in ingested_data.columns:
+        d[col] = calc_xcorr(col, ingested_data, max_lags=max_lags, modes=modes)
+
+    return d
+
+

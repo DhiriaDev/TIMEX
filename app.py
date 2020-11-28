@@ -50,15 +50,6 @@ def create_children():
     print('-> SELECTION')
     ingested_data = data_selection(ingested_data, param_config)
 
-    if "add_diff_column" in param_config["input_parameters"]:
-        print('-> ADD DIFF COLUMN')
-        targets = list(param_config["input_parameters"]["add_diff_column"].split(','))
-        ingested_data = add_diff_column(ingested_data, targets, verbose="yes")
-
-    # Rename columns
-    mappings = param_config["input_parameters"]["scenarios_names"]
-    ingested_data.rename(columns=mappings, inplace=True)
-
     # Custom columns
     ingested_data["New cases/tests ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 

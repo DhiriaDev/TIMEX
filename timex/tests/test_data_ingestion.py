@@ -105,6 +105,63 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(df.columns[0], "third_column")
         self.assertEqual(df.columns[1], "first_column")
 
+    def test_data_ingestion_univariate_5(self):
+        # Local load, with diff columns.
+        param_config = {
+            "verbose": "no",
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_1.csv",
+                "columns_to_load_from_url": "third_column,second_column,first_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "add_diff_column": "third_column,second_column"
+            }
+        }
+
+        df = data_ingestion(param_config)
+
+        self.assertEqual(df.index.name, "first_column")
+        self.assertEqual(df.columns[0], "third_column")
+        self.assertEqual(df.columns[1], "second_column")
+        self.assertEqual(df.columns[2], "third_column_diff")
+        self.assertEqual(df.columns[3], "second_column_diff")
+        self.assertEqual(len(df.columns), 4)
+        self.assertEqual(len(df), 2)
+
+    def test_data_ingestion_univariate_6(self):
+        # Local load, with diff columns. Rename columns.
+        param_config = {
+            "verbose": "no",
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_1.csv",
+                "columns_to_load_from_url": "third_column,second_column,first_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "add_diff_column": "third_column,second_column",
+                "scenarios_names":
+                    {
+                        "first_column": "A",
+                        "second_column": "B",
+                        "third_column": "C",
+                        "third_column_diff": "D",
+                        "second_column_diff": "E"
+                    }
+
+            }
+        }
+
+        df = data_ingestion(param_config)
+
+        self.assertEqual(df.index.name, "A")
+        self.assertEqual(df.columns[0], "C")
+        self.assertEqual(df.columns[1], "B")
+        self.assertEqual(df.columns[2], "D")
+        self.assertEqual(df.columns[3], "E")
+        self.assertEqual(len(df.columns), 4)
+        self.assertEqual(len(df), 2)
+
     def test_add_freq_1(self):
         # df already has freq; do nothing.
         df = get_fake_df(10)

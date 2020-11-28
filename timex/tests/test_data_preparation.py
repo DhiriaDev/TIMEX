@@ -124,7 +124,7 @@ class MyTestCase(unittest.TestCase):
         # Add a multiple diff column.
 
         df = get_fake_df(3)
-        new_df = add_diff_column(df, ["second_column", "third_column"], verbose="no")
+        # new_df = add_diff_column(df, ["second_column", "third_column"], verbose="no")
 
         # TODO
         # self.assertEqual(df.iloc[0]["second_column"], 5)
