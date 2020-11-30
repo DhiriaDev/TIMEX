@@ -1,3 +1,4 @@
+import logging
 from warnings import warn
 
 import pandas as pd
@@ -5,6 +6,7 @@ from pandas import Series, DataFrame
 
 from timex.data_preparation.data_preparation import add_diff_column
 
+log = logging.getLogger(__name__)
 
 
 def data_ingestion(param_config):
@@ -23,7 +25,6 @@ def data_ingestion(param_config):
         correct names.
     """
 
-    verbose = param_config["verbose"]
     input_parameters = param_config["input_parameters"]
 
     # Extract parameters from parameters' dictionary.
@@ -35,9 +36,7 @@ def data_ingestion(param_config):
     except KeyError:
         freq = None
 
-    if verbose == 'yes':
-        print('------------------------------------------------------')
-        print('Data_ingestion: starting the data ingestion phase.')
+    log.info('Starting the data ingestion phase.')
 
     columns_to_read = list(columns_to_load_from_url.split(','))
     # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
@@ -47,6 +46,7 @@ def data_ingestion(param_config):
     if "datetime_column_name" in input_parameters:
         datetime_column_name = input_parameters["datetime_column_name"]
         datetime_format = input_parameters["datetime_format"]
+        log.debug(f"Parsing {datetime_column_name} as datetime column...")
         # datetime_column = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
         # datetime_column = add_freq(datetime_column)
         df_ingestion[datetime_column_name] = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
@@ -56,9 +56,9 @@ def data_ingestion(param_config):
     # df_ingestion.set_index(add_freq(df_ingestion.index, freq=freq))
 
     if "add_diff_column" in input_parameters:
-        print('-> ADD DIFF COLUMN') if verbose == "yes" else None
+        log.debug(f"Adding the diff columns...")
         targets = list(input_parameters["add_diff_column"].split(','))
-        df_ingestion = add_diff_column(df_ingestion, targets, verbose="yes")
+        df_ingestion = add_diff_column(df_ingestion, targets)
 
     if "scenarios_names" in input_parameters:
         mappings = input_parameters["scenarios_names"]
@@ -69,13 +69,11 @@ def data_ingestion(param_config):
         except KeyError:
             df_ingestion.set_index(index_column_name, inplace=True)
 
-    if verbose == 'yes':
-        print('Data_ingestion: data frame (df) creation completed!')
-        print('Data_ingestion: summary of statistics *** ')
-        print('                |-> number of rows: ' + str(len(df_ingestion)))
-        print('                |-> number of columns: ' + str(len(df_ingestion.columns)))
-        print('                |-> column names: ' + str(list(df_ingestion.columns)))
-        print('                |-> number of missing data: ' + str(list(df_ingestion.isnull().sum())))
+    log.info(f"Finished the data-ingestion phase. Some stats:\n"
+                 f"-> Number of rows: {len(df_ingestion)}\n"
+                 f"-> Number of columns: {len(df_ingestion.columns)}\n"
+                 f"-> Column names: {[*df_ingestion.columns]}\n"
+                 f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
 
     return df_ingestion
 
@@ -113,7 +111,7 @@ def add_freq(df, freq=None) -> DataFrame:
             freq = pd.infer_freq(local_df.index)
 
         if freq is None:
-            warn('no discernible frequency found for input data.')
+            log.warning(f"No discernible frequency found for the dataframe.")
             return df
         else:
             if freq == "D":

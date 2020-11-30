@@ -12,7 +12,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_selection_univariate_1(self):
         # Select rows using init datetime.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "datetime_format": "%Y-%m-%d"
             },
@@ -35,7 +34,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_selection_univariate_2(self):
         # Select rows using end datetime.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "datetime_format": "%Y-%m-%d"
             },
@@ -58,7 +56,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_selection_univariate_3(self):
         # Select rows using both init and end time.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "datetime_format": "%Y-%m-%d"
             },
@@ -84,7 +81,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_selection_univariate_4(self):
         # Select rows based on value.
         param_config = {
-            "verbose": "yes",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "first_column,third_column",
@@ -111,7 +107,7 @@ class MyTestCase(unittest.TestCase):
         # Add a single diff column.
         df = get_fake_df(3)
 
-        new_df = add_diff_column(df, ["value"], verbose="no")
+        new_df = add_diff_column(df, ["value"])
         self.assertEqual(df.iloc[1]["value"], new_df.iloc[0]["value"])
         self.assertEqual(df.iloc[2]["value"], new_df.iloc[1]["value"])
 

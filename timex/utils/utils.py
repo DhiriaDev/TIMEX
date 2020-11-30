@@ -30,7 +30,7 @@ def prepare_extra_regressor(scenario: Scenario, testing_performance_target: str 
     model_results.sort(key=lambda x: getattr(x.testing_performances, testing_performance_target.upper()))
 
     original_ts = scenario.ingested_data[[name]]
-    f = model_results[0].prediction[['yhat']]
+    f = model_results[0].prediction.loc[:, ['yhat']]
     f.rename(columns={'yhat': name}, inplace=True)
 
     best_entire_forecast = original_ts.combine_first(f)

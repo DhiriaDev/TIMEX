@@ -14,7 +14,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_1(self):
         # Local load, with datetime. Infer freq.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "first_column,third_column",
@@ -40,7 +39,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_2(self):
         # Local load, with datetime. Specify freq.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1_1.csv",
                 "columns_to_load_from_url": "first_column,third_column",
@@ -67,7 +65,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_3(self):
         # Local load, with no datetime column.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "second_column,third_column",
@@ -91,7 +88,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_4(self):
         # Local load, with no datetime column. Check columns'order is maintained.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "third_column,second_column,first_column",
@@ -108,7 +104,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_5(self):
         # Local load, with diff columns.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "third_column,second_column,first_column",
@@ -132,7 +127,6 @@ class MyTestCase(unittest.TestCase):
     def test_data_ingestion_univariate_6(self):
         # Local load, with diff columns. Rename columns.
         param_config = {
-            "verbose": "no",
             "input_parameters": {
                 "source_data_url": "test_datasets/test_1.csv",
                 "columns_to_load_from_url": "third_column,second_column,first_column",
@@ -216,7 +210,6 @@ class MyTestCase(unittest.TestCase):
         ts = pd.DataFrame(np.random.randn(4), index=dates)
 
         new_ts = add_freq(ts)
-        print(new_ts)
         self.assertTrue(new_ts.equals(ts))
         self.assertEqual(new_ts.index.freq, None)
 

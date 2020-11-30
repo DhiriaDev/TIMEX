@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import pickle
+import sys
 import webbrowser
 from functools import reduce
 
@@ -18,6 +20,8 @@ from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
 from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
 from timex.scenario.scenario import Scenario
+
+log = logging.getLogger(__name__)
 
 
 def create_children():
@@ -40,19 +44,28 @@ def create_children():
     with open(param_file_nameJSON) as json_file:  # opening the config_file_name
         param_config = json.load(json_file)  # loading the json
 
+    # Logging
+    log_level = getattr(logging, param_config["verbose"], None)
+    if not isinstance(log_level, int):
+        log_level = 0
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=log_level,
+                        stream=sys.stdout)
+
     # data ingestion
-    print('-> INGESTION')
+    log.info(f"Started data ingestion.")
     ingested_data = data_ingestion.data_ingestion(param_config)  # ingestion of data
 
     # data selection
-    print('-> SELECTION')
+    log.info(f"Started data selection.")
     ingested_data = data_selection(ingested_data, param_config)
 
     # Custom columns
+    log.info(f"Adding custom columns.")
     ingested_data["New cases/tests ratio"] = [100 * (np / tamp) for np, tamp in
                                               zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # Calculate the cross-correlation.
+    log.info(f"Computing the cross-correlation...")
     xcorr_max_lags = param_config['model_parameters']['xcorr_max_lags']
     xcorr_modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
     xcorr_threshold = param_config['model_parameters']['xcorr_extra_regressor_threshold']
@@ -62,6 +75,7 @@ def create_children():
     total_xcorr = calc_all_xcorr(ingested_data=ingested_data, max_lags=xcorr_max_lags, modes=xcorr_modes)
 
     # Predictions without extra-regressors.
+    log.info(f"Started the prediction with univariate models.")
     columns = ingested_data.columns
     scenarios = []
     for col in columns:
@@ -70,7 +84,7 @@ def create_children():
 
         xcorr = total_xcorr[col]
 
-        print(f"-> PREDICTION FOR {col} without extra-regressors...")
+        log.info(f"Computing univariate prediction for {col}...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy())
         model_results.append(prophet_result)
@@ -84,11 +98,12 @@ def create_children():
         )
 
     # Prediction with extra regressors.
+    log.info(f"Starting the prediction with extra-regressors.")
     best_forecasts_found = 0
     while best_forecasts_found != len(columns):
-        print(f"-> Found the best prediction for {best_forecasts_found}")
+        log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
         best_forecasts_found = 0
-        print(f"-> Look for extra regressors.")
+
         for col in columns:
             local_xcorr = total_xcorr[col][xcorr_mode_target]
 
@@ -99,14 +114,14 @@ def create_children():
                 index_of_max = local_xcorr[extra_regressor].abs().idxmax()
                 corr = local_xcorr.loc[index_of_max, extra_regressor]
                 if abs(corr) > xcorr_threshold and index_of_max >= 0:
-                    print(f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
+                    log.debug(f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
                     useful_extra_regressors.append(extra_regressor)
 
             if len(useful_extra_regressors) == 0:
-                print(f"No useful extra-regressor found for {col}: skipping...")
+                log.debug(f"No useful extra-regressor found for {col}: skipping...")
                 best_forecasts_found += 1
             else:
-                print(f"Found useful extra-regressors. Prepare them and re-compute the prediction for {col}")
+                log.info(f"Found useful extra-regressors. Prepare them and re-compute the prediction for {col}")
                 useful_extra_regressors = [
                     prepare_extra_regressor(next(filter(lambda x: x.scenario_data.columns[0] == s, scenarios)),
                                             main_accuracy_estimator) for s in useful_extra_regressors]
@@ -117,7 +132,7 @@ def create_children():
                 model_results = []
 
                 predictor = FBProphet(param_config)
-                prophet_result = predictor.launch_model(scenario_data.copy(), extra_regressors=useful_extra_regressors)
+                prophet_result = predictor.launch_model(scenario_data.copy(), extra_regressors=useful_extra_regressors.copy())
                 model_results.append(prophet_result)
 
                 old_this_scenario = next(filter(lambda x: x.scenario_data.columns[0] == col, scenarios))
@@ -126,12 +141,14 @@ def create_children():
                 min_new_error = min([x.testing_performances.MAE for x in prophet_result.results])
 
                 if min_new_error < min_old_error:
-                    print(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
+                    log.info(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
                     new_scenario = Scenario(scenario_data, model_results, ingested_data, total_xcorr[col])
                     scenarios = [new_scenario if x.scenario_data.columns[0] == col else x for x in scenarios]
                 else:
-                    print(f"No improvements.")
+                    log.info(f"No improvements.")
                     best_forecasts_found += 1
+
+    log.info(f"Found the optimal prediction for all the {best_forecasts_found} scenarios!")
 
     # data visualization
     children_for_each_scenario = [{
@@ -222,7 +239,9 @@ def create_children():
     # Save the children; these are the plots relatives to all the scenarios.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the plots.
-    with open('children_for_each_scenario_beta.pkl', 'wb') as input_file:
+    filename = 'children_for_each_scenario_beta.pkl'
+    log.info(f"Saving the computed Dash children to {filename}...")
+    with open(filename, 'wb') as input_file:
         pickle.dump(children_for_each_scenario, input_file)
 
 

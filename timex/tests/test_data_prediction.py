@@ -45,7 +45,6 @@ class MyTestCase(unittest.TestCase):
     def test_launch_model_fbprophet_1(self):
         # Percentages' sum is not 100%; adapt the windows.
         param_config = {
-            "verbose": "yes",
             "model_parameters": {
                 "test_percentage": 10,
                 "delta_training_percentage": 20,
@@ -77,7 +76,6 @@ class MyTestCase(unittest.TestCase):
     def test_launch_model_fbprophet_2(self):
         # Percentages' sum is not 100%; adapt the windows.
         param_config = {
-            "verbose": "no",
             "model_parameters": {
                 "test_values": 5,
                 "delta_training_percentage": 20,
@@ -134,7 +132,6 @@ class MyTestCase(unittest.TestCase):
 
     def test_launch_model_arima(self):
         param_config = {
-            "verbose": "no",
             "model_parameters": {
                 "test_percentage": 10,
                 "delta_training_percentage": 20,

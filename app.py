@@ -2,8 +2,10 @@ import json
 import os
 import pickle
 import runpy
+import sys
 import webbrowser
 from threading import Timer
+import logging
 
 import dash_html_components as html
 import gunicorn
@@ -20,6 +22,8 @@ from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
 from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
 from timex.scenario.scenario import Scenario
+
+log = logging.getLogger(__name__)
 
 
 def create_children():
@@ -42,31 +46,40 @@ def create_children():
     with open(param_file_nameJSON) as json_file:  # opening the config_file_name
         param_config = json.load(json_file)  # loading the json
 
+    # Logging
+    log_level = getattr(logging, param_config["verbose"], None)
+    if not isinstance(log_level, int):
+        log_level = 0
+    logging.basicConfig(format='%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s', level=log_level,
+                        stream=sys.stdout)
+
     # data ingestion
-    print('-> INGESTION')
+    log.info(f"Started data ingestion.")
     ingested_data = data_ingestion.data_ingestion(param_config)  # ingestion of data
 
     # data selection
-    print('-> SELECTION')
+    log.info(f"Started data selection.")
     ingested_data = data_selection(ingested_data, param_config)
 
     # Custom columns
+    log.info(f"Adding custom columns.")
     ingested_data["New cases/tests ratio"] = [100*(np/tamp) for np, tamp in zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # data prediction
+    log.info(f"Computing the cross-correlation...")
     max_lags = param_config['model_parameters']['xcorr_max_lags']
     modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
 
+    log.info(f"Started the prediction with univariate models.")
     columns = ingested_data.columns
     scenarios = []
     for col in columns:
         scenario_data = ingested_data[[col]]
         model_results = []
 
-        print('-> Calculate the cross-correlation...')
         xcorr = calc_xcorr(col, ingested_data, max_lags, modes)
 
-        print('-> PREDICTION FOR ' + str(col))
+        log.info(f"Computing univariate prediction for {col}...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy())
         model_results.append(prophet_result)
@@ -87,6 +100,7 @@ def create_children():
 
     ####################################################################################################################
     # Custom scenario #########
+    log.info(f"Computing the custom scenarios.")
 
     regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
                        header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
@@ -144,10 +158,9 @@ def create_children():
 
         model_results = []
 
-        print('-> Calculate the cross-correlation...')
         xcorr = calc_xcorr(region, daily_cases_regions, max_lags, modes)
 
-        print('-> PREDICTION FOR ' + str(region))
+        log.info(f"Computing univariate prediction for {region}...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy())
         model_results.append(prophet_result)
@@ -168,11 +181,14 @@ def create_children():
     # Save the children; these are the plots relatives to all the scenarios.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the plots.
-    with open('children_for_each_scenario.pkl', 'wb') as input_file:
+    filename = 'children_for_each_scenario.pkl'
+    log.info(f"Saving the computed Dash children to {filename}...")
+    with open(filename, 'wb') as input_file:
         pickle.dump(children_for_each_scenario, input_file)
 
 
 if __name__ == '__main__':
+
     create_children()
 
     def open_browser():

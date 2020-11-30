@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import pkgutil
 from math import sqrt
@@ -7,6 +8,8 @@ import pandas as pd
 from pandas import DataFrame, Series
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+log = logging.getLogger(__name__)
 
 
 class TestingPerformance:
@@ -126,20 +129,15 @@ class PredictionModel:
 
     def __init__(self, params: dict, name: str) -> None:
         self.name = name
-        self.verbose = params["verbose"]
 
-        if params["verbose"] == "yes":
-            print('-----------------------------------------------------------')
-            print('Model_training: creating ' + self.name + " model...")
+        log.info(f"Creating a {self.name} model...")
 
         if "model_parameters" not in params:
-            if params["verbose"] == "yes":
-                print("Model_training: loading default settings...")
+            log.debug(f"Loading default settings...")
             parsed = pkgutil.get_data(__name__, "default_prediction_parameters/" + self.name + ".json")
             model_parameters = json.loads(parsed)
         else:
-            if params["verbose"] == "yes":
-                print("Model_training: loading user settings...")
+            log.debug(f"Loading user settings...")
             model_parameters = params["model_parameters"]
 
         if "test_values" in model_parameters:
@@ -156,6 +154,7 @@ class PredictionModel:
         self.model_characteristics = {}
 
         self.freq = ""
+        log.debug(f"Finished model creation.")
 
     def train(self, ingested_data: DataFrame, extra_regressor: DataFrame = None) -> TestingPerformance:
         """
@@ -215,14 +214,12 @@ class PredictionModel:
 
         results = []
 
-        if self.verbose == "yes":
-            print("Model will use " + str(train_sets_number) + " different training sets.")
+        log.info(f"Model will use {train_sets_number} different training sets...")
 
         for i in range(1, train_sets_number + 1):
             tr = train_ts.iloc[-i * self.delta_training_values:]
 
-            if self.verbose == "yes":
-                print("Trying with last " + str(len(tr)) + " values as training set...")
+            log.debug(f"Trying with last {len(tr)} values as training set...")
 
             self.train(tr.copy(), extra_regressors)
 
