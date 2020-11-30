@@ -7,9 +7,8 @@ def prepare_extra_regressor(scenario: Scenario, testing_performance_target: str 
     """
     This function receives a Scenario object which includes a prediction for a time-series and indications on the
     prediction errors, along with the entire ingested dataset.
-    Then, the best possible prediction (w.r.t a specific indicator, i.e MAE) is taken. If this prediction is missing
-    some values from the past (because the training window used is not 100% of the time-series length), then it is
-    filled with values coming from the original time-series.
+    Then, the best possible prediction (w.r.t a specific indicator, i.e MAE) is taken and appended to the original
+    time-series, in order to obtain a DataFrame with the original time series and the best possible prediction.
 
     The resulting DataFrame is returned.
 
@@ -34,5 +33,6 @@ def prepare_extra_regressor(scenario: Scenario, testing_performance_target: str 
     f = model_results[0].prediction[['yhat']]
     f.rename(columns={'yhat': name}, inplace=True)
 
-    best_entire_forecast = f.combine_first(original_ts)
+    best_entire_forecast = original_ts.combine_first(f)
+
     return best_entire_forecast

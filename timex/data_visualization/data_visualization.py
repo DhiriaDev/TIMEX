@@ -511,15 +511,15 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
                              mode='lines+markers',
                              name='yhat'))
-    try:
-        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
-                                 line=dict(color='lightgreen', dash='dash'),
-                                 name='yhat_lower'))
-        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
-                                 line=dict(color='lightgreen', dash='dash'),
-                                 name='yhat_upper'))
-    except:
-        pass
+    # try:
+    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+    #                              line=dict(color='lightgreen', dash='dash'),
+    #                              name='yhat_lower'))
+    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+    #                              line=dict(color='lightgreen', dash='dash'),
+    #                              name='yhat_upper'))
+    # except:
+    #     pass
 
     fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
                              line=dict(color='black'),

@@ -4,7 +4,7 @@ from pandas import Series, DataFrame
 import numpy as np
 
 from timex.data_prediction.arima_predictor import ARIMA
-from timex.data_prediction.data_prediction import pre_transformation, calc_xcorr
+from timex.data_prediction.data_prediction import pre_transformation, calc_xcorr, post_transformation
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.tests.utilities import get_fake_df
 
@@ -14,20 +14,26 @@ xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 class MyTestCase(unittest.TestCase):
     def test_pre_transformation_1(self):
 
-        s = Series(np.array([1, 2, 3, 4]))
-        res = pre_transformation(s, "log")
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        res = pre_transformation(s, "log_modified")
 
-        self.assertEqual(res[0], np.log(1))
-        self.assertEqual(res[1], np.log(2))
-        self.assertEqual(res[2], np.log(3))
-        self.assertEqual(res[3], np.log(4))
+        self.assertEqual(res[0], -np.log(4+1))
+        self.assertEqual(res[1], -np.log(3+1))
+        self.assertEqual(res[2], -np.log(2+1))
+        self.assertEqual(res[3], -np.log(1+1))
+        self.assertEqual(res[4],  np.log(1))
+        self.assertEqual(res[5],  np.log(1+1))
+        self.assertEqual(res[6],  np.log(2+1))
+        self.assertEqual(res[7],  np.log(3+1))
+        self.assertEqual(res[8],  np.log(4+1))
 
     def test_pre_transformation_2(self):
 
-        s = Series(np.array([0]))
-        res = pre_transformation(s, "log")
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        res = pre_transformation(s, "log_modified")
+        res = post_transformation(res, "log_modified")
 
-        self.assertEqual(res[0], 0)
+        self.assertTrue(np.allclose(s, res))
 
     def test_pre_transformation_3(self):
 

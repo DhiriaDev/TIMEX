@@ -275,11 +275,16 @@ def pre_transformation(data: Series, transformation: str) -> Series:
     """
     if transformation == "log":
         def f(x):
-            return np.log(x) if x > 0 else 0
-
-        return data.apply(f)
+            return np.sign(x) * np.log(abs(x)) if abs(x) > 1 else 0
+    elif transformation == "log_modified":
+        # Log-modulus transform to preserve 0 values and negative values.
+        def f(x):
+            return np.sign(x)*np.log(abs(x)+1)
     else:
-        return data
+        def f(x):
+            return x
+
+    return data.apply(f)
 
 
 def post_transformation(data: Series, transformation: str) -> Series:
@@ -300,11 +305,16 @@ def post_transformation(data: Series, transformation: str) -> Series:
         Pandas Series where the transformation has been applied.
     """
     if transformation == "log":
-        f = np.exp
+        def f(x):
+            return np.sign(x) * np.exp(abs(x)) if abs(x) > 1 else 0
+    elif transformation == "log_modified":
+        def f(x):
+            return np.sign(x) * np.exp(abs(x)) - np.sign(x)
     else:
-        f = lambda x: x
+        def f(x):
+            return x
 
-    return f(data)
+    return data.apply(f)
 
 
 def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
