@@ -511,15 +511,15 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
                              mode='lines+markers',
                              name='yhat'))
-    # try:
-    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
-    #                              line=dict(color='lightgreen', dash='dash'),
-    #                              name='yhat_lower'))
-    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
-    #                              line=dict(color='lightgreen', dash='dash'),
-    #                              name='yhat_upper'))
-    # except:
-    #     pass
+    try:
+        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name='yhat_lower'))
+        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name='yhat_upper'))
+    except:
+        pass
 
     fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
                              line=dict(color='black'),
@@ -656,7 +656,9 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
             "test_values": f"The last {value} values have been used for testing.",
             "delta_training_percentage": f"The length of the training windows is the {value}% of the time series' length.",
             "delta_training_values": f"Training windows are composed of {value} values.",
-            "extra_regressors": f"The model has used {value} as extra-regressor(s) to improve the training."
+            "extra_regressors": f"The model has used {value} as extra-regressor(s) to improve the training.",
+            "transformation": f"The model has used a {value} transformation on the input data." if value != "none"
+            else f"The model has not used any pre/post transformation on input data."
         }
         return switcher.get(key, "Invalid choice!")
 

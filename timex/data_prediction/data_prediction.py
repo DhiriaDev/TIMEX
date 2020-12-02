@@ -2,12 +2,14 @@ import json
 import logging
 import math
 import pkgutil
+from functools import reduce
 from math import sqrt
 
 import pandas as pd
 from pandas import DataFrame, Series
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+
 
 log = logging.getLogger(__name__)
 
@@ -127,7 +129,7 @@ class PredictionModel:
         of the model. Default {}
     """
 
-    def __init__(self, params: dict, name: str) -> None:
+    def __init__(self, params: dict, name: str, transformation: str = None) -> None:
         self.name = name
 
         log.info(f"Creating a {self.name} model...")
@@ -146,8 +148,12 @@ class PredictionModel:
             self.test_percentage = model_parameters["test_percentage"]
             self.test_values = -1
 
+        if transformation is not None:
+            self.transformation = transformation
+        else:
+            self.transformation = model_parameters["transformation"]
+
         self.prediction_lags = model_parameters["prediction_lags"]
-        self.transformation = model_parameters["transformation"]
         self.delta_training_percentage = model_parameters["delta_training_percentage"]
         self.main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
         self.delta_training_values = 0
@@ -243,12 +249,13 @@ class PredictionModel:
         # testing_results = results
 
         if extra_regressors is not None:
-            model_characteristics["extra_regressors"] = [*extra_regressors.columns]
+            model_characteristics["extra_regressors"] = ', '.join([*extra_regressors.columns])
 
         model_characteristics["name"] = self.name
         model_characteristics["delta_training_percentage"] = self.delta_training_percentage
         model_characteristics["delta_training_values"] = self.delta_training_values
         model_characteristics["test_values"] = self.test_values
+        model_characteristics["transformation"] = self.transformation
 
         return ModelResult(results=results, characteristics=model_characteristics)
 
@@ -276,7 +283,7 @@ def pre_transformation(data: Series, transformation: str) -> Series:
     elif transformation == "log_modified":
         # Log-modulus transform to preserve 0 values and negative values.
         def f(x):
-            return np.sign(x)*np.log(abs(x)+1)
+            return np.sign(x) * np.log(abs(x) + 1)
     else:
         def f(x):
             return x
@@ -303,7 +310,7 @@ def post_transformation(data: Series, transformation: str) -> Series:
     """
     if transformation == "log":
         def f(x):
-            return np.sign(x) * np.exp(abs(x)) if abs(x) > 1 else 0
+            return np.sign(x) * np.exp(abs(x))
     elif transformation == "log_modified":
         def f(x):
             return np.sign(x) * np.exp(abs(x)) - np.sign(x)
@@ -396,7 +403,7 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
     return results
 
 
-def calc_all_xcorr(ingested_data: DataFrame, max_lags: int, modes: [str]) -> dict:
+def calc_all_xcorr(ingested_data: DataFrame, param_config: dict) -> dict:
     """
     Compute, for every column in ingested_data (excluding the index) the cross-correlation of that series with respect
     to all others columns in ingested data.
@@ -409,22 +416,27 @@ def calc_all_xcorr(ingested_data: DataFrame, max_lags: int, modes: [str]) -> dic
     max_lags : int
         Limit the cross-correlation to at maximum max_lags in the past and future (from -max_lags to max_lags)
 
-    modes : [str]
-        Compute the cross-correlation using different algorithms. The available choices are:
+    param_config : dict
+        TIMEX configuration dictionary, needed to for xcorr_modes and xcorr_max_lags.
+        xcorr_modes indicate the different algorithms which should be used to compute the xcorr.
+        The available choices are:
             `matlab_normalized`: same as using the MatLab function xcorr(x, y, 'normalized')
             `pearson` : use Pearson formula (NaN values are fillled to 0)
             `kendall`: use Kendall formula (NaN values are filled to 0)
             `spearman`: use Spearman formula (NaN values are filled to 0)
 
+        xcorr_max_lags is the number of lags, both in positive and negative direction, to which the cross-correlation
+        calculations should be limited to.
+
     Returns
     -------
     dict
-        Python dict with a key for every data column in ingested_data.
+        Python dict with a key for every cross-correlation algorithm requested.
     """
+    xcorr_max_lags = param_config['model_parameters']['xcorr_max_lags']
+    xcorr_modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
     d = {}
     for col in ingested_data.columns:
-        d[col] = calc_xcorr(col, ingested_data, max_lags=max_lags, modes=modes)
+        d[col] = calc_xcorr(col, ingested_data, max_lags=xcorr_max_lags, modes=xcorr_modes)
 
     return d
-
-

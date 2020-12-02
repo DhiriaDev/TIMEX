@@ -27,7 +27,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(res[7],  np.log(3+1))
         self.assertEqual(res[8],  np.log(4+1))
 
-    def test_pre_transformation_2(self):
+    def test_post_transformation_1(self):
 
         s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
         res = pre_transformation(s, "log_modified")
@@ -35,12 +35,40 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(np.allclose(s, res))
 
-    def test_pre_transformation_3(self):
+    def test_pre_transformation_2(self):
 
         s = Series(np.array([2]))
         res = pre_transformation(s, "none")
 
         self.assertEqual(res[0], 2)
+
+    def test_pre_transformation_3(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        res = pre_transformation(s, "log")
+
+        self.assertEqual(res[0], -np.log(4))
+        self.assertEqual(res[1], -np.log(3))
+        self.assertEqual(res[2], -np.log(2))
+        self.assertEqual(res[3], -np.log(1))
+        self.assertEqual(res[4],  0)
+        self.assertEqual(res[5],  np.log(1))
+        self.assertEqual(res[6],  np.log(2))
+        self.assertEqual(res[7],  np.log(3))
+        self.assertEqual(res[8],  np.log(4))
+
+    def test_post_transformation_3(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        res = pre_transformation(s, "log")
+
+        self.assertEqual(res[0], -np.log(4))
+        self.assertEqual(res[1], -np.log(3))
+        self.assertEqual(res[2], -np.log(2))
+        self.assertEqual(res[3],  0)
+        self.assertEqual(res[4],  0)
+        self.assertEqual(res[5],  0)
+        self.assertEqual(res[6],  np.log(2))
+        self.assertEqual(res[7],  np.log(3))
+        self.assertEqual(res[8],  np.log(4))
 
     def test_launch_model_fbprophet_1(self):
         # Percentages' sum is not 100%; adapt the windows.

@@ -17,8 +17,8 @@ logging.getLogger('fbprophet').setLevel(logging.WARNING)
 class FBProphet(PredictionModel):
     """Facebook's Prophet prediction model."""
 
-    def __init__(self, params: dict):
-        super().__init__(params, "FBProphet")
+    def __init__(self, params: dict, transformation: str = None):
+        super().__init__(params, name="FBProphet", transformation=transformation)
 
         # Stuff needed to make Prophet shut up during training.
         self.suppress_stdout_stderr = suppress_stdout_stderr

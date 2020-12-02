@@ -4,22 +4,12 @@ import os
 import pickle
 import sys
 import webbrowser
-from functools import reduce
-
-import numpy
-import pandas as pd
-from pandas import read_csv, DataFrame
-import dash_html_components as html
-
 
 from timex.data_ingestion import data_ingestion
-from timex.data_ingestion.data_ingestion import add_freq
-from timex.data_prediction.data_prediction import calc_all_xcorr, calc_xcorr
-from timex.utils.utils import prepare_extra_regressor
-from timex.data_prediction.prophet_predictor import FBProphet
-from timex.data_preparation.data_preparation import data_selection, add_diff_column
-from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
-from timex.scenario.scenario import Scenario
+from timex.data_prediction.data_prediction import calc_all_xcorr
+from timex.data_preparation.data_preparation import data_selection
+from timex.data_visualization.data_visualization import create_scenario_children
+from timex.utils.utils import get_best_univariate_predictions, get_best_multivariate_predictions
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +18,7 @@ def create_children():
     example = "covid19italy"
 
     if example == "covid19italy":
-        param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy.json'
+        param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_BETA.json'
     # elif example == "covid19italyregions":
     #     param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_regions.json'
     elif example == "airlines":
@@ -48,8 +38,8 @@ def create_children():
     log_level = getattr(logging, param_config["verbose"], None)
     if not isinstance(log_level, int):
         log_level = 0
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=log_level,
-                        stream=sys.stdout)
+    # %(name)s for module name
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=log_level, stream=sys.stdout)
 
     # data ingestion
     log.info(f"Started data ingestion.")
@@ -66,89 +56,19 @@ def create_children():
 
     # Calculate the cross-correlation.
     log.info(f"Computing the cross-correlation...")
-    xcorr_max_lags = param_config['model_parameters']['xcorr_max_lags']
-    xcorr_modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
-    xcorr_threshold = param_config['model_parameters']['xcorr_extra_regressor_threshold']
-    xcorr_mode_target = param_config['model_parameters']['xcorr_mode_target']
-    main_accuracy_estimator = param_config['model_parameters']['main_accuracy_estimator']
-
-    total_xcorr = calc_all_xcorr(ingested_data=ingested_data, max_lags=xcorr_max_lags, modes=xcorr_modes)
+    total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
 
     # Predictions without extra-regressors.
     log.info(f"Started the prediction with univariate models.")
-    columns = ingested_data.columns
-    scenarios = []
-    for col in columns:
-        scenario_data = ingested_data[[col]]
-        model_results = []
-
-        xcorr = total_xcorr[col]
-
-        log.info(f"Computing univariate prediction for {col}...")
-        predictor = FBProphet(param_config)
-        prophet_result = predictor.launch_model(scenario_data.copy())
-        model_results.append(prophet_result)
-
-        # predictor = ARIMA(param_config)
-        # arima_result = predictor.launch_model(scenario_data.copy())
-        # model_results.append(arima_result)
-
-        scenarios.append(
-            Scenario(scenario_data, model_results, ingested_data, xcorr)
-        )
+    best_transformations, scenarios = get_best_univariate_predictions(ingested_data=ingested_data,
+                                                                      param_config=param_config,
+                                                                      total_xcorr=total_xcorr)
 
     # Prediction with extra regressors.
     log.info(f"Starting the prediction with extra-regressors.")
-    best_forecasts_found = 0
-    while best_forecasts_found != len(columns):
-        log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
-        best_forecasts_found = 0
-
-        for col in columns:
-            local_xcorr = total_xcorr[col][xcorr_mode_target]
-
-            useful_extra_regressors = []
-
-            for extra_regressor in local_xcorr.columns:
-                # Look only in correlation with future lags.
-                index_of_max = local_xcorr[extra_regressor].abs().idxmax()
-                corr = local_xcorr.loc[index_of_max, extra_regressor]
-                if abs(corr) > xcorr_threshold and index_of_max >= 0:
-                    log.debug(f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
-                    useful_extra_regressors.append(extra_regressor)
-
-            if len(useful_extra_regressors) == 0:
-                log.debug(f"No useful extra-regressor found for {col}: skipping...")
-                best_forecasts_found += 1
-            else:
-                log.info(f"Found useful extra-regressors. Prepare them and re-compute the prediction for {col}")
-                useful_extra_regressors = [
-                    prepare_extra_regressor(next(filter(lambda x: x.scenario_data.columns[0] == s, scenarios)),
-                                            main_accuracy_estimator) for s in useful_extra_regressors]
-
-                useful_extra_regressors = reduce(lambda x, y: x.join(y), useful_extra_regressors)
-
-                scenario_data = ingested_data[[col]]
-                model_results = []
-
-                predictor = FBProphet(param_config)
-                prophet_result = predictor.launch_model(scenario_data.copy(), extra_regressors=useful_extra_regressors.copy())
-                model_results.append(prophet_result)
-
-                old_this_scenario = next(filter(lambda x: x.scenario_data.columns[0] == col, scenarios))
-                old_errors = [x.testing_performances.MAE for x in old_this_scenario.models[0].results]
-                min_old_error = min(old_errors)
-                min_new_error = min([x.testing_performances.MAE for x in prophet_result.results])
-
-                if min_new_error < min_old_error:
-                    log.info(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
-                    new_scenario = Scenario(scenario_data, model_results, ingested_data, total_xcorr[col])
-                    scenarios = [new_scenario if x.scenario_data.columns[0] == col else x for x in scenarios]
-                else:
-                    log.info(f"No improvements.")
-                    best_forecasts_found += 1
-
-    log.info(f"Found the optimal prediction for all the {best_forecasts_found} scenarios!")
+    scenarios = get_best_multivariate_predictions(scenarios=scenarios, ingested_data=ingested_data,
+                                                  best_transformations=best_transformations, total_xcorr=total_xcorr,
+                                                  param_config=param_config)
 
     # data visualization
     children_for_each_scenario = [{
@@ -254,6 +174,6 @@ if __name__ == '__main__':
 
 
     # Timer(6, open_browser).start()
-    os.system("gunicorn -b 0.0.0.0:8002 app_load_from_dump_beta:server")
+    os.system("gunicorn -b 0.0.0.0:8003 app_load_from_dump_beta:server")
 
 
