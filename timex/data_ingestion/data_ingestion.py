@@ -52,6 +52,11 @@ def data_ingestion(param_config):
         df_ingestion[datetime_column_name] = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+
+    # TODO: test this
+    log.debug(f"Removing duplicates rows from dataframe; keep the last...")
+    df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
+
     df_ingestion = add_freq(df_ingestion, freq)
     # df_ingestion.set_index(add_freq(df_ingestion.index, freq=freq))
 
