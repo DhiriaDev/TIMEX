@@ -90,7 +90,12 @@ def add_diff_column(data_frame: DataFrame, column_name_target_diff: [str], group
         else:
             data_frame[name] = tmp.diff()
 
-    data_frame = data_frame.iloc[1:]
+    if group_by:
+        nan_rows = len(data_frame.index.get_level_values(group_by).unique())
+    else:
+        nan_rows = 1
+
+    data_frame = data_frame.iloc[nan_rows:]
 
     log.info(f"Total number of rows after the add diff_columns phase: {len(data_frame)}")
     log.info(f"Total number of columns after the add diff_columns phase: {len(data_frame.columns)}")

@@ -53,7 +53,6 @@ def data_ingestion(param_config):
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
-    # TODO: test this
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
@@ -75,10 +74,10 @@ def data_ingestion(param_config):
             df_ingestion.set_index(index_column_name, inplace=True)
 
     log.info(f"Finished the data-ingestion phase. Some stats:\n"
-                 f"-> Number of rows: {len(df_ingestion)}\n"
-                 f"-> Number of columns: {len(df_ingestion.columns)}\n"
-                 f"-> Column names: {[*df_ingestion.columns]}\n"
-                 f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
+             f"-> Number of rows: {len(df_ingestion)}\n"
+             f"-> Number of columns: {len(df_ingestion.columns)}\n"
+             f"-> Column names: {[*df_ingestion.columns]}\n"
+             f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
 
     return df_ingestion
 
@@ -88,8 +87,6 @@ def add_freq(df, freq=None) -> DataFrame:
 
     If `freq` is None, it is inferred.
     """
-    # TODO reorder this mess
-
     local_df = df.copy()
 
     try:

@@ -156,6 +156,25 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(len(df.columns), 4)
         self.assertEqual(len(df), 2)
 
+    def test_data_ingestion_univariate_7(self):
+        # Test that duplicated data is removed.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_4.csv",
+                "columns_to_load_from_url": "first_column,second_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+            }
+        }
+
+        df = data_ingestion(param_config)
+
+        self.assertEqual(len(df), 3)
+        self.assertEqual(df.iloc[0, 0], 1)
+        self.assertEqual(df.iloc[1, 0], 3)
+        self.assertEqual(df.iloc[2, 0], 4)
+
     def test_add_freq_1(self):
         # df already has freq; do nothing.
         df = get_fake_df(10)

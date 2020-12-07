@@ -1,10 +1,13 @@
 import unittest
 
+import numpy
+from pandas import DataFrame, read_csv
 from pandas._libs.tslibs.timestamps import Timestamp
 
 from timex.data_ingestion.data_ingestion import data_ingestion
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
 from timex.tests.utilities import get_fake_df
+import pandas as pd
 
 
 class MyTestCase(unittest.TestCase):
@@ -119,21 +122,32 @@ class MyTestCase(unittest.TestCase):
     def test_add_diff_column_2(self):
         # Add a multiple diff column.
 
-        df = get_fake_df(3)
-        # new_df = add_diff_column(df, ["second_column", "third_column"], verbose="no")
+        df = DataFrame({"a": [0, 1, 2], "b": [10, 30, 60], "c": [5, 10, 20]}, dtype=numpy.float)
+        df.set_index("a", inplace=True, drop=True)
 
-        # TODO
-        # self.assertEqual(df.iloc[0]["second_column"], 5)
-        # self.assertEqual(df.iloc[1]["second_column"], 8)
-        # self.assertEqual(df.iloc[0]["third_column"], 8)
-        # self.assertEqual(df.iloc[1]["third_column"], 15)
-        #
-        # self.assertEqual(df.iloc[0]["second_column_diff"], 3)
-        # self.assertEqual(df.iloc[1]["second_column_diff"], 3)
-        # self.assertEqual(df.iloc[0]["third_column_diff"], 5)
-        # self.assertEqual(df.iloc[1]["third_column_diff"], 7)
-        #
-        # self.assertEqual(len(df), 2)
+        new_df = add_diff_column(df, ["b", "c"])
+
+        test_df = DataFrame({"a": [1, 2], "b": [30, 60], "c": [10, 20], "b_diff": [20, 30], "c_diff": [5, 10]},
+                            dtype=numpy.float)
+        test_df.set_index("a", inplace=True, drop=True)
+
+        self.assertTrue(new_df.equals(test_df))
+
+    def test_add_diff_column_3(self):
+        # Add a multiple diff column. Group by.
+
+        df = DataFrame({"a": [0, 0, 0, 1, 1, 1, 2, 2, 2], "b": [10, 20, 30, 10, 20, 30, 10, 20, 30],
+                        "c": [1, 1, 2, 3, 5, 8, 13, 21, 34], "d": [1, 2, 3, 5, 8, 13, 21, 34, 55]}, dtype=numpy.float)
+        df.set_index(["a", "b"], inplace=True, drop=True)
+
+        new_df = add_diff_column(df, ["c", "d"], group_by="b")
+
+        test_df = DataFrame({"a": [1, 1, 1, 2, 2, 2], "b": [10, 20, 30, 10, 20, 30],
+                             "c": [3, 5, 8, 13, 21, 34], "d": [5, 8, 13, 21, 34, 55],
+                             "c_diff": [2, 4, 6, 10, 16, 26], "d_diff": [4, 6, 10, 16, 26, 42]}, dtype=numpy.float)
+        test_df.set_index(["a", "b"], inplace=True, drop=True)
+
+        self.assertTrue(new_df.equals(test_df))
 
 
 if __name__ == '__main__':
