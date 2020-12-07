@@ -1,4 +1,5 @@
 import logging
+import os
 from functools import reduce
 
 from pandas import DataFrame
@@ -69,6 +70,14 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
     best_transformations = []
     scenarios = []
 
+    try:
+        max_threads = param_config['max_threads']
+    except KeyError:
+        try:
+            max_threads = len(os.sched_getaffinity(0))
+        except:
+            max_threads = 1
+
     columns = ingested_data.columns
 
     for col in columns:
@@ -83,7 +92,7 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
         for transf in transformations_to_test:
             log.info(f"Computing univariate prediction for {col} using transformation: {transf}...")
             predictor = FBProphet(param_config, transformation=transf)
-            prophet_result = predictor.launch_model(scenario_data.copy())
+            prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
 
             performances = prophet_result.results
             performances.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
@@ -138,6 +147,14 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
     xcorr_threshold = param_config["model_parameters"]["xcorr_extra_regressor_threshold"]
     main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
 
+    try:
+        max_threads = param_config['max_threads']
+    except KeyError:
+        try:
+            max_threads = len(os.sched_getaffinity(0))
+        except:
+            max_threads = 1
+
     while best_forecasts_found != len(ingested_data.columns):
         log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
         best_forecasts_found = 0
@@ -172,7 +189,8 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
                 tr = (next(filter(lambda x: x[0] == col, best_transformations)))[1]
                 predictor = FBProphet(param_config, transformation=tr)
                 prophet_result = predictor.launch_model(scenario_data.copy(),
-                                                        extra_regressors=useful_extra_regressors.copy())
+                                                        extra_regressors=useful_extra_regressors.copy(),
+                                                        max_threads=max_threads)
                 model_results.append(prophet_result)
 
                 old_this_scenario = next(filter(lambda x: x.scenario_data.columns[0] == col, scenarios))

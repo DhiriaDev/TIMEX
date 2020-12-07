@@ -69,8 +69,16 @@ def create_children():
     log.info(f"Computing the cross-correlation...")
     max_lags = param_config['model_parameters']['xcorr_max_lags']
     modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
+    try:
+        max_threads = param_config['max_threads']
+    except KeyError:
+        try:
+            max_threads = len(os.sched_getaffinity(0))
+        except:
+            max_threads = 1
 
     log.info(f"Started the prediction with univariate models.")
+    log.debug(f"Training will use {max_threads} threads...")
     columns = ingested_data.columns
     scenarios = []
     for col in columns:
@@ -81,7 +89,7 @@ def create_children():
 
         log.info(f"Computing univariate prediction for {col}...")
         predictor = FBProphet(param_config)
-        prophet_result = predictor.launch_model(scenario_data.copy())
+        prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
         model_results.append(prophet_result)
         #
         # predictor = ARIMA(param_config)
@@ -162,7 +170,7 @@ def create_children():
 
         log.info(f"Computing univariate prediction for {region}...")
         predictor = FBProphet(param_config)
-        prophet_result = predictor.launch_model(scenario_data.copy())
+        prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
         model_results.append(prophet_result)
         #
         # predictor = ARIMA(param_config)

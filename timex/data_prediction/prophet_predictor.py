@@ -1,3 +1,4 @@
+import itertools
 import json
 import pkgutil
 import logging
@@ -5,6 +6,7 @@ import os
 
 from fbprophet import Prophet
 import pandas as pd
+from fbprophet.diagnostics import cross_validation, performance_metrics
 from pandas import DataFrame
 import numpy as np
 
@@ -43,6 +45,54 @@ class FBProphet(PredictionModel):
 
         with self.suppress_stdout_stderr():
             self.fbmodel.fit(input_data)
+
+        #######################
+        # param_grid = {
+        #     'changepoint_prior_scale': [0.001, 0.01, 0.1, 0.5],
+        #     'seasonality_prior_scale': [0.01, 0.1, 1.0, 10.0],
+        # }
+        # param_grid = {
+        #     'changepoint_prior_scale': [0.001, 0.01],
+        #     'seasonality_prior_scale': [0.01, 0.1],
+        # }
+        #
+        # if extra_regressors is not None:
+        #     input_data = input_data.join(extra_regressors)
+        #     input_data.reset_index(inplace=True)
+        #     column_indices = [0, 1]
+        #     new_names = ['ds', 'y']
+        #     old_names = input_data.columns[column_indices]
+        #     input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+        #
+        # else:
+        #     input_data.reset_index(inplace=True)
+        #     input_data.columns = ['ds', 'y']
+        #
+        # # Generate all combinations of parameters
+        # all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
+        # rmses = []  # Store the RMSEs for each params here
+        #
+        # # Use cross validation to evaluate all parameters
+        # for params in all_params:
+        #     m = Prophet(**params)
+        #     [m.add_regressor(col) for col in extra_regressors.columns] if extra_regressors is not None else None
+        #     with self.suppress_stdout_stderr():
+        #         m.fit(input_data)  # Fit model with given params
+        #         df_cv = cross_validation(m, horizon=self.prediction_lags, parallel="processes")
+        #         df_p = performance_metrics(df_cv, rolling_window=1)
+        #         rmses.append(df_p['rmse'].values[0])
+        #
+        # # Find the best parameters
+        # tuning_results = pd.DataFrame(all_params)
+        # tuning_results['rmse'] = rmses
+        #
+        # best_params = all_params[np.argmin(rmses)]
+        # print(best_params)
+        #
+        # self.fbmodel = Prophet(**best_params)
+        # [self.fbmodel.add_regressor(col) for col in extra_regressors.columns] if extra_regressors is not None else None
+        # with self.suppress_stdout_stderr():
+        #     self.fbmodel.fit(input_data)
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""

@@ -1,6 +1,7 @@
 import json
 import logging
 import math
+import multiprocessing
 import pkgutil
 from functools import reduce
 from math import sqrt
@@ -192,9 +193,105 @@ class PredictionModel:
         """
         pass
 
-    def launch_model(self, ingested_data: DataFrame, extra_regressors: DataFrame = None) -> ModelResult:
+    def compute_trainings(self, train_ts: DataFrame, test_ts: DataFrame, extra_regressors: DataFrame, max_threads: int):
+        """
+        Compute the training of a model on a set of different training sets, of increasing length.
+        train_ts is split in train_sets_number and the computation is split across different processes, according to the
+        value of max_threads which indicates the maximum number of usable processes.
+
+        Parameters
+        ----------
+        train_ts : DataFrame
+            The entire train_ts which can be used; it will be split in different training sets, in order to test which
+            length performs better.
+        test_ts : DataFrame
+            Testing set to be used to compute the models' performances.
+        extra_regressors : DataFrame
+            Additional values to be passed to train_model in order to improve the performances.
+        max_threads : int
+            Maximum number of threads to use in the training phase.
+
+        Returns
+        -------
+        results : list
+            List of SingleResult. Each one is the result relative to the use of a specific train set.
+        """
+        train_sets_number = math.ceil(len(train_ts) / self.delta_training_values)
+        log.info(f"Model will use {train_sets_number} different training sets...")
+
+        def c(targets: [int], _return_dict: dict, thread_number: int):
+            _results = []
+
+            for _i in range(targets[0], targets[1]):
+                tr = train_ts.iloc[-(_i+1) * self.delta_training_values:]
+
+                log.debug(f"Trying with last {len(tr)} values as training set, in thread {thread_number}")
+
+                self.train(tr.copy(), extra_regressors)
+
+                future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
+                                                             start=tr.index.values[0],
+                                                             periods=len(tr) + self.test_values + self.prediction_lags),
+                                         columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
+
+                forecast = self.predict(future_df, extra_regressors)
+                testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
+
+                first_used_index = tr.index.values[0]
+
+                tp = TestingPerformance(first_used_index)
+                tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
+                _results.append(SingleResult(forecast, tp))
+
+            _return_dict[thread_number] = _results
+
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        processes = []
+
+        if max_threads == 1:
+            distributions = [[0, train_sets_number]]
+            n_threads = 1
+        else:
+            distributions = []
+
+            if train_sets_number % max_threads == 0:
+                n_threads = max_threads
+                subtraining_dim = train_sets_number // n_threads
+                for i in range(0, n_threads):
+                    distributions.append([i*subtraining_dim, i*subtraining_dim + subtraining_dim])
+            else:
+                n_threads = min(max_threads, train_sets_number)
+                subtraining_dim = train_sets_number // n_threads
+                for i in range(0, n_threads):
+                    distributions.append([i*subtraining_dim, i*subtraining_dim+subtraining_dim])
+                for k in range(0, (train_sets_number % n_threads)):
+                    distributions[k][1] += 1
+                    distributions[k+1::] = [ [x+1, y+1] for x, y in distributions[k+1::]]
+
+        for i in range(0, n_threads):
+            processes.append(multiprocessing.Process(target=c, args=(distributions[i], return_dict, i)))
+            processes[-1].start()
+
+        for p in processes:
+            p.join()
+
+        results = reduce(lambda x, y: x+y, [return_dict[key] for key in return_dict])
+
+        return results
+
+    def launch_model(self, ingested_data: DataFrame, extra_regressors: DataFrame = None, max_threads: int = 1) -> ModelResult:
         """
         Train the model on ingested_data and returns a ModelResult object.
+
+        Parameters
+        ----------
+        ingested_data : DataFrame
+            DataFrame containing the historical time series value; it will be split in training and test parts.
+        extra_regressors : DataFrame
+            Additional values to be passed to train_model in order to improve the performances.
+        max_threads : int
+            Maximum number of threads to use in the training phase.
 
         Returns
         -------
@@ -213,35 +310,35 @@ class PredictionModel:
         train_ts = ingested_data.iloc[:-self.test_values]
         test_ts = ingested_data.iloc[-self.test_values:]
 
-        train_sets_number = math.floor(len(train_ts) / self.delta_training_values) + 1
-
         with pd.option_context('mode.chained_assignment', None):
             train_ts.iloc[:, 0] = pre_transformation(train_ts.iloc[:, 0], self.transformation)
 
-        results = []
+        # results = []
 
-        log.info(f"Model will use {train_sets_number} different training sets...")
+        # log.info(f"Model will use {train_sets_number} different training sets...")
 
-        for i in range(1, train_sets_number + 1):
-            tr = train_ts.iloc[-i * self.delta_training_values:]
+        results = self.compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
 
-            log.debug(f"Trying with last {len(tr)} values as training set...")
-
-            self.train(tr.copy(), extra_regressors)
-
-            future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
-                                                         start=tr.index.values[0],
-                                                         periods=len(tr) + self.test_values + self.prediction_lags),
-                                     columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
-
-            forecast = self.predict(future_df, extra_regressors)
-            testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
-
-            first_used_index = tr.index.values[0]
-
-            tp = TestingPerformance(first_used_index)
-            tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
-            results.append(SingleResult(forecast, tp))
+        # for i in range(1, train_sets_number + 1):
+        #     tr = train_ts.iloc[-i * self.delta_training_values:]
+        #
+        #     log.debug(f"Trying with last {len(tr)} values as training set...")
+        #
+        #     self.train(tr.copy(), extra_regressors)
+        #
+        #     future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
+        #                                                  start=tr.index.values[0],
+        #                                                  periods=len(tr) + self.test_values + self.prediction_lags),
+        #                              columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
+        #
+        #     forecast = self.predict(future_df, extra_regressors)
+        #     testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
+        #
+        #     first_used_index = tr.index.values[0]
+        #
+        #     tp = TestingPerformance(first_used_index)
+        #     tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
+        #     results.append(SingleResult(forecast, tp))
 
         # results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
         # best_forecast = results[0]["forecast"]
