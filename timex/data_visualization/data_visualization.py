@@ -248,7 +248,7 @@ def components_plot(ingested_data: DataFrame) -> html.Div:
                                      name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
                           row=3, col=1, secondary_y=secondary_y)
         except ValueError:
-            log.warning(f"Multiplicative decomposition not available for {ingested_data.columns.names[0]}")
+            log.warning(f"Multiplicative decomposition not available for {ingested_data.columns[0]}")
 
     fig.update_layout(title="Components decomposition", height=1000, legend_title_text='Decomposition model')
     fig.update_yaxes(title_text="<b>Additive</b>", secondary_y=False)
