@@ -12,6 +12,7 @@ from matplotlib import pyplot
 import dash_bootstrap_components as dbc
 
 from colorhash import ColorHash
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
@@ -52,6 +53,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
         line_plot(scenario_data),
         histogram_plot(scenario_data),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
+        components_plot(scenario_data),
         autocorrelation_plot(scenario_data),
     ])
 
@@ -189,6 +191,65 @@ def histogram_plot(df: DataFrame) -> dcc.Graph:
 
     fig = px.histogram(df, df.columns[0])
     fig.update_layout(title='Histogram')
+    g = dcc.Graph(
+        figure=fig
+    )
+    return g
+
+
+def components_plot(ingested_data: DataFrame):
+    """
+    Create and return the plots of all the components of the time series: level, trend, residual.
+    It uses both an additive and multiplicative model, with a subplot.
+
+    Parameters
+    ----------
+    ingested_data : DataFrame
+        Original time series values.
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+    modes = ["additive", "multiplicative"]
+
+    fig = make_subplots(
+        rows=3,
+        cols=1,
+        subplot_titles=["Trend", "Seasonality", "Residual"], shared_xaxes=True, vertical_spacing=0.05,
+        specs=[[{"secondary_y": True}], [{"secondary_y": True}], [{"secondary_y": True}]]
+    )
+
+    interpolated = ingested_data.interpolate()
+    interpolated = interpolated.fillna(0)
+
+    for mode in modes:
+        result = seasonal_decompose(interpolated, model=mode)
+        trend = result.trend
+        seasonal = result.seasonal
+        residual = result.resid
+
+        secondary_y = False if mode == "additive" else True
+
+        fig.add_trace(go.Scatter(x=trend.index, y=trend,
+                                 mode='lines+markers',
+                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                      row=1, col=1, secondary_y=secondary_y)
+        fig.add_trace(go.Scatter(x=seasonal.index, y=seasonal,
+                                 mode='lines+markers', showlegend=False,
+                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                      row=2, col=1, secondary_y=secondary_y)
+        fig.add_trace(go.Scatter(x=residual.index, y=residual,
+                                 mode='lines+markers', showlegend=False,
+                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                      row=3, col=1, secondary_y=secondary_y)
+
+    fig.update_layout(title="Components decomposition", height=1000, legend_title_text='Decomposition model')
+    fig.update_yaxes(title_text="<b>Additive</b>", secondary_y=False)
+    fig.update_yaxes(title_text="<b>Multiplicative</b>", secondary_y=True)
+    # fig.update_xaxes(title_text=)
+    # fig.update_yaxes(tick0=-1.0, dtick=0.25, range=[-1.2, 1.2], title_text="Correlation")
+
     g = dcc.Graph(
         figure=fig
     )
