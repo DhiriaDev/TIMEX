@@ -6,8 +6,6 @@
       "columns_to_load_from_url": "data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
       "datetime_column_name": "data",
       "index_column_name": "data",
-      "datetime_format": "%Y-%m-%dT%H:%M:%S",
-      "frequency": "D",
       "add_diff_column": "terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
       "scenarios_names":
         {
@@ -26,18 +24,17 @@
   },
   "selection_parameters": {
       "init_datetime": "2020-01-01T17:00:00",
-      "end_datetime": "2020-12-09T17:00:00"
+      "end_datetime": "2021-12-09T17:00:00"
   },
   "model_parameters": {
       "test_values": 5,
       "delta_training_percentage": 5,
       "prediction_lags": 10,
-      "transformation": "none",
-      "possible_transformations" : "log_modified,none",
+      "transformation": "log",
       "main_accuracy_estimator": "mae",
       "xcorr_max_lags": 120,
       "xcorr_extra_regressor_threshold": 0.8,
-      "xcorr_mode": "pearson",
+      "xcorr_mode": "pearson,kendall,spearman,matlab_normalized",
       "xcorr_mode_target": "pearson"
   },
   "visualization_parameters": {

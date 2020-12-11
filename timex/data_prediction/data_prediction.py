@@ -31,6 +31,8 @@ class TestingPerformance:
         Root Mean Squared Error. Default 0
     MAE: float
         Mean Absolute Error. Default 0
+    AM: float
+        Arithmetic Mean of error. Default 0
     """
 
     def __init__(self, first_used_index):

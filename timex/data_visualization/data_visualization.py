@@ -568,16 +568,16 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     -------
     g : dcc.Graph
     """
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+    fig = make_subplots(rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
     training_data = df.iloc[:-test_values]
 
     data_performances = []
 
     for tp in testing_performances:
-        data_performances.append([tp.first_used_index, tp.MAE, tp.MSE])
+        data_performances.append([tp.first_used_index, tp.MAE, tp.MSE, tp.AM])
 
-    df_performances = pandas.DataFrame(data_performances, columns=['index', 'mae', 'mse'])
+    df_performances = pandas.DataFrame(data_performances, columns=['index', 'mae', 'mse', 'am'])
     df_performances.set_index('index', drop=True, inplace=True)
     df_performances.sort_index(inplace=True)
 
@@ -590,22 +590,29 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
                                 line=dict(color='green'),
                                 mode="lines+markers",
                                 name='MSE'), row=2, col=1)
+
+    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['am'],
+                                line=dict(color='blue'),
+                                mode="lines+markers",
+                                name='AM'), row=3, col=1)
+
     fig.append_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
                                 line=dict(color='black'),
                                 mode='markers',
-                                name='training data'), row=3, col=1)
+                                name='training data'), row=4, col=1)
 
     # Small trick to make the x-axis have the same length of the "Prediction plot"
     predicted_data.iloc[:, 0] = "nan"
     fig.append_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                                 mode='lines+markers',
-                                name='yhat', showlegend=False), row=3, col=1)
+                                name='yhat', showlegend=False), row=4, col=1)
 
     fig.update_yaxes(title_text="MAE", row=1, col=1)
     fig.update_yaxes(title_text="MSE", row=2, col=1)
-    fig.update_yaxes(title_text=df.columns[0], row=3, col=1)
+    fig.update_yaxes(title_text="AM", row=3, col=1)
+    fig.update_yaxes(title_text=df.columns[0], row=4, col=1)
 
-    fig.update_layout(title='Performances with different training windows', height=700)
+    fig.update_layout(title='Performances with different training windows', height=900)
     g = dcc.Graph(
         figure=fig
     )

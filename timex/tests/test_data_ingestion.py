@@ -19,7 +19,9 @@ class MyTestCase(unittest.TestCase):
                 "columns_to_load_from_url": "first_column,third_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "datetime_format": "%Y-%m-%dT%H:%M:%S"
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                }
             }
         }
 
@@ -44,7 +46,9 @@ class MyTestCase(unittest.TestCase):
                 "columns_to_load_from_url": "first_column,third_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                },
                 "frequency": "M"
             }
         }
@@ -109,7 +113,9 @@ class MyTestCase(unittest.TestCase):
                 "columns_to_load_from_url": "third_column,second_column,first_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                },
                 "add_diff_column": "third_column,second_column"
             }
         }
@@ -132,7 +138,9 @@ class MyTestCase(unittest.TestCase):
                 "columns_to_load_from_url": "third_column,second_column,first_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                },
                 "add_diff_column": "third_column,second_column",
                 "scenarios_names":
                     {
@@ -142,7 +150,6 @@ class MyTestCase(unittest.TestCase):
                         "third_column_diff": "D",
                         "second_column_diff": "E"
                     }
-
             }
         }
 
@@ -164,7 +171,9 @@ class MyTestCase(unittest.TestCase):
                 "columns_to_load_from_url": "first_column,second_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "datetime_format": "%Y-%m-%dT%H:%M:%S",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                },
             }
         }
 
@@ -174,6 +183,66 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(df.iloc[0, 0], 1)
         self.assertEqual(df.iloc[1, 0], 3)
         self.assertEqual(df.iloc[2, 0], 4)
+
+    def test_data_ingestion_univariate_8(self):
+        # Local load, read all columns.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_1.csv",
+                "columns_to_load_from_url": "",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                }
+            }
+        }
+
+        df = data_ingestion(param_config)
+        self.assertEqual(df.index.name, "first_column")
+        self.assertEqual(df.index.values[0], Timestamp("2020-02-25"))
+        self.assertEqual(df.index.values[1], Timestamp("2020-02-26"))
+        self.assertEqual(df.index.values[2], Timestamp("2020-02-27"))
+
+        self.assertEqual(df.columns[0], "second_column")
+        self.assertEqual(df.iloc[0]["second_column"], 2)
+        self.assertEqual(df.iloc[1]["second_column"], 5)
+        self.assertEqual(df.iloc[2]["second_column"], 8)
+
+        self.assertEqual(df.columns[1], "third_column")
+        self.assertEqual(df.iloc[0]["third_column"], 3)
+        self.assertEqual(df.iloc[1]["third_column"], 6)
+        self.assertEqual(df.iloc[2]["third_column"], 9)
+
+        self.assertEqual(df.index.freq, '1d')
+
+    def test_data_ingestion_univariate_9(self):
+        # Local load, with datetime with italian months (e.g. Gen, Feb, etc.)
+        # Check that monthly freq is applied.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_5.csv",
+                "columns_to_load_from_url": "first_column,third_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "dateparser_options": {
+                    "settings": { "PREFER_DAY_OF_MONTH": "first" }
+                }
+            }
+        }
+
+        df = data_ingestion(param_config)
+        self.assertEqual(df.index.name, "first_column")
+        self.assertEqual(df.index.values[0], Timestamp("2020-11-01"))
+        self.assertEqual(df.index.values[1], Timestamp("2020-12-01"))
+        self.assertEqual(df.index.values[2], Timestamp("2021-01-01"))
+
+        self.assertEqual(df.columns[0], "third_column")
+        self.assertEqual(df.iloc[0]["third_column"], 3)
+        self.assertEqual(df.iloc[1]["third_column"], 6)
+        self.assertEqual(df.iloc[2]["third_column"], 9)
+
+        self.assertEqual(df.index.freq, 'MS')
 
     def test_add_freq_1(self):
         # df already has freq; do nothing.

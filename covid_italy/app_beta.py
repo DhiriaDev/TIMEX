@@ -15,20 +15,8 @@ log = logging.getLogger(__name__)
 
 
 def create_children():
-    example = "covid19italy"
 
-    if example == "covid19italy":
-        param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_BETA.json'
-    # elif example == "covid19italyregions":
-    #     param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_regions.json'
-    elif example == "airlines":
-        param_file_nameJSON = 'demo_configurations/configuration_test_airlines.json'
-    elif example == "covid19switzerland":
-        param_file_nameJSON = 'demo_configurations/configuration_test_covid19switzerland.json'
-    elif example == "temperatures":
-        param_file_nameJSON = 'demo_configurations/configuration_test_daily_min_temperatures.json'
-    else:
-        exit()
+    param_file_nameJSON = 'configurations/configuration_test_covid19italy_BETA.json'
 
     # Load parameters from config file.
     with open(param_file_nameJSON) as json_file:  # opening the config_file_name
@@ -159,9 +147,10 @@ def create_children():
     # Save the children; these are the plots relatives to all the scenarios.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the plots.
+    curr_dirr = os.path.dirname(os.path.abspath(__file__))
     filename = 'children_for_each_scenario_beta.pkl'
-    log.info(f"Saving the computed Dash children to {filename}...")
-    with open(filename, 'wb') as input_file:
+    log.info(f"Saving the computed Dash children to {curr_dirr}/{filename}...")
+    with open(f"{curr_dirr}/{filename}", 'wb') as input_file:
         pickle.dump(children_for_each_scenario, input_file)
 
 
@@ -174,6 +163,7 @@ if __name__ == '__main__':
 
 
     # Timer(6, open_browser).start()
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.system("gunicorn -b 0.0.0.0:8003 app_load_from_dump_beta:server")
 
 

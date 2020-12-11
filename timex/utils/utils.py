@@ -84,7 +84,7 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
         scenario_data = ingested_data[[col]]
         model_results = []
 
-        xcorr = total_xcorr[col]
+        xcorr = total_xcorr[col] if total_xcorr is not None else None
 
         prophet_results = []
 

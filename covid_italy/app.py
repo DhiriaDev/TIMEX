@@ -1,22 +1,18 @@
 import json
 import os
 import pickle
-import runpy
 import sys
 import webbrowser
-from threading import Timer
 import logging
 
 import dash_html_components as html
-import gunicorn
+import dateparser
 import numpy
 from pandas import read_csv, DataFrame
 import pandas as pd
 
-import app_load_from_dump
 from timex.data_ingestion import data_ingestion
 from timex.data_ingestion.data_ingestion import add_freq
-from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_xcorr
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
@@ -27,20 +23,8 @@ log = logging.getLogger(__name__)
 
 
 def create_children():
-    example = "covid19italy"
 
-    if example == "covid19italy":
-        param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy.json'
-    # elif example == "covid19italyregions":
-    #     param_file_nameJSON = 'demo_configurations/configuration_test_covid19italy_regions.json'
-    elif example == "airlines":
-        param_file_nameJSON = 'demo_configurations/configuration_test_airlines.json'
-    elif example == "covid19switzerland":
-        param_file_nameJSON = 'demo_configurations/configuration_test_covid19switzerland.json'
-    elif example == "temperatures":
-        param_file_nameJSON = 'demo_configurations/configuration_test_daily_min_temperatures.json'
-    else:
-        exit()
+    param_file_nameJSON = 'configurations/configuration_test_covid19italy.json'
 
     # Load parameters from config file.
     with open(param_file_nameJSON) as json_file:  # opening the config_file_name
@@ -113,7 +97,7 @@ def create_children():
     regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
                        header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
     regions.reset_index(inplace=True)
-    regions['data'] = pd.to_datetime(regions['data'], format=param_config['input_parameters']['datetime_format'])
+    regions['data'] = regions['data'].apply(lambda x: dateparser.parse(x))
     regions.set_index(['data', 'denominazione_regione'], inplace=True, drop=True)
 
     regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
@@ -152,7 +136,6 @@ def create_children():
     daily_cases_regions = DataFrame(columns=cols, dtype=numpy.float64)
     daily_cases_regions['data'] = datas
 
-    daily_cases_regions['data'] = pd.to_datetime(daily_cases_regions['data'], format=param_config['input_parameters']['datetime_format'])
     daily_cases_regions.set_index(['data'], inplace=True, drop=True)
 
     for col in daily_cases_regions.columns:
@@ -189,9 +172,10 @@ def create_children():
     # Save the children; these are the plots relatives to all the scenarios.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the plots.
+    curr_dirr = os.path.dirname(os.path.abspath(__file__))
     filename = 'children_for_each_scenario.pkl'
-    log.info(f"Saving the computed Dash children to {filename}...")
-    with open(filename, 'wb') as input_file:
+    log.info(f"Saving the computed Dash children to {curr_dirr}/{filename}...")
+    with open(f"{curr_dirr}/{filename}", 'wb') as input_file:
         pickle.dump(children_for_each_scenario, input_file)
 
 
@@ -203,5 +187,6 @@ if __name__ == '__main__':
         webbrowser.open("http://127.0.0.1:8000")
 
     # Timer(6, open_browser).start()
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.system("gunicorn -b 0.0.0.0:8000 app_load_from_dump:server")
 

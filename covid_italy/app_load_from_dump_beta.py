@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import dash
@@ -15,7 +16,9 @@ server = app.server
 now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
 # Get children fromfile
-with open('children_for_each_scenario.pkl', 'rb') as input_file:
+curr_dirr = os.path.dirname(os.path.abspath(__file__))
+filename = 'children_for_each_scenario_beta.pkl'
+with open(f"{curr_dirr}/{filename}", 'rb') as input_file:
     children_for_each_scenario = pickle.load(input_file)
 
 disclaimer = [html.Div([
@@ -26,6 +29,7 @@ disclaimer = [html.Div([
         "Dashboard by the Intelligent Embedded Systems (IES) research group of the Politecnico di Milano, Italy",
         style={'text-align': 'center', 'top-margin': '25px'}),
     html.Hr(),
+    html.H5("BETA VERSION", style={'text-align': 'center', 'color': 'red'}),
     dcc.Markdown('''
         *Welcome to the monitoring and forecasting dashboard of the Coronavirus (COVID-19) pandemic in Italy provided by the Intelligent Embedded Systems (IES) research group of Politecnico di Milano, Italy.*
 

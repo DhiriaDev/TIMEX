@@ -1,6 +1,7 @@
 import logging
 from warnings import warn
 
+import dateparser
 import pandas as pd
 from pandas import Series, DataFrame
 
@@ -38,18 +39,28 @@ def data_ingestion(param_config):
 
     log.info('Starting the data ingestion phase.')
 
-    columns_to_read = list(columns_to_load_from_url.split(','))
-    # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
-    df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
+    if columns_to_load_from_url == "":
+        # Use all columns.
+        df_ingestion = pd.read_csv(source_data_url)
+    else:
+        columns_to_read = list(columns_to_load_from_url.split(','))
+        # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
+        df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
 
     # These are optional.
     if "datetime_column_name" in input_parameters:
         datetime_column_name = input_parameters["datetime_column_name"]
-        datetime_format = input_parameters["datetime_format"]
         log.debug(f"Parsing {datetime_column_name} as datetime column...")
-        # datetime_column = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
-        # datetime_column = add_freq(datetime_column)
-        df_ingestion[datetime_column_name] = pd.to_datetime(df_ingestion[datetime_column_name], format=datetime_format)
+
+        if "dateparser_options" in input_parameters:
+            dateparser_options = input_parameters["dateparser_options"]
+            df_ingestion[datetime_column_name] = df_ingestion[datetime_column_name].apply(
+                lambda x: dateparser.parse(x, **dateparser_options)
+            )
+        else:
+            df_ingestion[datetime_column_name] = df_ingestion[datetime_column_name].apply(
+                lambda x: dateparser.parse(x)
+            )
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
@@ -57,7 +68,6 @@ def data_ingestion(param_config):
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
     df_ingestion = add_freq(df_ingestion, freq)
-    # df_ingestion.set_index(add_freq(df_ingestion.index, freq=freq))
 
     if "add_diff_column" in input_parameters:
         log.debug(f"Adding the diff columns...")

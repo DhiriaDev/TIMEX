@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+import dateparser
 from pandas import DataFrame
 
 log = logging.getLogger(__name__)
@@ -36,18 +37,18 @@ def data_selection(data_frame, param_config):
         data_frame = data_frame.loc[data_frame[column_name] == value]
 
     if "init_datetime" in selection_parameters:
-        datetime_format = input_parameters["datetime_format"]
+        # datetime_format = input_parameters["datetime_format"]
 
-        init_datetime = datetime.strptime(selection_parameters['init_datetime'], datetime_format)
+        init_datetime = dateparser.parse(selection_parameters['init_datetime'])
 
         log.debug(f"Selection over date, keep data after {init_datetime}")
         mask = (data_frame.index.to_series() >= init_datetime)
         data_frame = data_frame.loc[mask]
 
     if "end_datetime" in selection_parameters:
-        datetime_format = input_parameters["datetime_format"]
+        # datetime_format = input_parameters["datetime_format"]
 
-        end_datetime = datetime.strptime(selection_parameters['end_datetime'], datetime_format)
+        end_datetime = dateparser.parse(selection_parameters['end_datetime'])
 
         log.debug(f"Selection over date, keep data before {end_datetime}")
         mask = (data_frame.index.to_series() <= end_datetime)
