@@ -1,3 +1,5 @@
+import logging
+
 import pandas
 from pandas import Grouper, DataFrame
 import plotly.graph_objects as go
@@ -17,8 +19,10 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
 
+log = logging.getLogger(__name__)
 
-def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot: bool = True):
+
+def create_scenario_children(scenario: Scenario, param_config: dict):
     """
     Creates the Dash children for a specific scenario. They include a line plot,
     histogram, box plot and autocorrelation plot. For each model on the scenario
@@ -30,7 +34,6 @@ def create_scenario_children(scenario: Scenario, param_config: dict, xcorr_plot:
     
     param_config : dict
     
-    xcorr_plot : bool
     True to display the cross-correlation plot. Default True.
 
     Returns
@@ -197,7 +200,7 @@ def histogram_plot(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def components_plot(ingested_data: DataFrame):
+def components_plot(ingested_data: DataFrame) -> html.Div:
     """
     Create and return the plots of all the components of the time series: level, trend, residual.
     It uses both an additive and multiplicative model, with a subplot.
@@ -224,25 +227,28 @@ def components_plot(ingested_data: DataFrame):
     interpolated = interpolated.fillna(0)
 
     for mode in modes:
-        result = seasonal_decompose(interpolated, model=mode)
-        trend = result.trend
-        seasonal = result.seasonal
-        residual = result.resid
+        try:
+            result = seasonal_decompose(interpolated, model=mode)
+            trend = result.trend
+            seasonal = result.seasonal
+            residual = result.resid
 
-        secondary_y = False if mode == "additive" else True
+            secondary_y = False if mode == "additive" else True
 
-        fig.add_trace(go.Scatter(x=trend.index, y=trend,
-                                 mode='lines+markers',
-                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
-                      row=1, col=1, secondary_y=secondary_y)
-        fig.add_trace(go.Scatter(x=seasonal.index, y=seasonal,
-                                 mode='lines+markers', showlegend=False,
-                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
-                      row=2, col=1, secondary_y=secondary_y)
-        fig.add_trace(go.Scatter(x=residual.index, y=residual,
-                                 mode='lines+markers', showlegend=False,
-                                 name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
-                      row=3, col=1, secondary_y=secondary_y)
+            fig.add_trace(go.Scatter(x=trend.index, y=trend,
+                                     mode='lines+markers',
+                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                          row=1, col=1, secondary_y=secondary_y)
+            fig.add_trace(go.Scatter(x=seasonal.index, y=seasonal,
+                                     mode='lines+markers', showlegend=False,
+                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                          row=2, col=1, secondary_y=secondary_y)
+            fig.add_trace(go.Scatter(x=residual.index, y=residual,
+                                     mode='lines+markers', showlegend=False,
+                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                          row=3, col=1, secondary_y=secondary_y)
+        except ValueError:
+            log.warning(f"Multiplicative decomposition not available for {ingested_data.columns.names[0]}")
 
     fig.update_layout(title="Components decomposition", height=1000, legend_title_text='Decomposition model')
     fig.update_yaxes(title_text="<b>Additive</b>", secondary_y=False)
@@ -253,7 +259,10 @@ def components_plot(ingested_data: DataFrame):
     g = dcc.Graph(
         figure=fig
     )
-    return g
+
+    warning = html.H5("Multiplicative model is not available for series which contain zero or negative values.")
+
+    return html.Div([g, warning])
 
 
 def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
