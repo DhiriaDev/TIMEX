@@ -9,7 +9,7 @@ from scipy.stats import yeojohnson
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_xcorr
 from timex.data_prediction.prophet_predictor import FBProphet
-from timex.data_prediction.transformation import transformation_factory
+from timex.data_prediction.transformation import transformation_factory, Log
 from timex.tests.utilities import get_fake_df
 
 xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
@@ -76,7 +76,7 @@ class MyTestCase(unittest.TestCase):
         res = tr.inverse(res)
 
         self.assertTrue(np.allclose(s, res))
-        self.assertEqual(str(tr), f"Yeo-Johnson (lambda: {round(lmbda)})")
+        self.assertEqual(str(tr), f"Yeo-Johnson (lambda: {round(lmbda, 3)})")
 
     # def test_transformation_yeo_johnson_2(self):
     #     a = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
@@ -290,7 +290,7 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(predictor.test_values, 1)
             self.assertEqual(predictor.delta_training_values, 2)
             self.assertEqual(predictor.main_accuracy_estimator, "mae")
-            self.assertEqual(predictor.transformation, "log")
+            self.assertEqual(type(predictor.transformation), Log)
 
             self.assertEqual(len(model_result.results), 5)
 
