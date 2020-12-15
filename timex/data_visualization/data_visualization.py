@@ -734,7 +734,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
             "delta_training_percentage": f"The length of the training windows is the {value}% of the time series' length.",
             "delta_training_values": f"Training windows are composed of {value} values.",
             "extra_regressors": f"The model has used {value} as extra-regressor(s) to improve the training.",
-            "transformation": f"The model has used a {value} transformation on the input data." if value != "none"
+            "transformation": f"The model has used a {value} transformation on the input data." if str(value) != "none"
             else f"The model has not used any pre/post transformation on input data."
         }
         return switcher.get(key, "Invalid choice!")

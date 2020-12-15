@@ -11,6 +11,7 @@ from pandas import DataFrame, Series
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+from timex.data_prediction.transformation import transformation_factory
 
 log = logging.getLogger(__name__)
 
@@ -152,9 +153,9 @@ class PredictionModel:
             self.test_values = -1
 
         if transformation is not None:
-            self.transformation = transformation
+            self.transformation = transformation_factory(transformation)
         else:
-            self.transformation = model_parameters["transformation"]
+            self.transformation = transformation_factory(model_parameters["transformation"])
 
         self.prediction_lags = model_parameters["prediction_lags"]
         self.delta_training_percentage = model_parameters["delta_training_percentage"]
@@ -313,39 +314,9 @@ class PredictionModel:
         test_ts = ingested_data.iloc[-self.test_values:]
 
         with pd.option_context('mode.chained_assignment', None):
-            train_ts.iloc[:, 0] = pre_transformation(train_ts.iloc[:, 0], self.transformation)
-
-        # results = []
-
-        # log.info(f"Model will use {train_sets_number} different training sets...")
+            train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
 
         results = self.compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
-
-        # for i in range(1, train_sets_number + 1):
-        #     tr = train_ts.iloc[-i * self.delta_training_values:]
-        #
-        #     log.debug(f"Trying with last {len(tr)} values as training set...")
-        #
-        #     self.train(tr.copy(), extra_regressors)
-        #
-        #     future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
-        #                                                  start=tr.index.values[0],
-        #                                                  periods=len(tr) + self.test_values + self.prediction_lags),
-        #                              columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
-        #
-        #     forecast = self.predict(future_df, extra_regressors)
-        #     testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
-        #
-        #     first_used_index = tr.index.values[0]
-        #
-        #     tp = TestingPerformance(first_used_index)
-        #     tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
-        #     results.append(SingleResult(forecast, tp))
-
-        # results.sort(key=lambda x: getattr(x["testing_performances"], self.main_accuracy_estimator.upper()))
-        # best_forecast = results[0]["forecast"]
-        # testing_results = [x["testing_performances"] for x in results]
-        # testing_results = results
 
         if extra_regressors is not None:
             model_characteristics["extra_regressors"] = ', '.join([*extra_regressors.columns])
@@ -359,65 +330,70 @@ class PredictionModel:
         return ModelResult(results=results, characteristics=model_characteristics)
 
 
-def pre_transformation(data: Series, transformation: str) -> Series:
-    """
-    Applies a function (whose name is defined in transformation) to the input data.
-    Returns the transformed data.
-
-    Parameters
-    ----------
-    data : Series
-        Pandas Series. Transformation will be applied to each value.
-    transformation : str
-        Name of the transformation which should be applied.
-
-    Returns
-    -------
-    transformed_data : Series
-        Series where the transformation has been applied.
-    """
-    if transformation == "log":
-        def f(x):
-            return np.sign(x) * np.log(abs(x)) if abs(x) > 1 else 0
-    elif transformation == "log_modified":
-        # Log-modulus transform to preserve 0 values and negative values.
-        def f(x):
-            return np.sign(x) * np.log(abs(x) + 1)
-    else:
-        def f(x):
-            return x
-
-    return data.apply(f)
-
-
-def post_transformation(data: Series, transformation: str) -> Series:
-    """
-    Applies the inverse of a function (whose name is defined in transformation) to the input data.
-    Returns the transformed data.
-
-    Parameters
-    ----------
-    data : Series
-        Pandas Series. Transformation's inverse will be applied on each value.
-    transformation : str
-        Name of the transformation: the inverse will be applied on the data.
-
-    Returns
-    -------
-    transformed_data : Series
-        Pandas Series where the transformation has been applied.
-    """
-    if transformation == "log":
-        def f(x):
-            return np.sign(x) * np.exp(abs(x))
-    elif transformation == "log_modified":
-        def f(x):
-            return np.sign(x) * np.exp(abs(x)) - np.sign(x)
-    else:
-        def f(x):
-            return x
-
-    return data.apply(f)
+# def pre_transformation(data: Series, transformation: str) -> Series:
+#     """
+#     Applies a function (whose name is defined in transformation) to the input data.
+#     Returns the transformed data.
+#
+#     Parameters
+#     ----------
+#     data : Series
+#         Pandas Series. Transformation will be applied to each value.
+#     transformation : str
+#         Name of the transformation which should be applied.
+#
+#     Returns
+#     -------
+#     transformed_data : Series
+#         Series where the transformation has been applied.
+#     """
+#     if transformation == "log":
+#         # def f(x):
+#         return data.apply(lambda x: np.sign(x) * np.log(abs(x)) if abs(x) > 1 else 0)
+#     elif transformation == "log_modified":
+#         # Log-modulus transform to preserve 0 values and negative values.
+#         # def f(x):
+#         return data.apply(lambda x: np.sign(x) * np.log(abs(x) + 1))
+#     elif transformation == "yeo-johnson":
+#         # def f(x):
+#         res, lmbda = yeojohnson(data)
+#
+#
+#     else:
+#         def f(x):
+#             return x
+#
+#     return data.apply(f)
+#
+#
+# def post_transformation(data: Series, transformation: str) -> Series:
+#     """
+#     Applies the inverse of a function (whose name is defined in transformation) to the input data.
+#     Returns the transformed data.
+#
+#     Parameters
+#     ----------
+#     data : Series
+#         Pandas Series. Transformation's inverse will be applied on each value.
+#     transformation : str
+#         Name of the transformation: the inverse will be applied on the data.
+#
+#     Returns
+#     -------
+#     transformed_data : Series
+#         Pandas Series where the transformation has been applied.
+#     """
+#     if transformation == "log":
+#         def f(x):
+#             return np.sign(x) * np.exp(abs(x))
+#     elif transformation == "log_modified":
+#         def f(x):
+#             return np.sign(x) * np.exp(abs(x)) - np.sign(x)
+#     else:
+#         def f(x):
+#             return x
+#
+#     return data.apply(f)
 
 
 def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:

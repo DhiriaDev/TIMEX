@@ -10,9 +10,7 @@ from fbprophet.diagnostics import cross_validation, performance_metrics
 from pandas import DataFrame
 import numpy as np
 
-from timex.data_prediction.data_prediction import PredictionModel, TestingPerformance, pre_transformation, \
-    post_transformation
-
+from timex.data_prediction.data_prediction import PredictionModel, TestingPerformance
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 
 
@@ -31,6 +29,8 @@ class FBProphet(PredictionModel):
         self.fbmodel = Prophet()
 
         if extra_regressors is not None:
+            # We could apply self.transformation also on the extra regressors.
+            # From tests, it looks like it doesn't change much/it worsens the forecasts.
             input_data = input_data.join(extra_regressors)
             input_data.reset_index(inplace=True)
             column_indices = [0, 1]
@@ -105,9 +105,9 @@ class FBProphet(PredictionModel):
 
         forecast = self.fbmodel.predict(future)
 
-        forecast.loc[:, 'yhat'] = post_transformation(forecast['yhat'], self.transformation)
-        forecast.loc[:, 'yhat_lower'] = post_transformation(forecast['yhat_lower'], self.transformation)
-        forecast.loc[:, 'yhat_upper'] = post_transformation(forecast['yhat_upper'], self.transformation)
+        forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
+        forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_upper'])
+        forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
 
         forecast.set_index('ds', inplace=True)
 

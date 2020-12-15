@@ -4,7 +4,7 @@ import itertools
 import statsmodels.api as sm
 import pandas as pd
 
-from timex.data_prediction.data_prediction import PredictionModel, post_transformation
+from timex.data_prediction.data_prediction import PredictionModel
 
 
 class ARIMA(PredictionModel):
@@ -53,6 +53,6 @@ class ARIMA(PredictionModel):
         r.rename(columns={'predicted_mean': 'yhat'}, inplace=True)
         future_dataframe.update(r)
 
-        future_dataframe.loc[:, 'yhat'] = post_transformation(future_dataframe['yhat'], self.transformation)
+        future_dataframe.loc[:, 'yhat'] = self.transformation.inverse(future_dataframe['yhat'])
 
         return future_dataframe

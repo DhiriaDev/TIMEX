@@ -4,10 +4,12 @@ import unittest
 
 from pandas import Series, DataFrame
 import numpy as np
+from scipy.stats import yeojohnson
 
 from timex.data_prediction.arima_predictor import ARIMA
-from timex.data_prediction.data_prediction import pre_transformation, calc_xcorr, post_transformation
+from timex.data_prediction.data_prediction import calc_xcorr
 from timex.data_prediction.prophet_predictor import FBProphet
+from timex.data_prediction.transformation import transformation_factory
 from timex.tests.utilities import get_fake_df
 
 xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
@@ -20,39 +22,10 @@ logger.level = logging.DEBUG
 
 
 class MyTestCase(unittest.TestCase):
-    def test_pre_transformation_1(self):
-
+    def test_transformation_log(self):
         s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-        res = pre_transformation(s, "log_modified")
-
-        self.assertEqual(res[0], -np.log(4+1))
-        self.assertEqual(res[1], -np.log(3+1))
-        self.assertEqual(res[2], -np.log(2+1))
-        self.assertEqual(res[3], -np.log(1+1))
-        self.assertEqual(res[4],  np.log(1))
-        self.assertEqual(res[5],  np.log(1+1))
-        self.assertEqual(res[6],  np.log(2+1))
-        self.assertEqual(res[7],  np.log(3+1))
-        self.assertEqual(res[8],  np.log(4+1))
-
-    def test_post_transformation_1(self):
-
-        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-        res = pre_transformation(s, "log_modified")
-        res = post_transformation(res, "log_modified")
-
-        self.assertTrue(np.allclose(s, res))
-
-    def test_pre_transformation_2(self):
-
-        s = Series(np.array([2]))
-        res = pre_transformation(s, "none")
-
-        self.assertEqual(res[0], 2)
-
-    def test_pre_transformation_3(self):
-        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-        res = pre_transformation(s, "log")
+        tr = transformation_factory("log")
+        res = tr.apply(s)
 
         self.assertEqual(res[0], -np.log(4))
         self.assertEqual(res[1], -np.log(3))
@@ -64,19 +37,90 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(res[7],  np.log(3))
         self.assertEqual(res[8],  np.log(4))
 
-    def test_post_transformation_3(self):
-        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-        res = pre_transformation(s, "log")
+        res = tr.inverse(res)
 
-        self.assertEqual(res[0], -np.log(4))
-        self.assertEqual(res[1], -np.log(3))
-        self.assertEqual(res[2], -np.log(2))
-        self.assertEqual(res[3],  0)
+        exp = Series(np.array([-4, -3, -2, 0, 0, 0, 2, 3, 4]))
+        self.assertTrue(np.allclose(res, exp))
+        self.assertEqual(str(tr), "Log")
+
+    def test_transformation_log_modified(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        tr = transformation_factory("log_modified")
+        res = tr.apply(s)
+
+        self.assertEqual(res[0], -np.log(4+1))
+        self.assertEqual(res[1], -np.log(3+1))
+        self.assertEqual(res[2], -np.log(2+1))
+        self.assertEqual(res[3], -np.log(1+1))
+        self.assertEqual(res[4],  np.log(1))
+        self.assertEqual(res[5],  np.log(1+1))
+        self.assertEqual(res[6],  np.log(2+1))
+        self.assertEqual(res[7],  np.log(3+1))
+        self.assertEqual(res[8],  np.log(4+1))
+
+        res = tr.inverse(res)
+
+        self.assertTrue(np.allclose(s, res))
+        self.assertEqual(str(tr), "modified Log")
+
+    def test_transformation_yeo_johnson(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        tr = transformation_factory("yeo_johnson")
+        res = tr.apply(s)
+        lmbda = tr.lmbda
+
+        exp = yeojohnson(s, lmbda)
+
+        self.assertTrue(np.allclose(res, exp))
+
+        res = tr.inverse(res)
+
+        self.assertTrue(np.allclose(s, res))
+        self.assertEqual(str(tr), f"Yeo-Johnson (lambda: {round(lmbda)})")
+
+    # def test_transformation_yeo_johnson_2(self):
+    #     a = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+    #     b = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+    #     c = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+    #
+    #     df = DataFrame(data={"a": a, "b": b, "c": c})
+    #     tr = transformation_factory("yeo_johnson")
+    #
+    #     res_a = tr.apply(df["a"])
+    #     res_b = tr.apply(df["b"])
+    #     res_c = tr.apply(df["c"])
+    #
+    #     print(res_a)
+    #
+    #     res_a = tr.inverse(res_a)
+    #     res_b = tr.inverse(res_b)
+    #     res_c = tr.inverse(res_c)
+    #
+    #     self.assertTrue(np.allclose(a, res_a))
+    #     self.assertTrue(np.allclose(b, res_b))
+    #     self.assertTrue(np.allclose(c, res_c))
+    #
+    #     lmbda = tr.lmbda["a"]
+    #     self.assertEqual(str(tr), f"Yeo-Johnson (lambda: {round(lmbda)})")
+
+    def test_transformation_none(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        tr = transformation_factory("none")
+        res = tr.apply(s)
+
+        self.assertEqual(res[0], -4)
+        self.assertEqual(res[1], -3)
+        self.assertEqual(res[2], -2)
+        self.assertEqual(res[3], -1)
         self.assertEqual(res[4],  0)
-        self.assertEqual(res[5],  0)
-        self.assertEqual(res[6],  np.log(2))
-        self.assertEqual(res[7],  np.log(3))
-        self.assertEqual(res[8],  np.log(4))
+        self.assertEqual(res[5],  1)
+        self.assertEqual(res[6],  2)
+        self.assertEqual(res[7],  3)
+        self.assertEqual(res[8],  4)
+
+        res = tr.inverse(res)
+
+        self.assertTrue(np.allclose(s, res))
 
     def test_launch_model_fbprophet_1(self):
         # Percentages' sum is not 100%; adapt the windows. Use "test_percentage".
