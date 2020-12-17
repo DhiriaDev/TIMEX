@@ -107,6 +107,21 @@ class YeoJohnson(Transformation):
         return f"Yeo-Johnson (lambda: {round(self.lmbda, 3)})"
 
 
+class Diff(Transformation):
+    def __init__(self):
+        self.first_value = 0
+
+    def apply(self, data: Series) -> Series:
+        self.first_value = data[0]
+        return data.diff()[1:]
+
+    def inverse(self, data: Series) -> Series:
+        return Series(np.r_[self.first_value, data].cumsum())
+
+    def __str__(self):
+        return "differentiate (1)"
+
+
 def transformation_factory(tr_class: str) -> Transformation:
     """
     Given the type of the transformation, encoded as string, return the Transformation object.
@@ -127,5 +142,7 @@ def transformation_factory(tr_class: str) -> Transformation:
         return LogModified()
     elif tr_class == "none":
         return Identity()
+    elif tr_class == "diff":
+        return Diff()
     elif tr_class == "yeo_johnson":
         return YeoJohnson()

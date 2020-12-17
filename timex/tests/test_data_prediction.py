@@ -2,6 +2,7 @@ import logging
 import sys
 import unittest
 
+import pandas
 from pandas import Series, DataFrame
 import numpy as np
 from scipy.stats import yeojohnson
@@ -16,6 +17,9 @@ xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 
 logger = logging.getLogger()
 logger.level = logging.DEBUG
+
+np.random.seed(0)
+
 
 # stream_handler = logging.StreamHandler(sys.stdout)
 # logger.addHandler(stream_handler)
@@ -102,6 +106,28 @@ class MyTestCase(unittest.TestCase):
     #
     #     lmbda = tr.lmbda["a"]
     #     self.assertEqual(str(tr), f"Yeo-Johnson (lambda: {round(lmbda)})")
+
+    def test_transformation_diff(self):
+        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
+        tr = transformation_factory("diff")
+
+        res = tr.apply(s)
+
+        self.assertEqual(res[1],   1.0)
+        self.assertEqual(res[2],   1.0)
+        self.assertEqual(res[3],   1.0)
+        self.assertEqual(res[4],   1.0)
+        self.assertEqual(res[5],   1.0)
+        self.assertEqual(res[6],   1.0)
+        self.assertEqual(res[7],   1.0)
+        self.assertEqual(res[8],   1.0)
+        self.assertEqual(tr.first_value, -4)
+
+        res = tr.inverse(res)
+
+        self.assertTrue(np.allclose(res, s))
+
+        self.assertEqual(str(tr), f"differentiate (1)")
 
     def test_transformation_none(self):
         s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
@@ -379,24 +405,34 @@ class MyTestCase(unittest.TestCase):
                 self.assertEqual(len(prediction), len(used_training_set) + 10 + 10)
 
     def test_calc_xcorr_1(self):
-        # Example from https://www.mathworks.com/help/matlab/ref/xcorr.html
+        # Example from https://www.mathworks.com/help/matlab/ref/xcorr.html, slightly modified
+        # The y series is antecedent the x series; therefore, a correlation should be found between x and y.
 
-        x = [np.power(0.84, n) for n in np.arange(0, 16)]
-        y = np.roll(x, 5)
+        x = [np.power(0.94, n) for n in np.arange(0, 100)]
+        noise = np.random.normal(0, 1, 100)
+        x = x + noise
 
-        df = DataFrame(data={"x": x, "y": y})
+        y = np.roll(x, -5)
+        z = np.roll(x, -10)
+
+        df = DataFrame(data={"x": x, "y": y, "z": z})
+        df = df.iloc[0:-10]
 
         xcorr = calc_xcorr("x", df, max_lags=10, modes=xcorr_modes)
         for mode in xcorr:
-            self.assertEqual(xcorr[mode].idxmax()[0], -5)
+            self.assertEqual(xcorr[mode].idxmax()[0], 5)
+            self.assertEqual(xcorr[mode].idxmax()[1], 10)
 
     def test_calc_xcorr_2(self):
         # Shift a sin. Verify that highest correlation is in the correct region.
 
         # Restrict the delay to less than one period of the sin.
         max_delay = 50 - 1
-        x = np.linspace(0, 2 * np.pi, 100)
+        x = np.linspace(0, 2 * np.pi, 200)
         y = np.sin(x)
+
+        noise = np.random.normal(0, 0.5, 200)
+        y = y + noise
 
         for i in range(-max_delay, max_delay):
             y_delayed = np.roll(y, i)
@@ -407,6 +443,28 @@ class MyTestCase(unittest.TestCase):
             expected_max_lag = -i
             for mode in xcorr:
                 self.assertLess(abs(xcorr[mode].idxmax()[0] - expected_max_lag), 4)
+
+    def test_calc_xcorr_granger(self):
+        # Shift a sin. Verify that highest correlation is in the correct region.
+        # Specific test for granger method, which is slightly different from the others.
+
+        # Restrict the delay to less than one period of the sin.
+        max_delay = 50 - 1
+        x = np.linspace(0, 2 * np.pi, 200)
+        y = np.sin(x)
+
+        noise = np.random.normal(0, 1, 200)
+        y = y + noise
+
+        for i in [x for x in range(-max_delay, max_delay) if x != 0]:
+            y_delayed = np.roll(y, i)
+
+            df = DataFrame(data={"y": y, "y_delayed": y_delayed})
+
+            xcorr = calc_xcorr("y", df, max_lags=max_delay, modes=['granger'])
+            expected_max_lag = -i
+            for mode in xcorr:
+                self.assertEqual(xcorr[mode].loc[expected_max_lag][0], 1.0)
 
 
 if __name__ == '__main__':

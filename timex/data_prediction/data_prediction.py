@@ -10,6 +10,7 @@ import pandas as pd
 from pandas import DataFrame, Series
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from statsmodels.tsa.stattools import grangercausalitytests
 
 from timex.data_prediction.transformation import transformation_factory
 
@@ -464,6 +465,24 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
                 result[col] = c
 
             result.index -= max_lags
+
+        elif mode == 'granger':
+            for col in columns:
+                granger_max_lags = int(len(ingested_data) / 3) - 1
+                granger_max_lags = granger_max_lags if granger_max_lags < max_lags else max_lags
+
+                # Trick to compute both negative and positive lags
+                df = ingested_data[[col, target]]
+                granger_result = grangercausalitytests(df, maxlag=granger_max_lags, verbose=False)
+                for i in granger_result:
+                    result.loc[-i, col] = 1 - granger_result[i][0]['params_ftest'][1]
+
+                df = ingested_data[[target, col]]
+                granger_result = grangercausalitytests(df, maxlag=granger_max_lags, verbose=False)
+                for i in granger_result:
+                    result.loc[i, col] = 1 - granger_result[i][0]['params_ftest'][1]
+
+            result.sort_index(inplace=True)
 
         else:
             for i in range(-max_lags, max_lags + 1):
