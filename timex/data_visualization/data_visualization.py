@@ -54,7 +54,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         html.H2(children=name + " analysis", id=name),
         html.H3("Data visualization"),
         line_plot(scenario_data),
-        histogram_plot(scenario_data),
+        histogram_plot(scenario_data, visualization_parameters),
         box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
         components_plot(scenario_data),
         autocorrelation_plot(scenario_data),
@@ -78,10 +78,11 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
 
     # Prediction results
     children.append(
-        html.H3("Training & Prediction results"),
+        html.H3("Training & Validation results"),
     )
 
-    for model in models:
+    for model_name in models:
+        model = models[model_name]
         model_results = model.results
         model_characteristic = model.characteristics
 
@@ -93,6 +94,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         testing_performances = [x.testing_performances for x in model_results]
 
         children.extend([
+            html.H4(f"{model_name}"),
             characteristics_list(model_characteristic, testing_performances),
             # html.Div("Testing performance:"),
             # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
@@ -103,6 +105,17 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         # EXTRA
         # Warning: this will plot every model result, with every training set used!
         # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
+
+    if scenario.historical_prediction is not None:
+        children.extend([
+            html.H3("Prediction"),
+            html.Div("For every model the best predictions for each past date are plotted.")
+        ])
+        for model in scenario.historical_prediction:
+            children.extend([
+                html.H4(f"{model}"),
+                historical_prediction_plot(scenario_data, scenario.historical_prediction[model])
+            ])
 
     return children
 
@@ -178,7 +191,7 @@ def line_plot_multiIndex(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def histogram_plot(df: DataFrame) -> dcc.Graph:
+def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     """
     Create and return the histogram plot for a dataframe.
 
@@ -187,12 +200,19 @@ def histogram_plot(df: DataFrame) -> dcc.Graph:
     df : DataFrame
     Dataframe to plot.
 
+    visualization_parameters : dict
+    Options set by the user.
+
     Returns
     -------
     g : dcc.Graph
     """
 
-    fig = px.histogram(df, df.columns[0])
+    if "histogram_bins" in visualization_parameters:
+        fig = px.histogram(df, df.columns[0], nbins=visualization_parameters["histogram_bins"])
+    else:
+        fig = px.histogram(df, df.columns[0])
+
     fig.update_layout(title='Histogram')
     g = dcc.Graph(
         figure=fig
@@ -603,13 +623,90 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
-                             name='test data'))
-    fig.update_layout(title="Best prediction", xaxis_title=df.index.name,
+                             name='validation data'))
+    fig.update_layout(title="Best prediction for the validation set", xaxis_title=df.index.name,
                       yaxis_title=df.columns[0])
     g = dcc.Graph(
         figure=fig
     )
     return g
+
+
+def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) -> html.Div:
+    """
+    Create and return a plot which contains the best prediction found by this model for this time series.
+
+    Note that predicted_data may or not have the columns "yhat_lower" and "yhat_upper".
+
+    Parameters
+    ----------
+    predicted_data
+    real_data : DataFrame
+    Raw values ingested by the app.
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+    new_children = []
+    fig = go.Figure()
+
+    # not_training_data = df.loc[:predicted_data.index[0]]
+    # training_data = df.loc[predicted_data.index[0]:]
+    # training_data = training_data.iloc[:-test_values]
+    # test_data = df.iloc[-test_values:]
+    scenario_name = real_data.columns[0]
+    first_predicted_index = predicted_data.index[0]
+    last_real_index = real_data.index[-1]
+
+    testing_performance = TestingPerformance(first_predicted_index)
+    testing_performance.set_testing_stats(actual=real_data.loc[first_predicted_index:, scenario_name],
+                                          predicted=predicted_data.loc[:last_real_index, scenario_name])
+    new_children.extend([
+        html.Div(f"This model, during the history, reached these performances on unseen data:"),
+        show_errors(testing_performance)])
+
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
+                             mode='lines+markers',
+                             name='prediction'))
+
+    fig.add_trace(go.Scatter(x=real_data.index, y=real_data.iloc[:, 0],
+                             line=dict(color='red'),
+                             mode='markers',
+                             name='real data'))
+
+    # try:
+    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+    #                              line=dict(color='lightgreen', dash='dash'),
+    #                              name='yhat_lower'))
+    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+    #                              line=dict(color='lightgreen', dash='dash'),
+    #                              name='yhat_upper'))
+    # except:
+    #     pass
+
+    # fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
+    #                          line=dict(color='black'),
+    #                          mode='markers',
+    #                          name='unused data'))
+    # fig.add_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
+    #                          line=dict(color='green'),
+    #                          mode='markers',
+    #                          name='training data'))
+    #
+    # fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
+    #                          line=dict(color='red'),
+    #                          mode='markers',
+    #                          name='test data'))
+    fig.update_layout(title="Historical prediction", xaxis_title=real_data.index.name,
+                      yaxis_title=real_data.columns[0])
+    g = dcc.Graph(
+        figure=fig
+    )
+
+    new_children.append(g)
+
+    return html.Div(new_children)
 
 
 def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [TestingPerformance],
@@ -739,6 +836,26 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
         }
         return switcher.get(key, "Invalid choice!")
 
+    elems = [html.Div("Model characteristics:"),
+             html.Ul([html.Li(get_text_char(key, model_characteristics[key])) for key in model_characteristics]),
+             html.Div("This model, using the best training window, reaches these performances:"),
+             show_errors(testing_performances[0])]
+
+    return html.Div(elems)
+
+
+def show_errors(testing_performances: TestingPerformance) -> html.Div:
+    """
+
+    Parameters
+    ----------
+    testing_performances
+
+    Returns
+    -------
+
+
+    """
     def get_text_perf(key: str, value: any) -> str:
         switcher = {
             "MAE": "MAE: " + str(round(value, 2)),
@@ -748,13 +865,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
         }
         return switcher.get(key, "Invalid choice!")
 
-    best_testing_performances = testing_performances[0].get_dict()
-    del best_testing_performances["first_used_index"]
+    testing_performances = testing_performances.get_dict()
+    del testing_performances["first_used_index"]
 
-    elems = [html.Div("Model characteristics:"),
-             html.Ul([html.Li(get_text_char(key, model_characteristics[key])) for key in model_characteristics]),
-             html.Div("This model, using the best training window, reaches these performances:"),
-             html.Ul(
-                 [html.Li(get_text_perf(key, best_testing_performances[key])) for key in best_testing_performances])]
-
-    return html.Div(elems)
+    return html.Ul([html.Li(get_text_perf(key, testing_performances[key])) for key in testing_performances])

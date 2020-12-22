@@ -106,11 +106,14 @@ class ModelResult:
         for this model, on the time series.
     characteristics : dict
         Model parameters, obtained by automatic tuning.
+    best_prediction : DataFrame
+        Prediction obtained using the best training window and _all_ the available points in the time series.
     """
 
-    def __init__(self, results: [SingleResult], characteristics: dict):
+    def __init__(self, results: [SingleResult], characteristics: dict, best_prediction: DataFrame):
         self.results = results
         self.characteristics = characteristics
+        self.best_prediction = best_prediction
 
 
 class PredictionModel:
@@ -284,6 +287,39 @@ class PredictionModel:
 
         return results
 
+    def compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult], extra_regressors = None):
+        """
+        Given the ingested data and the training results, identify the best training window and compute a prediction
+        using all the possible data, till the end of the series.
+        Parameters
+        ----------
+        extra_regressors
+        ingested_data
+        training_results
+
+        Returns
+        -------
+        DataFrame
+            Best found prediction
+        """
+        training_results.sort(key=lambda x: getattr(x.testing_performances, self.main_accuracy_estimator.upper()))
+        best_starting_index = training_results[0].testing_performances.first_used_index
+
+        training_data = ingested_data.loc[best_starting_index:]
+
+        with pd.option_context('mode.chained_assignment', None):
+            training_data.iloc[:, 0] = self.transformation.apply(training_data.iloc[:, 0])
+
+        self.train(training_data.copy(), extra_regressors)
+
+        future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
+                                                     start=training_data.index.values[0],
+                                                     periods=len(training_data) + self.prediction_lags),
+                                 columns=["yhat"], dtype=training_data.iloc[:, 0].dtype)
+
+        forecast = self.predict(future_df, extra_regressors)
+        return forecast
+
     def launch_model(self, ingested_data: DataFrame, extra_regressors: DataFrame = None, max_threads: int = 1) -> ModelResult:
         """
         Train the model on ingested_data and returns a ModelResult object.
@@ -317,7 +353,9 @@ class PredictionModel:
         with pd.option_context('mode.chained_assignment', None):
             train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
 
-        results = self.compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
+        model_training_results = self.compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
+
+        best_prediction = self.compute_best_prediction(ingested_data, model_training_results, extra_regressors)
 
         if extra_regressors is not None:
             model_characteristics["extra_regressors"] = ', '.join([*extra_regressors.columns])
@@ -328,73 +366,8 @@ class PredictionModel:
         model_characteristics["test_values"] = self.test_values
         model_characteristics["transformation"] = self.transformation
 
-        return ModelResult(results=results, characteristics=model_characteristics)
-
-
-# def pre_transformation(data: Series, transformation: str) -> Series:
-#     """
-#     Applies a function (whose name is defined in transformation) to the input data.
-#     Returns the transformed data.
-#
-#     Parameters
-#     ----------
-#     data : Series
-#         Pandas Series. Transformation will be applied to each value.
-#     transformation : str
-#         Name of the transformation which should be applied.
-#
-#     Returns
-#     -------
-#     transformed_data : Series
-#         Series where the transformation has been applied.
-#     """
-#     if transformation == "log":
-#         # def f(x):
-#         return data.apply(lambda x: np.sign(x) * np.log(abs(x)) if abs(x) > 1 else 0)
-#     elif transformation == "log_modified":
-#         # Log-modulus transform to preserve 0 values and negative values.
-#         # def f(x):
-#         return data.apply(lambda x: np.sign(x) * np.log(abs(x) + 1))
-#     elif transformation == "yeo-johnson":
-#         # def f(x):
-#         res, lmbda = yeojohnson(data)
-#
-#
-#     else:
-#         def f(x):
-#             return x
-#
-#     return data.apply(f)
-#
-#
-# def post_transformation(data: Series, transformation: str) -> Series:
-#     """
-#     Applies the inverse of a function (whose name is defined in transformation) to the input data.
-#     Returns the transformed data.
-#
-#     Parameters
-#     ----------
-#     data : Series
-#         Pandas Series. Transformation's inverse will be applied on each value.
-#     transformation : str
-#         Name of the transformation: the inverse will be applied on the data.
-#
-#     Returns
-#     -------
-#     transformed_data : Series
-#         Pandas Series where the transformation has been applied.
-#     """
-#     if transformation == "log":
-#         def f(x):
-#             return np.sign(x) * np.exp(abs(x))
-#     elif transformation == "log_modified":
-#         def f(x):
-#             return np.sign(x) * np.exp(abs(x)) - np.sign(x)
-#     else:
-#         def f(x):
-#             return x
-#
-#     return data.apply(f)
+        return ModelResult(results=model_training_results, characteristics=model_characteristics,
+                           best_prediction=best_prediction)
 
 
 def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
@@ -534,3 +507,4 @@ def calc_all_xcorr(ingested_data: DataFrame, param_config: dict) -> dict:
         d[col] = calc_xcorr(col, ingested_data, max_lags=xcorr_max_lags, modes=xcorr_modes)
 
     return d
+

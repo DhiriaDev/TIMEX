@@ -357,10 +357,8 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(predictor.test_values, 1)
             self.assertEqual(predictor.delta_training_values, 2)
             self.assertEqual(predictor.main_accuracy_estimator, "mae")
-
             self.assertEqual(len(model_result.results), 5)
 
-            i = 0
             for r in model_result.results:
                 prediction = r.prediction
                 testing_performances = r.testing_performances
@@ -369,8 +367,9 @@ class MyTestCase(unittest.TestCase):
                 used_training_set = df.loc[first_used_index:]
                 used_training_set = used_training_set.iloc[:-1]
                 self.assertEqual(len(prediction), len(used_training_set) + 1 + 10)
-                self.assertEqual(len(used_training_set), expected_train_set_lengths[i])
-                i += 1
+                expected_train_set_lengths.remove(len(used_training_set))
+
+            self.assertEqual(len(expected_train_set_lengths), 0)
 
     def test_launch_model_arima(self):
         param_config = {

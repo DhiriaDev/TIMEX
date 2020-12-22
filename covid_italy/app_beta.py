@@ -6,15 +6,14 @@ import sys
 import webbrowser
 
 from timex.data_ingestion import data_ingestion
-from timex.data_prediction.data_prediction import calc_all_xcorr
 from timex.data_preparation.data_preparation import data_selection
 from timex.data_visualization.data_visualization import create_scenario_children
-from timex.utils.utils import get_best_univariate_predictions, get_best_multivariate_predictions
+from timex.utils.utils import compute_predictions
 
 log = logging.getLogger(__name__)
 
 
-def create_children():
+def create_scenarios():
 
     param_file_nameJSON = 'configurations/configuration_test_covid19italy_BETA.json'
 
@@ -42,27 +41,14 @@ def create_children():
     ingested_data["New cases/tests ratio"] = [100 * (np / tamp) for np, tamp in
                                               zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
-    # Calculate the cross-correlation.
-    log.info(f"Computing the cross-correlation...")
-    total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
+    # data prediction
+    scenarios = compute_predictions(ingested_data=ingested_data, param_config=param_config)
 
-    # Predictions without extra-regressors.
-    log.info(f"Started the prediction with univariate models.")
-    best_transformations, scenarios = get_best_univariate_predictions(ingested_data=ingested_data,
-                                                                      param_config=param_config,
-                                                                      total_xcorr=total_xcorr)
-
-    # Prediction with extra regressors.
-    log.info(f"Starting the prediction with extra-regressors.")
-    scenarios = get_best_multivariate_predictions(scenarios=scenarios, ingested_data=ingested_data,
-                                                  best_transformations=best_transformations, total_xcorr=total_xcorr,
-                                                  param_config=param_config)
-
-    # data visualization
-    children_for_each_scenario = [{
-        'name': s.scenario_data.columns[0],
-        'children': create_scenario_children(s, param_config)
-    } for s in scenarios]
+    # Save the children; these are the scenarios objects from which a nice Dash page can be built.
+    # They can be loaded by "app_load_from_dump.py" to start the app
+    # without re-computing all the data.
+    with open(f"scenarios_beta.pkl", 'wb') as input_file:
+        pickle.dump(scenarios, input_file)
 
     ####################################################################################################################
     # Custom scenario #########
@@ -144,18 +130,9 @@ def create_children():
 
     ####################################################################################################################
 
-    # Save the children; these are the plots relatives to all the scenarios.
-    # They can be loaded by "app_load_from_dump.py" to start the app
-    # without re-computing all the plots.
-    curr_dirr = os.path.dirname(os.path.abspath(__file__))
-    filename = 'children_for_each_scenario_beta.pkl'
-    log.info(f"Saving the computed Dash children to {curr_dirr}/{filename}...")
-    with open(f"{curr_dirr}/{filename}", 'wb') as input_file:
-        pickle.dump(children_for_each_scenario, input_file)
-
 
 if __name__ == '__main__':
-    create_children()
+    create_scenarios()
 
 
     def open_browser():

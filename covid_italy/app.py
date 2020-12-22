@@ -67,21 +67,21 @@ def create_children():
     scenarios = []
     for col in columns:
         scenario_data = ingested_data[[col]]
-        model_results = []
+        model_results = {}
 
         xcorr = calc_xcorr(col, ingested_data, max_lags, modes)
 
         log.info(f"Computing univariate prediction for {col}...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
-        model_results.append(prophet_result)
+        model_results['fbprophet'] = prophet_result
         #
         # predictor = ARIMA(param_config)
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
 
         scenarios.append(
-            Scenario(scenario_data, model_results, ingested_data, xcorr)
+            Scenario(scenario_data, model_results, xcorr)
         )
 
     # data visualization
@@ -147,20 +147,20 @@ def create_children():
     for region in daily_cases_regions.columns:
         scenario_data = daily_cases_regions[[region]]
 
-        model_results = []
+        model_results = {}
 
         xcorr = calc_xcorr(region, daily_cases_regions, max_lags, modes)
 
         log.info(f"Computing univariate prediction for {region}...")
         predictor = FBProphet(param_config)
         prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
-        model_results.append(prophet_result)
+        model_results['fbprophet'] = prophet_result
         #
         # predictor = ARIMA(param_config)
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
 
-        s = Scenario(scenario_data, model_results, daily_cases_regions, xcorr)
+        s = Scenario(scenario_data, model_results, xcorr)
 
         children_for_each_scenario.append({
             'name': region,

@@ -109,7 +109,7 @@ class MyTestCase(unittest.TestCase):
         # Local load, with diff columns.
         param_config = {
             "input_parameters": {
-                "source_data_url": "test_datasets/test_1.csv",
+                "source_data_url": "test_datasets/test_1_2.csv",
                 "columns_to_load_from_url": "third_column,second_column,first_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
@@ -128,13 +128,13 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(df.columns[2], "third_column_diff")
         self.assertEqual(df.columns[3], "second_column_diff")
         self.assertEqual(len(df.columns), 4)
-        self.assertEqual(len(df), 2)
+        self.assertEqual(len(df), 3)
 
     def test_data_ingestion_univariate_6(self):
         # Local load, with diff columns. Rename columns.
         param_config = {
             "input_parameters": {
-                "source_data_url": "test_datasets/test_1.csv",
+                "source_data_url": "test_datasets/test_1_2.csv",
                 "columns_to_load_from_url": "third_column,second_column,first_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
@@ -161,7 +161,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(df.columns[2], "D")
         self.assertEqual(df.columns[3], "E")
         self.assertEqual(len(df.columns), 4)
-        self.assertEqual(len(df), 2)
+        self.assertEqual(len(df), 3)
 
     def test_data_ingestion_univariate_7(self):
         # Test that duplicated data is removed.

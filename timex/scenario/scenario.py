@@ -12,15 +12,16 @@ class Scenario:
     ----------
     scenario_data : DataFrame
         Initial time series, in the form of a DataFrame with a index and a single data column.
-    models : [ModelResult]
-        List of ModelResult objects, all trained on this scenario.
-    ingested_data : DataFrame
-        The entire DataFrame parsed starting from the CSV. Useful for cross-correlation diagrams.
+    models : dict
+        Dict of ModelResult objects, all trained on this scenario.
     xcorr : dict
         Cross-correlation between the data of this scenario and all the other ones.
     """
-    def __init__(self, scenario_data: DataFrame, models: [ModelResult], ingested_data: DataFrame, xcorr: dict):
+    def __init__(self, scenario_data: DataFrame, models: dict, xcorr: dict):
         self.scenario_data = scenario_data
         self.models = models
-        self.ingested_data = ingested_data
         self.xcorr = xcorr
+        self.historical_prediction = None
+
+    def set_historical_prediction(self, historical_prediction):
+        self.historical_prediction = historical_prediction

@@ -75,6 +75,13 @@ class Identity(Transformation):
 
 
 class YeoJohnson(Transformation):
+    #######################################################################################
+    # WARNING
+    # Yeo-Johnson is basically broken for some series with high values.
+    # Follow this issue: https://github.com/scikit-learn/scikit-learn/issues/14959
+    # Until this is solved, Yeo-Johnson may not work as expected and create random crashes.
+    #######################################################################################
+
     def __init__(self):
         self.lmbda = 0
 

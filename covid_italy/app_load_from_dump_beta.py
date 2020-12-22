@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 import pickle
 
@@ -7,19 +9,32 @@ from datetime import datetime, timezone
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
+from timex.data_visualization.data_visualization import create_scenario_children
 
+log = logging.getLogger(__name__)
+
+
+param_file_nameJSON = 'configurations/configuration_test_covid19italy_BETA.json'
+
+# Load parameters from config file.
+with open(param_file_nameJSON) as json_file:  # opening the config_file_name
+    param_config = json.load(json_file)  # loading the json
+
+# Load scenarios dump.
+with open(f"scenarios_beta.pkl", 'rb') as input_file:
+    scenarios = pickle.load(input_file)
+
+# data visualization
+children_for_each_scenario = [{
+    'name': s.scenario_data.columns[0],
+    'children': create_scenario_children(s, param_config)
+} for s in scenarios]
 
 # Initialize Dash app.
 app = dash.Dash(__name__)
 server = app.server
 
 now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-
-# Get children fromfile
-curr_dirr = os.path.dirname(os.path.abspath(__file__))
-filename = 'children_for_each_scenario_beta.pkl'
-with open(f"{curr_dirr}/{filename}", 'rb') as input_file:
-    children_for_each_scenario = pickle.load(input_file)
 
 disclaimer = [html.Div([
     html.H1("COVID-19 pandemic in Italy: monitoring and forecasting", style={'text-align': 'center'}),
@@ -84,3 +99,5 @@ def update_scenario_wrapper(input_value):
         return html.Div(style={'padding': 200})
 
     return children
+
+

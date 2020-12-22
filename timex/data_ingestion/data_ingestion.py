@@ -67,8 +67,6 @@ def data_ingestion(param_config):
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
-    df_ingestion = add_freq(df_ingestion, freq)
-
     if "add_diff_column" in input_parameters:
         log.debug(f"Adding the diff columns...")
         targets = list(input_parameters["add_diff_column"].split(','))
@@ -89,6 +87,7 @@ def data_ingestion(param_config):
              f"-> Column names: {[*df_ingestion.columns]}\n"
              f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
 
+    df_ingestion = add_freq(df_ingestion, freq)
     return df_ingestion
 
 

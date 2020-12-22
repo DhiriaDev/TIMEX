@@ -26,6 +26,24 @@ class FBProphet(PredictionModel):
 
     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
+        # deals_dates = pd.date_range('2019-02-07', periods=12, freq='D').union_many([
+        #     pd.date_range('2019-03-28', periods=12, freq='D'),
+        #     pd.date_range('2019-06-05', periods=12, freq='D'),
+        #     pd.date_range('2019-07-17', periods=12, freq='D'),
+        #     pd.date_range('2019-10-02', periods=12, freq='D'),
+        #     pd.date_range('2019-11-09', periods=12, freq='D'),
+        #     pd.date_range('2020-02-05', periods=12, freq='D'),
+        #     pd.date_range('2020-03-04', periods=12, freq='D'),
+        #     pd.date_range('2020-04-29', periods=12, freq='D'),
+        #     pd.date_range('2020-06-10', periods=12, freq='D'),
+        #     pd.date_range('2020-07-11', periods=12, freq='D'),
+        #     pd.date_range('2020-10-13', periods=12, freq='D'),
+        #     pd.date_range('2020-11-30', periods=40, freq='D'),
+        # ])
+        # deals = pd.DataFrame({
+        #     'holiday': 'deals',
+        #     'ds': deals_dates,
+        # })
         self.fbmodel = Prophet()
 
         if extra_regressors is not None:
@@ -96,7 +114,8 @@ class FBProphet(PredictionModel):
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
-        future = self.fbmodel.make_future_dataframe(periods=self.prediction_lags + self.test_values, freq=self.freq)
+        future = future_dataframe.reset_index()
+        future.rename(columns={'index': 'ds'}, inplace=True)
 
         if extra_regressors is not None:
             future.set_index('ds', inplace=True)
