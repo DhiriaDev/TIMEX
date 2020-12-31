@@ -170,10 +170,9 @@ class PredictionModel:
         self.freq = ""
         log.debug(f"Finished model creation.")
 
-    def train(self, ingested_data: DataFrame, extra_regressor: DataFrame = None) -> TestingPerformance:
+    def train(self, ingested_data: DataFrame, extra_regressor: DataFrame = None):
         """
         Train the model on the ingested_data.
-        Returns the statistical performance of the testing.
 
         Parameters
         ----------
@@ -182,10 +181,6 @@ class PredictionModel:
 
         extra_regressor : DataFrame
             Additional time series to use for better predictions.
-
-        Returns
-        -------
-        testing_performance : TestingPerformance
         """
         pass
 
@@ -305,10 +300,9 @@ class PredictionModel:
         training_results.sort(key=lambda x: getattr(x.testing_performances, self.main_accuracy_estimator.upper()))
         best_starting_index = training_results[0].testing_performances.first_used_index
 
-        training_data = ingested_data.loc[best_starting_index:]
+        training_data = ingested_data.copy().loc[best_starting_index:]
 
-        with pd.option_context('mode.chained_assignment', None):
-            training_data.iloc[:, 0] = self.transformation.apply(training_data.iloc[:, 0])
+        training_data.iloc[:, 0] = self.transformation.apply(training_data.iloc[:, 0])
 
         self.train(training_data.copy(), extra_regressors)
 
@@ -347,11 +341,12 @@ class PredictionModel:
 
         self.freq = pd.infer_freq(ingested_data.index)
 
-        train_ts = ingested_data.iloc[:-self.test_values]
-        test_ts = ingested_data.iloc[-self.test_values:]
+        # We need to pass ingested data both to compute_training and compute_best_prediction, so better use copy()
+        # because, otherwise, we may have side effects.
+        train_ts = ingested_data.copy().iloc[:-self.test_values]
+        test_ts = ingested_data.copy().iloc[-self.test_values:]
 
-        with pd.option_context('mode.chained_assignment', None):
-            train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
+        train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
 
         model_training_results = self.compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
 

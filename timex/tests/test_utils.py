@@ -2,12 +2,16 @@ import os
 import unittest
 from datetime import datetime
 
+import dateparser
 import pandas
+from fbprophet import Prophet
 from pandas import DataFrame
 import numpy as np
+import pandas as pd
 
 from timex.data_ingestion.data_ingestion import add_freq
 from timex.data_prediction.data_prediction import SingleResult, TestingPerformance, ModelResult, calc_all_xcorr
+from timex.data_prediction.prophet_predictor import suppress_stdout_stderr
 from timex.scenario.scenario import Scenario
 from timex.utils.utils import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_predictions
@@ -165,6 +169,101 @@ class MyTestCase(unittest.TestCase):
 
         # Cleanup.
         os.remove("test_hist_pred_saves/test1.pkl")
+
+    def test_compute_predictions_2(self):
+
+        ing_data = pd.read_csv("test_datasets/test_covid.csv")
+        ing_data["data"] = ing_data["data"].apply(lambda x: dateparser.parse(x))
+        ing_data.set_index("data", inplace=True, drop=True)
+        ing_data = add_freq(ing_data, "D")
+
+        param_config = {
+            "input_parameters": {},
+            "model_parameters": {
+                "test_values": 5,
+                "delta_training_percentage": 30,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "fbprophet",
+                "main_accuracy_estimator": "mae",
+                "xcorr_max_lags": 120,
+                "xcorr_extra_regressor_threshold": 0.99,
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            },
+            "historical_prediction_parameters": {
+                "initial_index": "2020-12-08",
+                "save_path": "test_hist_pred_saves/test2.pkl"
+            }
+        }
+
+        # You can verify with this code that tr_1 is the best training window.
+        # test_values = 5
+        # tr_1 = ing_data.copy().iloc[-35:-5][['nuovi_positivi']]
+        # tr_2 = ing_data.copy().iloc[-65:-5][['nuovi_positivi']]
+        # tr_3 = ing_data.copy().iloc[-95:-5][['nuovi_positivi']]
+        # tr_4 = ing_data.copy().iloc[0:-5][['nuovi_positivi']]
+
+        # tr_sets = [tr_1, tr_2, tr_3, tr_4]
+        # testing_df = ing_data.copy().iloc[-5:]['nuovi_positivi']
+        #
+        # for tr in tr_sets:
+        #     fb_tr = tr.copy()
+        #     fbmodel = Prophet()
+        #     fb_tr.reset_index(inplace=True)
+        #     fb_tr.columns = ['ds', 'y']
+        #
+        #     with suppress_stdout_stderr():
+        #         fbmodel.fit(fb_tr)
+        #
+        #     future_df = pd.DataFrame(index=pd.date_range(freq="1d",
+        #                                                  start=tr.index.values[0],
+        #                                                  periods=len(tr) + test_values + 10),
+        #                              columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
+        #
+        #     future = future_df.reset_index()
+        #     future.rename(columns={'index': 'ds'}, inplace=True)
+        #
+        #     forecast = fbmodel.predict(future)
+        #
+        #     forecast.set_index('ds', inplace=True)
+        #
+        #     testing_prediction = forecast.iloc[-15:-10]['yhat']
+        #     print(mean_absolute_error(testing_df['nuovi_positivi'], testing_prediction))
+
+        # The best tr is tr_1. Compute historical predictions.
+        tr_1 = ing_data.copy().iloc[-35:][['nuovi_positivi']]
+        fb_tr = tr_1.copy()
+        fbmodel = Prophet()
+        fb_tr.reset_index(inplace=True)
+        fb_tr.columns = ['ds', 'y']
+
+        with suppress_stdout_stderr():
+            fbmodel.fit(fb_tr)
+
+        future_df = pd.DataFrame(index=pd.date_range(freq="1d",
+                                                     start=tr_1.index.values[0],
+                                                     periods=len(tr_1) + 10),
+                                 columns=["yhat"], dtype=tr_1.iloc[:, 0].dtype)
+        future = future_df.reset_index()
+        future.rename(columns={'index': 'ds'}, inplace=True)
+        forecast = fbmodel.predict(future)
+        forecast.set_index('ds', inplace=True)
+        historical_prediction = forecast[['yhat']]
+
+        # Let TIMEX do this thing.
+        scenarios = compute_predictions(ingested_data=ing_data, param_config=param_config)
+
+        scenario = scenarios[1]
+        training_results = scenario.models['fbprophet'].results
+        training_results.sort(key=lambda x: getattr(x.testing_performances, 'MAE'))
+
+        self.assertTrue(historical_prediction.equals(scenario.models['fbprophet'].best_prediction[['yhat']]))
+
+        # Cleanup.
+        os.remove("test_hist_pred_saves/test2.pkl")
+
+        # Make this test with a log_modified
 
 
 if __name__ == '__main__':

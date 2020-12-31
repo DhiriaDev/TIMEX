@@ -12,6 +12,7 @@ import numpy as np
 
 from timex.data_prediction.data_prediction import PredictionModel, TestingPerformance
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
+log = logging.getLogger(__name__)
 
 
 class FBProphet(PredictionModel):
@@ -23,6 +24,10 @@ class FBProphet(PredictionModel):
         # Stuff needed to make Prophet shut up during training.
         self.suppress_stdout_stderr = suppress_stdout_stderr
         self.fbmodel = Prophet()
+        try:
+            self.fbprophet_parameters = params["model_parameters"]["fbprophet_parameters"]
+        except KeyError:
+            self.fbprophet_parameters = None
 
     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
@@ -45,6 +50,14 @@ class FBProphet(PredictionModel):
         #     'ds': deals_dates,
         # })
         self.fbmodel = Prophet()
+
+        if self.fbprophet_parameters is not None:
+            try:
+                holiday_country = self.fbprophet_parameters["holiday_country"]
+                self.fbmodel.add_country_holidays(country_name=holiday_country)
+                log.debug(f"Set {holiday_country} as country for holiday calendar...")
+            except KeyError:
+                pass
 
         if extra_regressors is not None:
             # We could apply self.transformation also on the extra regressors.
