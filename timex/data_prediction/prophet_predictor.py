@@ -31,33 +31,27 @@ class FBProphet(PredictionModel):
 
     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
-        # deals_dates = pd.date_range('2019-02-07', periods=12, freq='D').union_many([
-        #     pd.date_range('2019-03-28', periods=12, freq='D'),
-        #     pd.date_range('2019-06-05', periods=12, freq='D'),
-        #     pd.date_range('2019-07-17', periods=12, freq='D'),
-        #     pd.date_range('2019-10-02', periods=12, freq='D'),
-        #     pd.date_range('2019-11-09', periods=12, freq='D'),
-        #     pd.date_range('2020-02-05', periods=12, freq='D'),
-        #     pd.date_range('2020-03-04', periods=12, freq='D'),
-        #     pd.date_range('2020-04-29', periods=12, freq='D'),
-        #     pd.date_range('2020-06-10', periods=12, freq='D'),
-        #     pd.date_range('2020-07-11', periods=12, freq='D'),
-        #     pd.date_range('2020-10-13', periods=12, freq='D'),
-        #     pd.date_range('2020-11-30', periods=40, freq='D'),
-        # ])
-        # deals = pd.DataFrame({
-        #     'holiday': 'deals',
-        #     'ds': deals_dates,
-        # })
-        self.fbmodel = Prophet()
 
         if self.fbprophet_parameters is not None:
+            try:
+                scenario_name = input_data.columns[0]
+                date_format = self.fbprophet_parameters["holidays_dataframes"]["date_format"]
+                holidays = pd.read_csv(self.fbprophet_parameters["holidays_dataframes"][scenario_name])
+                holidays.loc[:, "ds"].apply(lambda x: pd.to_datetime(x, format=date_format))
+                self.fbmodel = Prophet(holidays=holidays)
+                log.debug(f"Using a dataframe for holidays...")
+            except KeyError:
+                self.fbmodel = Prophet()
+
             try:
                 holiday_country = self.fbprophet_parameters["holiday_country"]
                 self.fbmodel.add_country_holidays(country_name=holiday_country)
                 log.debug(f"Set {holiday_country} as country for holiday calendar...")
             except KeyError:
                 pass
+
+        else:
+            self.fbmodel = Prophet()
 
         if extra_regressors is not None:
             # We could apply self.transformation also on the extra regressors.

@@ -149,8 +149,8 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
     iterations = 0
     best_forecasts_found = 0
 
-    xcorr_mode_target = param_config["model_parameters"]["xcorr_mode_target"]
-    xcorr_threshold = param_config["model_parameters"]["xcorr_extra_regressor_threshold"]
+    xcorr_mode_target = param_config["xcorr_parameters"]["xcorr_mode_target"]
+    xcorr_threshold = param_config["xcorr_parameters"]["xcorr_extra_regressor_threshold"]
     main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
 
     models = [*param_config["model_parameters"]["models"].split(",")]
@@ -225,7 +225,26 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
     return scenarios
 
 
-def compute_predictions(ingested_data, param_config):
+def get_best_predictions(ingested_data: DataFrame, param_config: dict):
+
+    log.info(f"Computing the cross-correlation...")
+    if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
+        total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
+    else:
+        total_xcorr = None
+
+    best_transformations, scenarios = get_best_univariate_predictions(ingested_data, param_config, total_xcorr)
+
+    if total_xcorr is not None:
+        scenarios = get_best_multivariate_predictions(scenarios=scenarios, ingested_data=ingested_data,
+                                                      best_transformations=best_transformations,
+                                                      total_xcorr=total_xcorr,
+                                                      param_config=param_config)
+
+    return scenarios
+
+
+def compute_historical_predictions(ingested_data, param_config):
     """
 
     Parameters
@@ -273,15 +292,7 @@ def compute_predictions(ingested_data, param_config):
         available_data = ingested_data[:current_index]  # Remember: this includes current_index
         log.info(f"Using data from {available_data.index[0]} to {current_index} for training...")
 
-        log.info(f"Computing the cross-correlation...")
-        total_xcorr = calc_all_xcorr(ingested_data=available_data, param_config=param_config)
-
-        best_transformations, scenarios = get_best_univariate_predictions(available_data, param_config, total_xcorr)
-
-        scenarios = get_best_multivariate_predictions(scenarios=scenarios, ingested_data=available_data,
-                                                      best_transformations=best_transformations,
-                                                      total_xcorr=total_xcorr,
-                                                      param_config=param_config)
+        scenarios = get_best_predictions(ingested_data, param_config)
 
         log.info(f"Assigning the 1-step-ahead prediction for {current_index + delta_index}")
         for s in scenarios:
@@ -304,6 +315,33 @@ def compute_predictions(ingested_data, param_config):
     log.info(f"Saving the historical prediction to file...")
     with open(save_path, 'wb') as file:
         pickle.dump(historical_prediction, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return scenarios
+
+
+def create_scenarios(ingested_data: DataFrame, param_config: dict):
+
+    if "historical_prediction_parameters" in param_config:
+        log.debug(f"Requested the computation of historical predictions.")
+        scenarios = compute_historical_predictions(ingested_data, param_config)
+    else:
+        if "model_parameters" in param_config:
+            log.debug(f"Computing best predictions, without history.")
+            scenarios = get_best_predictions(ingested_data, param_config)
+        else:
+            log.debug(f"Creating scenarios only for data visualization.")
+            scenarios = []
+            if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
+                total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
+            else:
+                total_xcorr = None
+
+            for col in ingested_data.columns:
+                scenario_data = ingested_data[[col]]
+                scenario_xcorr = total_xcorr[col] if total_xcorr is not None else None
+                scenarios.append(
+                    Scenario(scenario_data, None, scenario_xcorr)
+                )
 
     return scenarios
 

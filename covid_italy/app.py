@@ -51,8 +51,8 @@ def create_children():
 
     # data prediction
     log.info(f"Computing the cross-correlation...")
-    max_lags = param_config['model_parameters']['xcorr_max_lags']
-    modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
+    max_lags = param_config['xcorr_parameters']['xcorr_max_lags']
+    modes = [*param_config['xcorr_parameters']["xcorr_mode"].split(",")]
     try:
         max_threads = param_config['max_threads']
     except KeyError:

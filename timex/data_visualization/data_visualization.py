@@ -43,10 +43,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
     children = []
 
     visualization_parameters = param_config["visualization_parameters"]
-    model_parameters = param_config["model_parameters"]
-
     scenario_data = scenario.scenario_data
-    models = scenario.models
+
     name = scenario_data.columns[0]
 
     # Data visualization with plots
@@ -76,35 +74,40 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
             cross_correlation_graph(name, scenario.xcorr, graph_corr_threshold)
         ])
 
-    # Prediction results
-    children.append(
-        html.H3("Training & Validation results"),
-    )
+    # Plot the prediction results, if requested.
+    if scenario.models is not None:
+        model_parameters = param_config["model_parameters"]
 
-    for model_name in models:
-        model = models[model_name]
-        model_results = model.results
-        model_characteristic = model.characteristics
+        models = scenario.models
 
-        test_values = model_characteristic["test_values"]
-        main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
-        model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+        children.append(
+            html.H3("Training & Validation results"),
+        )
 
-        best_prediction = model_results[0].prediction
-        testing_performances = [x.testing_performances for x in model_results]
+        for model_name in models:
+            model = models[model_name]
+            model_results = model.results
+            model_characteristic = model.characteristics
 
-        children.extend([
-            html.H4(f"{model_name}"),
-            characteristics_list(model_characteristic, testing_performances),
-            # html.Div("Testing performance:"),
-            # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-            prediction_plot(scenario_data, best_prediction, test_values),
-            performance_plot(scenario_data, best_prediction, testing_performances, test_values),
-        ])
+            test_values = model_characteristic["test_values"]
+            main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+            model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
 
-        # EXTRA
-        # Warning: this will plot every model result, with every training set used!
-        # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
+            best_prediction = model_results[0].prediction
+            testing_performances = [x.testing_performances for x in model_results]
+
+            children.extend([
+                html.H4(f"{model_name}"),
+                characteristics_list(model_characteristic, testing_performances),
+                # html.Div("Testing performance:"),
+                # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
+                prediction_plot(scenario_data, best_prediction, test_values),
+                performance_plot(scenario_data, best_prediction, testing_performances, test_values),
+            ])
+
+            # EXTRA
+            # Warning: this will plot every model result, with every training set used!
+            # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
 
     if scenario.historical_prediction is not None:
         children.extend([

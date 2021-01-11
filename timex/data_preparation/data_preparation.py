@@ -24,8 +24,11 @@ def data_selection(data_frame, param_config):
     df: DataFrame
         Pandas' DataFrame after the selection phase.
     """
-    selection_parameters = param_config["selection_parameters"]
-    input_parameters = param_config["input_parameters"]
+    try:
+        selection_parameters = param_config["selection_parameters"]
+    except KeyError:
+        log.debug(f"Selection phase not requested by user. Skip.")
+        return data_frame
 
     log.info(f"Total amount of rows before the selection phase: {len(data_frame)}")
 

@@ -14,7 +14,7 @@ from timex.data_prediction.data_prediction import SingleResult, TestingPerforman
 from timex.data_prediction.prophet_predictor import suppress_stdout_stderr
 from timex.scenario.scenario import Scenario
 from timex.utils.utils import prepare_extra_regressor, get_best_univariate_predictions, \
-    get_best_multivariate_predictions, compute_predictions
+    get_best_multivariate_predictions, compute_historical_predictions
 
 
 class MyTestCase(unittest.TestCase):
@@ -51,6 +51,12 @@ class MyTestCase(unittest.TestCase):
         ing_data = add_freq(ing_data, "D")
 
         param_config = {
+            "xcorr_parameters": {
+                "xcorr_max_lags": 120,
+                "xcorr_extra_regressor_threshold": 0.8,
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            },
             "model_parameters": {
                 "test_values": 2,
                 "delta_training_percentage": 20,
@@ -58,10 +64,6 @@ class MyTestCase(unittest.TestCase):
                 "possible_transformations": "log_modified,none",
                 "models": "fbprophet,arima",
                 "main_accuracy_estimator": "mae",
-                "xcorr_max_lags": 120,
-                "xcorr_extra_regressor_threshold": 0.8,
-                "xcorr_mode": "pearson",
-                "xcorr_mode_target": "pearson"
             }
         }
 
@@ -100,6 +102,12 @@ class MyTestCase(unittest.TestCase):
         ing_data = add_freq(ing_data, "D")
 
         param_config = {
+            "xcorr_parameters": {
+                "xcorr_max_lags": 120,
+                "xcorr_extra_regressor_threshold": 0.8,
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            },
             "input_parameters": {},
             "model_parameters": {
                 "test_values": 2,
@@ -108,10 +116,6 @@ class MyTestCase(unittest.TestCase):
                 "possible_transformations": "log_modified,none",
                 "models": "fbprophet,arima",
                 "main_accuracy_estimator": "mae",
-                "xcorr_max_lags": 120,
-                "xcorr_extra_regressor_threshold": 0.8,
-                "xcorr_mode": "pearson",
-                "xcorr_mode_target": "pearson"
             },
             "historical_prediction_parameters": {
                 "initial_index": "2000-01-29",
@@ -119,7 +123,7 @@ class MyTestCase(unittest.TestCase):
             }
         }
 
-        scenarios = compute_predictions(ingested_data=ing_data, param_config=param_config)
+        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
         self.assertEqual(len(scenarios), 2)
         self.assertEqual(scenarios[0].scenario_data.columns[0], "b")
@@ -146,7 +150,7 @@ class MyTestCase(unittest.TestCase):
         ing_data = add_freq(ing_data, "D")
 
         # This time historical predictions will be loaded from file.
-        scenarios = compute_predictions(ingested_data=ing_data, param_config=param_config)
+        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
         for s in scenarios:
             for model in s.historical_prediction:
@@ -252,7 +256,7 @@ class MyTestCase(unittest.TestCase):
         historical_prediction = forecast[['yhat']]
 
         # Let TIMEX do this thing.
-        scenarios = compute_predictions(ingested_data=ing_data, param_config=param_config)
+        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
         scenario = scenarios[1]
         training_results = scenario.models['fbprophet'].results

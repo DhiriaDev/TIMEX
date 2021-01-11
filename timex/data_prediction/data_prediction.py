@@ -495,8 +495,8 @@ def calc_all_xcorr(ingested_data: DataFrame, param_config: dict) -> dict:
     dict
         Python dict with a key for every cross-correlation algorithm requested.
     """
-    xcorr_max_lags = param_config['model_parameters']['xcorr_max_lags']
-    xcorr_modes = [*param_config['model_parameters']["xcorr_mode"].split(",")]
+    xcorr_max_lags = param_config['xcorr_parameters']['xcorr_max_lags']
+    xcorr_modes = [*param_config['xcorr_parameters']["xcorr_mode"].split(",")]
     d = {}
     for col in ingested_data.columns:
         d[col] = calc_xcorr(col, ingested_data, max_lags=xcorr_max_lags, modes=xcorr_modes)

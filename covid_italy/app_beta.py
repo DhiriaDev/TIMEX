@@ -8,12 +8,12 @@ import webbrowser
 from timex.data_ingestion import data_ingestion
 from timex.data_preparation.data_preparation import data_selection
 from timex.data_visualization.data_visualization import create_scenario_children
-from timex.utils.utils import compute_predictions
+from timex.utils.utils import compute_historical_predictions, create_scenarios
 
 log = logging.getLogger(__name__)
 
 
-def create_scenarios():
+def compute():
 
     param_file_nameJSON = 'configurations/configuration_test_covid19italy_BETA.json'
 
@@ -42,7 +42,7 @@ def create_scenarios():
                                               zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # data prediction
-    scenarios = compute_predictions(ingested_data=ingested_data, param_config=param_config)
+    scenarios = create_scenarios(ingested_data=ingested_data, param_config=param_config)
 
     # Save the children; these are the scenarios objects from which a nice Dash page can be built.
     # They can be loaded by "app_load_from_dump.py" to start the app
@@ -132,7 +132,7 @@ def create_scenarios():
 
 
 if __name__ == '__main__':
-    create_scenarios()
+    compute()
 
 
     def open_browser():

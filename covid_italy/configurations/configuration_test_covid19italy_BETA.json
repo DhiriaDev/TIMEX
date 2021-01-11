@@ -1,6 +1,6 @@
 {
   "activity_title": "Covid-19 Italy Analysis",
-  "verbose": "DEBUG",
+  "verbose": "INFO",
   "input_parameters": {
       "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
       "columns_to_load_from_url": "data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
@@ -22,9 +22,11 @@
           "tamponi_diff": "Daily tests"
         }
   },
-  "selection_parameters": {
-      "init_datetime": "2020-01-01T17:00:00",
-      "end_datetime": "2021-10-23T17:00:00"
+  "xcorr_parameters": {
+      "xcorr_max_lags": 120,
+      "xcorr_extra_regressor_threshold": 0.8,
+      "xcorr_mode": "pearson",
+      "xcorr_mode_target": "pearson"
   },
   "model_parameters": {
       "test_values": 5,
@@ -32,14 +34,10 @@
       "prediction_lags": 10,
       "possible_transformations" : "none,log_modified",
       "models": "fbprophet",
-      "main_accuracy_estimator": "mae",
-      "xcorr_max_lags": 120,
-      "xcorr_extra_regressor_threshold": 0.8,
-      "xcorr_mode": "pearson",
-      "xcorr_mode_target": "pearson"
+      "main_accuracy_estimator": "mae"
   },
   "historical_prediction_parameters": {
-      "initial_index": "2020-12-17",
+      "initial_index": "2020-08-18",
       "save_path": "historical_predictions_italy_covid.pkl"
   },
   "visualization_parameters": {
