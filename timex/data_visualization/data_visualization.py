@@ -18,6 +18,7 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 
 from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
 from timex.scenario.scenario import Scenario
+import calendar
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         html.H3("Data visualization"),
         line_plot(scenario_data),
         histogram_plot(scenario_data, visualization_parameters),
-        box_plot(scenario_data, visualization_parameters["box_plot_frequency"]),
+        box_plot(scenario_data, visualization_parameters),
+        box_plot_aggregate(scenario_data, visualization_parameters),
         components_plot(scenario_data),
         autocorrelation_plot(scenario_data),
     ])
@@ -527,7 +529,7 @@ def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.G
     return g
 
 
-def box_plot(df: DataFrame, freq: str) -> dcc.Graph:
+def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     """
     Create and return the box plot for a dataframe.
 
@@ -536,14 +538,18 @@ def box_plot(df: DataFrame, freq: str) -> dcc.Graph:
     df : DataFrame
     Dataframe to use in the box plot.
 
-    freq : str
-    Frequency which should be used to group the data and
-    create the boxes.
+    visualization_parameters : dict
+    Options set by the user.
 
     Returns
     -------
     g : dcc.Graph
     """
+    try:
+        freq = visualization_parameters['box_plot_frequency']
+    except KeyError:
+        freq = '1W'
+
     temp = df.iloc[:, 0]
     groups = temp.groupby(Grouper(freq=freq))
 
@@ -557,6 +563,58 @@ def box_plot(df: DataFrame, freq: str) -> dcc.Graph:
 
     fig = go.Figure(data=boxes)
     fig.update_layout(title='Box plot', xaxis_title=df.index.name, yaxis_title='Count')
+
+    g = dcc.Graph(
+        figure=fig
+    )
+    return g
+
+
+def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
+    """
+    Create and return the aggregate box plot for a dataframe, i.e. a box plot which shows, for each day of the week/for
+    each month of the year the distribution of the values.
+
+    Parameters
+    ----------
+    df : DataFrame
+    Dataframe to use in the box plot.
+
+    visualization_parameters : dict
+    Options set by the user.
+
+    Returns
+    -------
+    g : dcc.Graph
+    """
+
+    temp = df.iloc[:, 0]
+    try:
+        freq = visualization_parameters['aggregate_box_plot_frequency']
+    except KeyError:
+        freq = 'weekday'
+
+    if freq == 'weekday':
+        groups = temp.groupby(temp.index.weekday)
+        boxes = []
+
+        for group in groups:
+            boxes.append(go.Box(
+                name=calendar.day_name[group[0]],
+                y=group[1]
+            ))
+    else:
+        groups = temp.groupby(temp.index.month)
+        boxes = []
+
+        for group in groups:
+            boxes.append(go.Box(
+                name=calendar.month_name[group[0]],
+                y=group[1]
+            ))
+
+    fig = go.Figure(data=boxes)
+    fig.update_layout(title='Aggregate box plot', yaxis_title='Count')
 
     g = dcc.Graph(
         figure=fig
