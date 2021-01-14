@@ -11,6 +11,7 @@ import pandas as pd
 
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_all_xcorr, PredictionModel
+# from timex.data_prediction.lstm_predictor import LSTM_model
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.scenario.scenario import Scenario
 
@@ -292,7 +293,7 @@ def compute_historical_predictions(ingested_data, param_config):
         available_data = ingested_data[:current_index]  # Remember: this includes current_index
         log.info(f"Using data from {available_data.index[0]} to {current_index} for training...")
 
-        scenarios = get_best_predictions(ingested_data, param_config)
+        scenarios = get_best_predictions(available_data, param_config)
 
         log.info(f"Assigning the 1-step-ahead prediction for {current_index + delta_index}")
         for s in scenarios:
@@ -363,5 +364,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     """
     if model_class == "fbprophet":
         return FBProphet(params=param_config, transformation=transformation)
+    # if model_class == "LSTM":
+    #     return LSTM_model(param_config, transformation)
     else:
         return ARIMA(params=param_config, transformation=transformation)
