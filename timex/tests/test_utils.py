@@ -123,6 +123,12 @@ class MyTestCase(unittest.TestCase):
             }
         }
 
+        # Cleanup eventual dumps.
+        try:
+            os.remove("test_hist_pred_saves/test1.pkl")
+        except FileNotFoundError:
+            pass
+
         scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
         self.assertEqual(len(scenarios), 2)

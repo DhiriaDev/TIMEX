@@ -251,6 +251,13 @@ class PredictionModel:
         return_dict = manager.dict()
         processes = []
 
+        if self.name == 'LSTM':
+            log.info(f"LSTM model. Cant use multiprocessing.")
+            return_d = {}
+            distributions = [[0, train_sets_number]]
+            c(distributions[0], return_d, 0)
+            return return_d[0]
+
         if max_threads == 1:
             distributions = [[0, train_sets_number]]
             n_threads = 1

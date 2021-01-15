@@ -11,7 +11,7 @@ import pandas as pd
 
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_all_xcorr, PredictionModel
-# from timex.data_prediction.lstm_predictor import LSTM_model
+from timex.data_prediction.lstm_predictor import LSTM_model
 from timex.data_prediction.prophet_predictor import FBProphet
 from timex.scenario.scenario import Scenario
 
@@ -364,7 +364,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     """
     if model_class == "fbprophet":
         return FBProphet(params=param_config, transformation=transformation)
-    # if model_class == "LSTM":
-    #     return LSTM_model(param_config, transformation)
+    if model_class == "LSTM":
+        return LSTM_model(param_config, transformation)
     else:
         return ARIMA(params=param_config, transformation=transformation)
