@@ -56,6 +56,7 @@ class LSTM_model(PredictionModel):
     """LSTM prediction model."""
     def __init__(self, params: dict, transformation: str = None):
         super().__init__(params, name="LSTM", transformation=transformation)
+        self.scalers = {}
 
     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
@@ -70,6 +71,9 @@ class LSTM_model(PredictionModel):
             # From tests, it looks like it doesn't change much/it worsens the forecasts.
             input_data = input_data.join(extra_regressors)
             n_features = 1 + len(extra_regressors.columns)
+            for col in extra_regressors.columns:
+                self.scalers[col] = MinMaxScaler(feature_range=(-1, 1))
+                extra_regressors[col] = self.scalers[col].fit_transform(extra_regressors[[col]])
         else:
             n_features = 1
 
@@ -80,14 +84,9 @@ class LSTM_model(PredictionModel):
         input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
         input_data.set_index('ds', inplace=True)
 
-        self.scalers = {}
+        self.scalers['y'] = MinMaxScaler(feature_range=(-1, 1))
+        input_data['y'] = self.scalers['y'].fit_transform(input_data[['y']])
 
-        for col in input_data.columns:
-            self.scalers[col] = MinMaxScaler(feature_range=(-1, 1))
-            input_data[col] = self.scalers[col].fit_transform(input_data[[col]])
-
-
-        # raw_seq = input_data.iloc[:, 0].values
         n_steps_in, n_steps_out = round(self.delta_training_values/4), 1
         #
         train_inout_seq = split_sequences(input_data, n_steps_in, n_steps_out, n_features=n_features)
@@ -96,12 +95,6 @@ class LSTM_model(PredictionModel):
             x = np.array(train_inout_seq[i][0], dtype=np.float32)
             y = np.array(train_inout_seq[i][1], dtype=np.float32)
             train_inout_seq[i] = (torch.from_numpy(x), torch.tensor(y))
-
-        # train_data_normalized = self.scaler.fit_transform(np.array(raw_seq).reshape(-1, 1))
-        # train_data_torch = torch.FloatTensor(train_data_normalized).view(-1)
-        #
-
-        # train_inout_seq = split_sequence(train_data_torch, n_steps_in, n_steps_out)
 
         self.model = LSTM(input_size=n_features)
         self.model.to(dev)
@@ -128,26 +121,6 @@ class LSTM_model(PredictionModel):
         self.values_for_prediction = train_inout_seq[-1][0]
         self.len_train_set = len(input_data)
 
-        # print(f"Len tr set: {self.len_train_set}")
-        # print(f"Values for prediction: {self.values_for_prediction}")
-
-        # if extra_regressors is not None:
-        #     # We could apply self.transformation also on the extra regressors.
-        #     # From tests, it looks like it doesn't change much/it worsens the forecasts.
-        #     input_data = input_data.join(extra_regressors)
-        #     input_data.reset_index(inplace=True)
-        #     column_indices = [0, 1]
-        #     new_names = ['ds', 'y']
-        #     old_names = input_data.columns[column_indices]
-        #     input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
-        #     [self.fbmodel.add_regressor(col) for col in extra_regressors.columns]
-
-        # else:
-        #     input_data.reset_index(inplace=True)
-        #     input_data.columns = ['ds', 'y']
-
-        # with self.suppress_stdout_stderr():
-        #     self.fbmodel.fit(input_data)
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
@@ -156,7 +129,6 @@ class LSTM_model(PredictionModel):
         else:
             dev = "cpu"
 
-        # print(f"Predict.")
         requested_prediction = len(future_dataframe) - self.len_train_set
 
         if extra_regressors is not None:
@@ -170,9 +142,6 @@ class LSTM_model(PredictionModel):
             for i in range(0, requested_prediction):
                 val = np.array(extra_regressors.iloc[i, :], dtype=np.float32)
                 tensors_to_append.append(torch.tensor(val))
-            # tensors_to_append.to(dev)
-
-        # print(f"Requested prediction: {requested_prediction}")
 
         x_input = self.values_for_prediction
         x_input = x_input.to(dev)
@@ -186,11 +155,8 @@ class LSTM_model(PredictionModel):
                 result = self.model(seq)
                 if extra_regressors is not None:
                     result = torch.cat((result, tensors_to_append[i].to(dev)))
-                #         print(model(seq))
                 x_input = torch.cat((x_input, result.view(1, -1)))
 
-        # with torch.no_grad():
-        #     results = self.model(x_input)
 
         results = x_input[-requested_prediction:]
         results = results.to("cpu")

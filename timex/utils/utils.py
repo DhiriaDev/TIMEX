@@ -305,6 +305,9 @@ def compute_historical_predictions(ingested_data, param_config):
                 historical_prediction[model].loc[current_index + delta_index, scenario_name] = prediction_for_next_row
 
         current_index += delta_index
+        log.info(f"Saving partial historical prediction to file...")
+        with open(save_path, 'wb') as file:
+            pickle.dump(historical_prediction, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     for s in scenarios:
         scenario_name = s.scenario_data.columns[0]
@@ -312,10 +315,6 @@ def compute_historical_predictions(ingested_data, param_config):
         for model in historical_prediction:
             scenario_hist_predictions[model] = DataFrame(historical_prediction[model].loc[:, scenario_name])
         s.set_historical_prediction(scenario_hist_predictions)
-
-    log.info(f"Saving the historical prediction to file...")
-    with open(save_path, 'wb') as file:
-        pickle.dump(historical_prediction, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     return scenarios
 
