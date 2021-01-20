@@ -1,0 +1,252 @@
+# Translations template for PROJECT.
+# Copyright (C) 2021 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-01-20 17:21+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.9.0\n"
+
+#: data_visualization.py:69
+msgid " analysis"
+msgstr ""
+
+#: data_visualization.py:70
+msgid "Data visualization"
+msgstr ""
+
+#: data_visualization.py:85
+msgid "Cross-correlation"
+msgstr ""
+
+#: data_visualization.py:86
+msgid ""
+"Negative lags (left part) show the correlation between this scenario and "
+"the future of the others."
+msgstr ""
+
+#: data_visualization.py:88
+msgid ""
+"Meanwhile, positive lags (right part) shows the correlation between this "
+"scenario and the past of the others."
+msgstr ""
+
+#: data_visualization.py:91
+msgid ""
+"The peaks found using each cross-correlation modality are shown in the "
+"graphs:"
+msgstr ""
+
+#: data_visualization.py:102
+msgid "Training & Validation results"
+msgstr ""
+
+#: data_visualization.py:132
+msgid "Prediction"
+msgstr ""
+
+#: data_visualization.py:133
+msgid "For every model the best predictions for each past date are plotted."
+msgstr ""
+
+#: data_visualization.py:179 data_visualization.py:207
+msgid "Line plot"
+msgstr ""
+
+#: data_visualization.py:239
+msgid "Histogram"
+msgstr ""
+
+#: data_visualization.py:239 data_visualization.py:583
+#: data_visualization.py:635
+msgid "Count"
+msgstr ""
+
+#: data_visualization.py:265
+msgid "Trend"
+msgstr ""
+
+#: data_visualization.py:265
+msgid "Seasonality"
+msgstr ""
+
+#: data_visualization.py:265
+msgid "Residual"
+msgstr ""
+
+#: data_visualization.py:296
+msgid "Components decomposition"
+msgstr ""
+
+#: data_visualization.py:296
+msgid "Decomposition model"
+msgstr ""
+
+#: data_visualization.py:297
+msgid "Additive"
+msgstr ""
+
+#: data_visualization.py:298
+msgid "Multiplicative"
+msgstr ""
+
+#: data_visualization.py:306
+msgid ""
+"Multiplicative model is not available for series which contain zero or "
+"negative values."
+msgstr ""
+
+#: data_visualization.py:346
+msgid "autocorrelation"
+msgstr ""
+
+#: data_visualization.py:351
+msgid "Autocorrelation plot"
+msgstr ""
+
+#: data_visualization.py:351
+msgid "Autocorrelation"
+msgstr ""
+
+#: data_visualization.py:405
+msgid "Cross-correlation using different algorithms"
+msgstr ""
+
+#: data_visualization.py:406
+msgid "Lags"
+msgstr ""
+
+#: data_visualization.py:407
+msgid "Correlation"
+msgstr ""
+
+#: data_visualization.py:509
+msgid "Lag: "
+msgstr ""
+
+#: data_visualization.py:583
+msgid "Box plot"
+msgstr ""
+
+#: data_visualization.py:635
+msgid "Aggregate box plot"
+msgstr ""
+
+#: data_visualization.py:682
+msgid "yhat"
+msgstr ""
+
+#: data_visualization.py:686
+msgid "yhat_lower"
+msgstr ""
+
+#: data_visualization.py:689
+msgid "yhat_upper"
+msgstr ""
+
+#: data_visualization.py:696
+msgid "unused data"
+msgstr ""
+
+#: data_visualization.py:700 data_visualization.py:848
+msgid "training data"
+msgstr ""
+
+#: data_visualization.py:705
+msgid "validation data"
+msgstr ""
+
+#: data_visualization.py:706
+msgid "Best prediction for the validation set"
+msgstr ""
+
+#: data_visualization.py:745
+msgid "This model, during the history, reached these performances on unseen data:"
+msgstr ""
+
+#: data_visualization.py:750
+msgid "prediction"
+msgstr ""
+
+#: data_visualization.py:755
+msgid "real data"
+msgstr ""
+
+#: data_visualization.py:780
+msgid "Historical prediction"
+msgstr ""
+
+#: data_visualization.py:861
+msgid "Performances with different training windows"
+msgstr ""
+
+#: data_visualization.py:909
+msgid "Model type: "
+msgstr ""
+
+#: data_visualization.py:910
+msgid "Values used for testing: last "
+msgstr ""
+
+#: data_visualization.py:910
+msgid " values"
+msgstr ""
+
+#: data_visualization.py:911
+msgid "The length of the training windows is the "
+msgstr ""
+
+#: data_visualization.py:912
+msgid " of the length of the time series."
+msgstr ""
+
+#: data_visualization.py:913
+msgid "Training windows are composed of "
+msgstr ""
+
+#: data_visualization.py:913
+msgid " values."
+msgstr ""
+
+#: data_visualization.py:914
+msgid "The model has used "
+msgstr ""
+
+#: data_visualization.py:914
+msgid " as extra-regressor(s) to improve the training."
+msgstr ""
+
+#: data_visualization.py:915
+msgid "The model has used a "
+msgstr ""
+
+#: data_visualization.py:915
+msgid " transformation on the input data."
+msgstr ""
+
+#: data_visualization.py:916
+msgid "The model has not used any pre/post transformation on input data."
+msgstr ""
+
+#: data_visualization.py:920
+msgid "Model characteristics:"
+msgstr ""
+
+#: data_visualization.py:922
+msgid "This model, using the best training window, reaches these performances:"
+msgstr ""
+
+#: data_visualization.py:946
+msgid "Arithmetic mean of errors:"
+msgstr ""
+

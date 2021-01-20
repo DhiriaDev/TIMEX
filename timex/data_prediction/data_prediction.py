@@ -251,8 +251,8 @@ class PredictionModel:
         return_dict = manager.dict()
         processes = []
 
-        if self.name == 'LSTM':
-            log.info(f"LSTM model. Cant use multiprocessing.")
+        if self.name == 'LSTM' or self.name == 'NeuralProphet':
+            log.info(f"LSTM/NeuralProphet model. Cant use multiprocessing.")
             return_d = {}
             distributions = [[0, train_sets_number]]
             c(distributions[0], return_d, 0)

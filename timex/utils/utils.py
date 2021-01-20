@@ -8,6 +8,7 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 import pandas as pd
+from timex.data_prediction.neuralprophet_predictor import NeuralProphetModel
 
 from timex.data_prediction.arima_predictor import ARIMA
 from timex.data_prediction.data_prediction import calc_all_xcorr, PredictionModel
@@ -365,5 +366,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return FBProphet(params=param_config, transformation=transformation)
     if model_class == "LSTM":
         return LSTM_model(param_config, transformation)
+    if model_class == "neuralprophet":
+        return NeuralProphetModel(param_config, transformation)
     else:
         return ARIMA(params=param_config, transformation=transformation)

@@ -1,4 +1,7 @@
 import logging
+import gettext
+import pathlib
+import os
 
 import pandas
 from pandas import Grouper, DataFrame
@@ -10,7 +13,6 @@ import dash_html_components as html
 import plotly.express as px
 from plotly.subplots import make_subplots
 import networkx as nx
-from matplotlib import pyplot
 import dash_bootstrap_components as dbc
 
 from colorhash import ColorHash
@@ -21,6 +23,9 @@ from timex.scenario.scenario import Scenario
 import calendar
 
 log = logging.getLogger(__name__)
+
+# Default method to get a translated text.
+global _
 
 
 def create_scenario_children(scenario: Scenario, param_config: dict):
@@ -48,10 +53,21 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
 
     name = scenario_data.columns[0]
 
+    locale_dir = pathlib.Path(os.path.abspath(__file__)).parent / "locales"
+
+    try:
+        gt = gettext.translation('messages', localedir=locale_dir, languages=[visualization_parameters["language"]])
+        gt.install()
+        _ = gt.gettext
+    except:
+        gt = gettext.translation('messages', localedir=locale_dir, languages=['en'])
+        gt.install()
+        _ = gt.gettext
+
     # Data visualization with plots
     children.extend([
-        html.H2(children=name + " analysis", id=name),
-        html.H3("Data visualization"),
+        html.H2(children=name + _(' analysis'), id=name),
+        html.H3(_("Data visualization")),
         line_plot(scenario_data),
         histogram_plot(scenario_data, visualization_parameters),
         box_plot(scenario_data, visualization_parameters),
@@ -66,13 +82,13 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
             "xcorr_graph_threshold"] if "xcorr_graph_threshold" in visualization_parameters else None
 
         children.extend([
-            html.H3("Cross-correlation"),
-            html.Div("Negative lags (left part) show the correlation between this scenario and the future of the "
-                     "others."),
-            html.Div("Meanwhile, positive lags (right part) shows the correlation between this scenario "
-                     "and the past of the others."),
+            html.H3(_("Cross-correlation")),
+            html.Div(_("Negative lags (left part) show the correlation between this scenario and the future of the "
+                       "others.")),
+            html.Div(_("Meanwhile, positive lags (right part) shows the correlation between this scenario "
+                       "and the past of the others.")),
             cross_correlation_plot(scenario.xcorr),
-            html.Div("The peaks found using each cross-correlation modality are shown in the graphs:"),
+            html.Div(_("The peaks found using each cross-correlation modality are shown in the graphs:")),
             cross_correlation_graph(name, scenario.xcorr, graph_corr_threshold)
         ])
 
@@ -83,7 +99,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         models = scenario.models
 
         children.append(
-            html.H3("Training & Validation results"),
+            html.H3(_("Training & Validation results")),
         )
 
         for model_name in models:
@@ -113,8 +129,8 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
 
     if scenario.historical_prediction is not None:
         children.extend([
-            html.H3("Prediction"),
-            html.Div("For every model the best predictions for each past date are plotted.")
+            html.H3(_("Prediction")),
+            html.Div(_("For every model the best predictions for each past date are plotted."))
         ])
         for model in scenario.historical_prediction:
             children.extend([
@@ -160,7 +176,7 @@ def line_plot(df: DataFrame) -> dcc.Graph:
     g : dcc.Graph
     """
     fig = go.Figure(data=go.Scatter(x=df.index, y=df.iloc[:, 0], mode='lines+markers'))
-    fig.update_layout(title='Line plot', xaxis_title=df.index.name, yaxis_title=df.columns[0])
+    fig.update_layout(title=_('Line plot'), xaxis_title=df.index.name, yaxis_title=df.columns[0])
 
     g = dcc.Graph(
         figure=fig
@@ -188,7 +204,7 @@ def line_plot_multiIndex(df: DataFrame) -> dcc.Graph:
         fig.add_trace(go.Scatter(x=df.index.get_level_values(0).unique(), y=df.loc[
             (df.index.get_level_values(1) == region), df.columns[0]], name=region))
 
-    fig.update_layout(title='Line plot', xaxis_title=df.index.get_level_values(0).name,
+    fig.update_layout(title=_('Line plot'), xaxis_title=df.index.get_level_values(0).name,
                       yaxis_title=df.columns[0])
     g = dcc.Graph(
         figure=fig
@@ -213,12 +229,14 @@ def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     g : dcc.Graph
     """
 
-    if "histogram_bins" in visualization_parameters:
-        fig = px.histogram(df, df.columns[0], nbins=visualization_parameters["histogram_bins"])
-    else:
-        fig = px.histogram(df, df.columns[0])
+    try:
+        p = {'nbinsx': visualization_parameters["histogram_bins"]}
+    except KeyError:
+        p = {}
 
-    fig.update_layout(title='Histogram')
+    fig = go.Figure(data=[go.Histogram(x=df.iloc[:, 0], **p)])
+
+    fig.update_layout(title=_('Histogram'), xaxis_title_text=df.columns[0], yaxis_title_text=_('Count'))
     g = dcc.Graph(
         figure=fig
     )
@@ -244,7 +262,7 @@ def components_plot(ingested_data: DataFrame) -> html.Div:
     fig = make_subplots(
         rows=3,
         cols=1,
-        subplot_titles=["Trend", "Seasonality", "Residual"], shared_xaxes=True, vertical_spacing=0.05,
+        subplot_titles=[_("Trend"), _("Seasonality"), _("Residual")], shared_xaxes=True, vertical_spacing=0.05,
         specs=[[{"secondary_y": True}], [{"secondary_y": True}], [{"secondary_y": True}]]
     )
 
@@ -262,30 +280,28 @@ def components_plot(ingested_data: DataFrame) -> html.Div:
 
             fig.add_trace(go.Scatter(x=trend.index, y=trend,
                                      mode='lines+markers',
-                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
                           row=1, col=1, secondary_y=secondary_y)
             fig.add_trace(go.Scatter(x=seasonal.index, y=seasonal,
                                      mode='lines+markers', showlegend=False,
-                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
                           row=2, col=1, secondary_y=secondary_y)
             fig.add_trace(go.Scatter(x=residual.index, y=residual,
                                      mode='lines+markers', showlegend=False,
-                                     name=mode, legendgroup=mode, line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
                           row=3, col=1, secondary_y=secondary_y)
         except ValueError:
             log.warning(f"Multiplicative decomposition not available for {ingested_data.columns[0]}")
 
-    fig.update_layout(title="Components decomposition", height=1000, legend_title_text='Decomposition model')
-    fig.update_yaxes(title_text="<b>Additive</b>", secondary_y=False)
-    fig.update_yaxes(title_text="<b>Multiplicative</b>", secondary_y=True)
-    # fig.update_xaxes(title_text=)
-    # fig.update_yaxes(tick0=-1.0, dtick=0.25, range=[-1.2, 1.2], title_text="Correlation")
+    fig.update_layout(title=_("Components decomposition"), height=1000, legend_title_text=_('Decomposition model'))
+    fig.update_yaxes(title_text="<b>" + _('Additive') + "</b>", secondary_y=False)
+    fig.update_yaxes(title_text="<b>" + _('Multiplicative') + "</b>", secondary_y=True)
 
     g = dcc.Graph(
         figure=fig
     )
 
-    warning = html.H5("Multiplicative model is not available for series which contain zero or negative values.")
+    warning = html.H5(_("Multiplicative model is not available for series which contain zero or negative values."))
 
     return html.Div([g, warning])
 
@@ -325,12 +341,12 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     c4 = -z99 / np.sqrt(n)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name='autocorrelation'))
+    fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name=_('autocorrelation')))
     fig.add_trace(go.Scatter(x=x, y=np.full(n, c1), line=dict(color='gray', width=1), name='z99'))
     fig.add_trace(go.Scatter(x=x, y=np.full(n, c2), line=dict(color='gray', width=1), name='z95'))
     fig.add_trace(go.Scatter(x=x, y=np.full(n, c3), line=dict(color='gray', width=1), name='-z95'))
     fig.add_trace(go.Scatter(x=x, y=np.full(n, c4), line=dict(color='gray', width=1), name='-z99'))
-    fig.update_layout(title='Autocorrelation plot', xaxis_title='Lag', yaxis_title='Autocorrelation')
+    fig.update_layout(title=_('Autocorrelation plot'), xaxis_title=_('Lags'), yaxis_title=_('Autocorrelation'))
     fig.update_yaxes(tick0=-1.0, dtick=0.25)
     fig.update_yaxes(range=[-1.2, 1.2])
     g = dcc.Graph(
@@ -384,9 +400,9 @@ def cross_correlation_plot(xcorr: dict):
     # fig.add_trace(
     #     go.Scatter(x=significance_level.index, y=-significance_level['Value'], line=dict(color='gray', width=1), name='-z95'))
 
-    fig.update_layout(title="Cross-correlation using different algorithms")
-    fig.update_xaxes(title_text="Lags")
-    fig.update_yaxes(tick0=-1.0, dtick=0.25, range=[-1.2, 1.2], title_text="Correlation")
+    fig.update_layout(title=_("Cross-correlation using different algorithms"))
+    fig.update_xaxes(title_text=_("Lags"))
+    fig.update_yaxes(tick0=-1.0, dtick=0.25, range=[-1.2, 1.2], title_text=_("Correlation"))
 
     g = dcc.Graph(
         figure=fig
@@ -488,7 +504,7 @@ def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.G
             end = e[1]
             x, y = pos.get(end)
 
-            graph.add_annotation(x=x, y=y, text="Lag: " + lag + ", corr: " + corr, yshift=20, showarrow=False,
+            graph.add_annotation(x=x, y=y, text=_("Lag: ") + lag + ", corr: " + corr, yshift=20, showarrow=False,
                                  bgcolor='white')
 
         figures.append(graph)
@@ -562,7 +578,7 @@ def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
         ))
 
     fig = go.Figure(data=boxes)
-    fig.update_layout(title='Box plot', xaxis_title=df.index.name, yaxis_title='Count')
+    fig.update_layout(title=_('Box plot'), xaxis_title=df.index.name, yaxis_title=_('Count'))
 
     g = dcc.Graph(
         figure=fig
@@ -614,7 +630,7 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
             ))
 
     fig = go.Figure(data=boxes)
-    fig.update_layout(title='Aggregate box plot', yaxis_title='Count')
+    fig.update_layout(title=_('Aggregate box plot'), yaxis_title=_('Count'))
 
     g = dcc.Graph(
         figure=fig
@@ -661,31 +677,31 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
                              mode='lines+markers',
-                             name='yhat'))
+                             name=_('yhat')))
     try:
         fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
                                  line=dict(color='lightgreen', dash='dash'),
-                                 name='yhat_lower'))
+                                 name=_('yhat_lower')))
         fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
                                  line=dict(color='lightgreen', dash='dash'),
-                                 name='yhat_upper'))
+                                 name=_('yhat_upper')))
     except:
         pass
 
     fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
                              line=dict(color='black'),
                              mode='markers',
-                             name='unused data'))
+                             name=_('unused data')))
     fig.add_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
                              line=dict(color='green'),
                              mode='markers',
-                             name='training data'))
+                             name=_('training data')))
 
     fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
-                             name='validation data'))
-    fig.update_layout(title="Best prediction for the validation set", xaxis_title=df.index.name,
+                             name=_('validation data')))
+    fig.update_layout(title=_("Best prediction for the validation set"), xaxis_title=df.index.name,
                       yaxis_title=df.columns[0])
     g = dcc.Graph(
         figure=fig
@@ -724,17 +740,17 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) 
     testing_performance.set_testing_stats(actual=real_data.loc[first_predicted_index:, scenario_name],
                                           predicted=predicted_data.loc[:last_real_index, scenario_name])
     new_children.extend([
-        html.Div(f"This model, during the history, reached these performances on unseen data:"),
+        html.Div(_("This model, during the history, reached these performances on unseen data:")),
         show_errors(testing_performance)])
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                              mode='lines+markers',
-                             name='prediction'))
+                             name=_('prediction')))
 
     fig.add_trace(go.Scatter(x=real_data.index, y=real_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
-                             name='real data'))
+                             name=_('real data')))
 
     # try:
     #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
@@ -759,7 +775,7 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) 
     #                          line=dict(color='red'),
     #                          mode='markers',
     #                          name='test data'))
-    fig.update_layout(title="Historical prediction", xaxis_title=real_data.index.name,
+    fig.update_layout(title=_("Historical prediction"), xaxis_title=real_data.index.name,
                       yaxis_title=real_data.columns[0])
     g = dcc.Graph(
         figure=fig
@@ -827,7 +843,7 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     fig.append_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
                                 line=dict(color='black'),
                                 mode='markers',
-                                name='training data'), row=4, col=1)
+                                name=_('training data')), row=4, col=1)
 
     # Small trick to make the x-axis have the same length of the "Prediction plot"
     predicted_data.iloc[:, 0] = "nan"
@@ -840,7 +856,7 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     fig.update_yaxes(title_text="AM", row=3, col=1)
     fig.update_yaxes(title_text=df.columns[0], row=4, col=1)
 
-    fig.update_layout(title='Performances with different training windows', height=900)
+    fig.update_layout(title=_('Performances with different training windows'), height=900)
     g = dcc.Graph(
         figure=fig
     )
@@ -886,20 +902,22 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
     """
 
     def get_text_char(key: str, value: any) -> str:
+        value = str(value)
         switcher = {
-            "name": f"Model type: {value}",
-            "test_values": f"The last {value} values have been used for testing.",
-            "delta_training_percentage": f"The length of the training windows is the {value}% of the time series' length.",
-            "delta_training_values": f"Training windows are composed of {value} values.",
-            "extra_regressors": f"The model has used {value} as extra-regressor(s) to improve the training.",
-            "transformation": f"The model has used a {value} transformation on the input data." if str(value) != "none"
-            else f"The model has not used any pre/post transformation on input data."
+            "name": _("Model type: ") + value,
+            "test_values": _('Values used for testing: last ') + value + _(' values'),
+            "delta_training_percentage": _('The length of the training windows is the ') + value
+                                         + "%" + _(' of the length of the time series.'),
+            "delta_training_values": _('Training windows are composed of ') + value + _(' values.'),
+            "extra_regressors": _("The model has used ") + value + _(" as extra-regressor(s) to improve the training."),
+            "transformation": _('The model has used a ') + value + _(' transformation on the input data.') if value != "none "
+                              else _('The model has not used any pre/post transformation on input data.')
         }
         return switcher.get(key, "Invalid choice!")
 
-    elems = [html.Div("Model characteristics:"),
+    elems = [html.Div(_('Model characteristics:')),
              html.Ul([html.Li(get_text_char(key, model_characteristics[key])) for key in model_characteristics]),
-             html.Div("This model, using the best training window, reaches these performances:"),
+             html.Div(_("This model, using the best training window, reaches these performances:")),
              show_errors(testing_performances[0])]
 
     return html.Div(elems)
@@ -917,12 +935,13 @@ def show_errors(testing_performances: TestingPerformance) -> html.Div:
 
 
     """
+
     def get_text_perf(key: str, value: any) -> str:
         switcher = {
             "MAE": "MAE: " + str(round(value, 2)),
             "RMSE": "RMSE: " + str(round(value, 2)),
             "MSE": "MSE: " + str(round(value, 2)),
-            "AM": "Arithmetic mean of errors: " + str(round(value, 2))
+            "AM": _('Arithmetic mean of errors:') + str(round(value, 2))
         }
         return switcher.get(key, "Invalid choice!")
 
