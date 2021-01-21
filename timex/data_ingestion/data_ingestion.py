@@ -25,12 +25,28 @@ def data_ingestion(param_config):
         Pandas dataframe storing the data loaded from the url in config_file_name, with optional diff columns and the
         correct names.
     """
-
     input_parameters = param_config["input_parameters"]
 
     # Extract parameters from parameters' dictionary.
     columns_to_load_from_url = input_parameters["columns_to_load_from_url"]
     source_data_url = input_parameters["source_data_url"]
+
+    df_ingestion = ingest_from_url(source_data_url, param_config, columns_to_load_from_url)
+
+    log.info(f"Finished the data-ingestion phase. Some stats:\n"
+             f"-> Number of rows: {len(df_ingestion)}\n"
+             f"-> Number of columns: {len(df_ingestion.columns)}\n"
+             f"-> Column names: {[*df_ingestion.columns]}\n"
+             f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
+
+    return df_ingestion
+
+
+def ingest_from_url(source_data_url, param_config, columns_to_load_from_url=""):
+
+    input_parameters = param_config["input_parameters"]
+
+    # Extract parameters from parameters' dictionary.
     index_column_name = input_parameters["index_column_name"]
     try:
         freq = input_parameters["frequency"]
@@ -80,12 +96,6 @@ def data_ingestion(param_config):
             df_ingestion.set_index(mappings.get(index_column_name), inplace=True)
         except KeyError:
             df_ingestion.set_index(index_column_name, inplace=True)
-
-    log.info(f"Finished the data-ingestion phase. Some stats:\n"
-             f"-> Number of rows: {len(df_ingestion)}\n"
-             f"-> Number of columns: {len(df_ingestion.columns)}\n"
-             f"-> Column names: {[*df_ingestion.columns]}\n"
-             f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
 
     df_ingestion = add_freq(df_ingestion, freq)
     return df_ingestion

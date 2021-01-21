@@ -1,4 +1,3 @@
-import unittest
 from datetime import datetime
 
 from pandas._libs.tslibs.timestamps import Timestamp
@@ -9,8 +8,7 @@ from timex.data_ingestion.data_ingestion import data_ingestion, add_freq
 from timex.tests.utilities import get_fake_df
 
 
-class MyTestCase(unittest.TestCase):
-
+class TestDataIngestion:
     def test_data_ingestion_univariate_1(self):
         # Local load, with datetime. Infer freq.
         param_config = {
@@ -26,17 +24,17 @@ class MyTestCase(unittest.TestCase):
         }
 
         df = data_ingestion(param_config)
-        self.assertEqual(df.index.name, "first_column")
-        self.assertEqual(df.index.values[0], Timestamp("2020-02-25"))
-        self.assertEqual(df.index.values[1], Timestamp("2020-02-26"))
-        self.assertEqual(df.index.values[2], Timestamp("2020-02-27"))
+        assert df.index.name == "first_column"
+        assert df.index.values[0] == Timestamp("2020-02-25")
+        assert df.index.values[1] == Timestamp("2020-02-26")
+        assert df.index.values[2] == Timestamp("2020-02-27")
 
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(df.iloc[1]["third_column"], 6)
-        self.assertEqual(df.iloc[2]["third_column"], 9)
+        assert df.columns[0] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
 
-        self.assertEqual(df.index.freq, '1d')
+        assert df.index.freq == '1d'
 
     def test_data_ingestion_univariate_2(self):
         # Local load, with datetime. Specify freq.
@@ -54,17 +52,17 @@ class MyTestCase(unittest.TestCase):
         }
 
         df = data_ingestion(param_config)
-        self.assertEqual(df.index.name, "first_column")
-        self.assertEqual(df.index.values[0], Timestamp("2011-01-31 18:00:00"))
-        self.assertEqual(df.index.values[1], Timestamp("2011-02-28 18:00:00"))
-        self.assertEqual(df.index.values[2], Timestamp("2011-03-31 18:00:00"))
+        assert df.index.name == "first_column"
+        assert df.index.values[0] == Timestamp("2011-01-31 18:00:00")
+        assert df.index.values[1] == Timestamp("2011-02-28 18:00:00")
+        assert df.index.values[2] == Timestamp("2011-03-31 18:00:00")
 
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(df.iloc[1]["third_column"], 6)
-        self.assertEqual(df.iloc[2]["third_column"], 9)
+        assert df.columns[0] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
 
-        self.assertEqual(df.index.freq, 'M')
+        assert df.index.freq == 'M'
 
     def test_data_ingestion_univariate_3(self):
         # Local load, with no datetime column.
@@ -78,16 +76,16 @@ class MyTestCase(unittest.TestCase):
 
         df = data_ingestion(param_config)
 
-        self.assertEqual(df.index.name, "second_column")
+        assert df.index.name == "second_column"
 
-        self.assertEqual(df.index.values[0], 2)
-        self.assertEqual(df.index.values[1], 5)
-        self.assertEqual(df.index.values[2], 8)
+        assert df.index.values[0] == 2
+        assert df.index.values[1] == 5
+        assert df.index.values[2] == 8
 
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(df.iloc[1]["third_column"], 6)
-        self.assertEqual(df.iloc[2]["third_column"], 9)
+        assert df.columns[0] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
 
     def test_data_ingestion_univariate_4(self):
         # Local load, with no datetime column. Check columns'order is maintained.
@@ -101,9 +99,9 @@ class MyTestCase(unittest.TestCase):
 
         df = data_ingestion(param_config)
 
-        self.assertEqual(df.index.name, "second_column")
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.columns[1], "first_column")
+        assert df.index.name == "second_column"
+        assert df.columns[0] == "third_column"
+        assert df.columns[1] == "first_column"
 
     def test_data_ingestion_univariate_5(self):
         # Local load, with diff columns.
@@ -122,13 +120,13 @@ class MyTestCase(unittest.TestCase):
 
         df = data_ingestion(param_config)
 
-        self.assertEqual(df.index.name, "first_column")
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.columns[1], "second_column")
-        self.assertEqual(df.columns[2], "third_column_diff")
-        self.assertEqual(df.columns[3], "second_column_diff")
-        self.assertEqual(len(df.columns), 4)
-        self.assertEqual(len(df), 3)
+        assert df.index.name == "first_column"
+        assert df.columns[0] == "third_column"
+        assert df.columns[1] == "second_column"
+        assert df.columns[2] == "third_column_diff"
+        assert df.columns[3] == "second_column_diff"
+        assert len(df.columns) == 4
+        assert len(df) == 3
 
     def test_data_ingestion_univariate_6(self):
         # Local load, with diff columns. Rename columns.
@@ -155,13 +153,13 @@ class MyTestCase(unittest.TestCase):
 
         df = data_ingestion(param_config)
 
-        self.assertEqual(df.index.name, "A")
-        self.assertEqual(df.columns[0], "C")
-        self.assertEqual(df.columns[1], "B")
-        self.assertEqual(df.columns[2], "D")
-        self.assertEqual(df.columns[3], "E")
-        self.assertEqual(len(df.columns), 4)
-        self.assertEqual(len(df), 3)
+        assert df.index.name == "A"
+        assert df.columns[0] == "C"
+        assert df.columns[1] == "B"
+        assert df.columns[2] == "D"
+        assert df.columns[3] == "E"
+        assert len(df.columns) == 4
+        assert len(df) == 3
 
     def test_data_ingestion_univariate_7(self):
         # Test that duplicated data is removed.
@@ -179,10 +177,10 @@ class MyTestCase(unittest.TestCase):
 
         df = data_ingestion(param_config)
 
-        self.assertEqual(len(df), 3)
-        self.assertEqual(df.iloc[0, 0], 1)
-        self.assertEqual(df.iloc[1, 0], 3)
-        self.assertEqual(df.iloc[2, 0], 4)
+        assert len(df) == 3
+        assert df.iloc[0, 0] == 1
+        assert df.iloc[1, 0] == 3
+        assert df.iloc[2, 0] == 4
 
     def test_data_ingestion_univariate_8(self):
         # Local load, read all columns.
@@ -199,22 +197,22 @@ class MyTestCase(unittest.TestCase):
         }
 
         df = data_ingestion(param_config)
-        self.assertEqual(df.index.name, "first_column")
-        self.assertEqual(df.index.values[0], Timestamp("2020-02-25"))
-        self.assertEqual(df.index.values[1], Timestamp("2020-02-26"))
-        self.assertEqual(df.index.values[2], Timestamp("2020-02-27"))
+        assert df.index.name == "first_column"
+        assert df.index.values[0] == Timestamp("2020-02-25")
+        assert df.index.values[1] == Timestamp("2020-02-26")
+        assert df.index.values[2] == Timestamp("2020-02-27")
 
-        self.assertEqual(df.columns[0], "second_column")
-        self.assertEqual(df.iloc[0]["second_column"], 2)
-        self.assertEqual(df.iloc[1]["second_column"], 5)
-        self.assertEqual(df.iloc[2]["second_column"], 8)
+        assert df.columns[0] == "second_column"
+        assert df.iloc[0]["second_column"] == 2
+        assert df.iloc[1]["second_column"] == 5
+        assert df.iloc[2]["second_column"] == 8
 
-        self.assertEqual(df.columns[1], "third_column")
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(df.iloc[1]["third_column"], 6)
-        self.assertEqual(df.iloc[2]["third_column"], 9)
+        assert df.columns[1] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
 
-        self.assertEqual(df.index.freq, '1d')
+        assert df.index.freq == '1d'
 
     def test_data_ingestion_univariate_9(self):
         # Local load, with datetime with italian months (e.g. Gen, Feb, etc.)
@@ -232,24 +230,26 @@ class MyTestCase(unittest.TestCase):
         }
 
         df = data_ingestion(param_config)
-        self.assertEqual(df.index.name, "first_column")
-        self.assertEqual(df.index.values[0], Timestamp("2020-11-01"))
-        self.assertEqual(df.index.values[1], Timestamp("2020-12-01"))
-        self.assertEqual(df.index.values[2], Timestamp("2021-01-01"))
+        assert df.index.name == "first_column"
+        assert df.index.values[0] == Timestamp("2020-11-01")
+        assert df.index.values[1] == Timestamp("2020-12-01")
+        assert df.index.values[2] == Timestamp("2021-01-01")
 
-        self.assertEqual(df.columns[0], "third_column")
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(df.iloc[1]["third_column"], 6)
-        self.assertEqual(df.iloc[2]["third_column"], 9)
+        assert df.columns[0] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
 
-        self.assertEqual(df.index.freq, 'MS')
+        assert df.index.freq == 'MS'
 
+
+class TestAddFreq:
     def test_add_freq_1(self):
         # df already has freq; do nothing.
         df = get_fake_df(10)
         new_df = add_freq(df)
 
-        self.assertTrue(df.equals(new_df))
+        assert df.equals(new_df)
 
     def test_add_freq_2(self):
         # df is daily; check if it is set, without passing it.
@@ -257,8 +257,8 @@ class MyTestCase(unittest.TestCase):
         df.index.freq = None
 
         new_df = add_freq(df)
-        self.assertTrue(df.equals(new_df))
-        self.assertEqual(new_df.index.freq, "D")
+        assert df.equals(new_df)
+        assert new_df.index.freq == "D"
 
     def test_add_freq_3(self):
         # df is daily; check if it is set, passing it.
@@ -266,8 +266,8 @@ class MyTestCase(unittest.TestCase):
         df.index.freq = None
 
         new_df = add_freq(df, "D")
-        self.assertTrue(df.equals(new_df))
-        self.assertEqual(new_df.index.freq, "D")
+        assert df.equals(new_df)
+        assert new_df.index.freq == "D"
 
     def test_add_freq_4(self):
         # df is daily, but with different hours.
@@ -280,12 +280,12 @@ class MyTestCase(unittest.TestCase):
         ts = pd.DataFrame(np.random.randn(4), index=dates)
 
         new_ts = add_freq(ts)
-        self.assertTrue(ts.iloc[0].equals(new_ts.iloc[0]))
-        self.assertEqual(new_ts.index[0], Timestamp('2020-01-01 00:00:00', freq='D'))
-        self.assertEqual(new_ts.index[1], Timestamp('2020-01-02 00:00:00', freq='D'))
-        self.assertEqual(new_ts.index[2], Timestamp('2020-01-03 00:00:00', freq='D'))
-        self.assertEqual(new_ts.index[3], Timestamp('2020-01-04 00:00:00', freq='D'))
-        self.assertEqual(new_ts.index.freq, "D")
+        assert ts.iloc[0].equals(new_ts.iloc[0])
+        assert new_ts.index[0] == Timestamp('2020-01-01 00:00:00', freq='D')
+        assert new_ts.index[1] == Timestamp('2020-01-02 00:00:00', freq='D')
+        assert new_ts.index[2] == Timestamp('2020-01-03 00:00:00', freq='D')
+        assert new_ts.index[3] == Timestamp('2020-01-04 00:00:00', freq='D')
+        assert new_ts.index.freq == "D"
 
     def test_add_freq_5(self):
         # df has no clear frequency.
@@ -298,9 +298,6 @@ class MyTestCase(unittest.TestCase):
         ts = pd.DataFrame(np.random.randn(4), index=dates)
 
         new_ts = add_freq(ts)
-        self.assertTrue(new_ts.equals(ts))
-        self.assertEqual(new_ts.index.freq, None)
+        assert new_ts.equals(ts)
+        assert new_ts.index.freq == None
 
-
-if __name__ == '__main__':
-    unittest.main()

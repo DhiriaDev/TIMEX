@@ -1,9 +1,8 @@
 import os
-import unittest
-from datetime import datetime
 
 import dateparser
 import pandas
+import pytest
 from fbprophet import Prophet
 from pandas import DataFrame
 import numpy as np
@@ -14,10 +13,10 @@ from timex.data_prediction.data_prediction import SingleResult, TestingPerforman
 from timex.data_prediction.prophet_predictor import suppress_stdout_stderr
 from timex.scenario.scenario import Scenario
 from timex.utils.utils import prepare_extra_regressor, get_best_univariate_predictions, \
-    get_best_multivariate_predictions, compute_historical_predictions
+    get_best_multivariate_predictions, compute_historical_predictions, create_scenarios
 
 
-class MyTestCase(unittest.TestCase):
+class TestGetPredictions:
 
     def test_prepare_extra_regressors(self):
         ing_data = DataFrame({"a": np.arange(0, 10), "b": np.arange(10, 20)})
@@ -40,7 +39,7 @@ class MyTestCase(unittest.TestCase):
                                              44.0, 45.0, 46.0])})
         expected.set_index("a", inplace=True)
 
-        self.assertTrue(expected.equals(result))
+        assert expected.equals(result)
 
     def test_get_best_univariate_and_multivariate_predictions(self):
         # Check that results are in the correct form.
@@ -62,7 +61,7 @@ class MyTestCase(unittest.TestCase):
                 "delta_training_percentage": 20,
                 "prediction_lags": 10,
                 "possible_transformations": "log_modified,none",
-                "models": "fbprophet,arima",
+                "models": "fbprophet,mockup",
                 "main_accuracy_estimator": "mae",
             }
         }
@@ -71,28 +70,28 @@ class MyTestCase(unittest.TestCase):
 
         best_transformations, scenarios = get_best_univariate_predictions(ing_data, param_config, total_xcorr)
 
-        self.assertTrue(len(best_transformations), 2)
-        self.assertTrue(best_transformations["fbprophet"]["b"] in ["log_modified", "none"])
-        self.assertTrue(best_transformations["fbprophet"]["c"] in ["log_modified", "none"])
-        self.assertTrue(best_transformations["arima"]["b"] in ["log_modified", "none"])
-        self.assertTrue(best_transformations["arima"]["c"] in ["log_modified", "none"])
+        assert len(best_transformations) == 2
+        assert best_transformations["fbprophet"]["b"] in ["log_modified", "none"]
+        assert best_transformations["fbprophet"]["c"] in ["log_modified", "none"]
+        assert best_transformations["mockup"]["b"] in ["log_modified", "none"]
+        assert best_transformations["mockup"]["c"] in ["log_modified", "none"]
 
-        self.assertEqual(len(scenarios), 2)
-        self.assertEqual(scenarios[0].scenario_data.columns[0], "b")
-        self.assertEqual(scenarios[1].scenario_data.columns[0], "c")
+        assert len(scenarios) == 2
+        assert scenarios[0].scenario_data.columns[0] == "b"
+        assert scenarios[1].scenario_data.columns[0] == "c"
 
-        self.assertEqual(len(scenarios[0].models), 2)
-        self.assertEqual(len(scenarios[1].models), 2)
+        assert len(scenarios[0].models) == 2
+        assert len(scenarios[1].models) == 2
 
         scenarios = get_best_multivariate_predictions(best_transformations=best_transformations, ingested_data=ing_data,
                                                       scenarios=scenarios, param_config=param_config,
                                                       total_xcorr=total_xcorr)
-        self.assertEqual(len(scenarios), 2)
-        self.assertEqual(scenarios[0].scenario_data.columns[0], "b")
-        self.assertEqual(scenarios[1].scenario_data.columns[0], "c")
+        assert len(scenarios) == 2
+        assert scenarios[0].scenario_data.columns[0] == "b"
+        assert scenarios[1].scenario_data.columns[0] == "c"
 
-        self.assertEqual(len(scenarios[0].models), 2)
-        self.assertEqual(len(scenarios[1].models), 2)
+        assert len(scenarios[0].models) == 2
+        assert len(scenarios[1].models) == 2
 
     def test_compute_predictions(self):
         # Check results are in the correct form and test the function to save historic predictions to file.
@@ -114,7 +113,7 @@ class MyTestCase(unittest.TestCase):
                 "delta_training_percentage": 20,
                 "prediction_lags": 10,
                 "possible_transformations": "log_modified,none",
-                "models": "fbprophet,arima",
+                "models": "fbprophet,mockup",
                 "main_accuracy_estimator": "mae",
             },
             "historical_prediction_parameters": {
@@ -131,12 +130,12 @@ class MyTestCase(unittest.TestCase):
 
         scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
-        self.assertEqual(len(scenarios), 2)
-        self.assertEqual(scenarios[0].scenario_data.columns[0], "b")
-        self.assertEqual(scenarios[1].scenario_data.columns[0], "c")
+        assert len(scenarios) == 2
+        assert scenarios[0].scenario_data.columns[0] == "b"
+        assert scenarios[1].scenario_data.columns[0] == "c"
 
-        self.assertEqual(len(scenarios[0].models), 2)
-        self.assertEqual(len(scenarios[1].models), 2)
+        assert len(scenarios[0].models) == 2
+        assert len(scenarios[1].models) == 2
 
         b_old_hist = scenarios[0].historical_prediction
         c_old_hist = scenarios[1].historical_prediction
@@ -144,9 +143,9 @@ class MyTestCase(unittest.TestCase):
         for s in scenarios:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
-                self.assertEqual(len(hist_prediction), 2)
-                self.assertEqual(hist_prediction.index[0], pandas.to_datetime('2000-01-30', format="%Y-%m-%d"))
-                self.assertEqual(hist_prediction.index[1], pandas.to_datetime('2000-01-31', format="%Y-%m-%d"))
+                assert len(hist_prediction) == 2
+                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Simulate a 1-step ahead in time, so we have collected a new point.
         # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
@@ -161,21 +160,21 @@ class MyTestCase(unittest.TestCase):
         for s in scenarios:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
-                self.assertEqual(len(hist_prediction), 3)
-                self.assertEqual(hist_prediction.index[0], pandas.to_datetime('2000-01-30', format="%Y-%m-%d"))
-                self.assertEqual(hist_prediction.index[1], pandas.to_datetime('2000-01-31', format="%Y-%m-%d"))
-                self.assertEqual(hist_prediction.index[2], pandas.to_datetime('2000-02-01', format="%Y-%m-%d"))
+                assert len(hist_prediction) == 3
+                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
+                assert hist_prediction.index[2] == pandas.to_datetime('2000-02-01', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
-        self.assertEqual(b_old_hist['fbprophet'].iloc[0, 0], scenarios[0].historical_prediction['fbprophet'].iloc[0, 0])
-        self.assertEqual(b_old_hist['fbprophet'].iloc[1, 0], scenarios[0].historical_prediction['fbprophet'].iloc[1, 0])
-        self.assertEqual(b_old_hist['arima'].iloc[0, 0], scenarios[0].historical_prediction['arima'].iloc[0, 0])
-        self.assertEqual(b_old_hist['arima'].iloc[1, 0], scenarios[0].historical_prediction['arima'].iloc[1, 0])
+        assert b_old_hist['fbprophet'].iloc[0, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[0, 0]
+        assert b_old_hist['fbprophet'].iloc[1, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[1, 0]
+        assert b_old_hist['mockup'].iloc[0, 0] == scenarios[0].historical_prediction['mockup'].iloc[0, 0]
+        assert b_old_hist['mockup'].iloc[1, 0] == scenarios[0].historical_prediction['mockup'].iloc[1, 0]
 
-        self.assertEqual(c_old_hist['fbprophet'].iloc[0, 0], scenarios[1].historical_prediction['fbprophet'].iloc[0, 0])
-        self.assertEqual(c_old_hist['fbprophet'].iloc[1, 0], scenarios[1].historical_prediction['fbprophet'].iloc[1, 0])
-        self.assertEqual(c_old_hist['arima'].iloc[0, 0], scenarios[1].historical_prediction['arima'].iloc[0, 0])
-        self.assertEqual(c_old_hist['arima'].iloc[1, 0], scenarios[1].historical_prediction['arima'].iloc[1, 0])
+        assert c_old_hist['fbprophet'].iloc[0, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[0, 0]
+        assert c_old_hist['fbprophet'].iloc[1, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[1, 0]
+        assert c_old_hist['mockup'].iloc[0, 0] == scenarios[1].historical_prediction['mockup'].iloc[0, 0]
+        assert c_old_hist['mockup'].iloc[1, 0] == scenarios[1].historical_prediction['mockup'].iloc[1, 0]
 
         # Cleanup.
         os.remove("test_hist_pred_saves/test1.pkl")
@@ -196,10 +195,6 @@ class MyTestCase(unittest.TestCase):
                 "possible_transformations": "none",
                 "models": "fbprophet",
                 "main_accuracy_estimator": "mae",
-                "xcorr_max_lags": 120,
-                "xcorr_extra_regressor_threshold": 0.99,
-                "xcorr_mode": "pearson",
-                "xcorr_mode_target": "pearson"
             },
             "historical_prediction_parameters": {
                 "initial_index": "2020-12-08",
@@ -268,7 +263,7 @@ class MyTestCase(unittest.TestCase):
         training_results = scenario.models['fbprophet'].results
         training_results.sort(key=lambda x: getattr(x.testing_performances, 'MAE'))
 
-        self.assertTrue(historical_prediction.equals(scenario.models['fbprophet'].best_prediction[['yhat']]))
+        assert historical_prediction.equals(scenario.models['fbprophet'].best_prediction[['yhat']])
 
         # Cleanup.
         os.remove("test_hist_pred_saves/test2.pkl")
@@ -276,5 +271,85 @@ class MyTestCase(unittest.TestCase):
         # Make this test with a log_modified
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestCreateScenarios:
+    @pytest.mark.parametrize(
+        "historical_predictions, xcorr, additional_regressors, expected_extra_regressors, expected_value",
+        [(True,  True,  True,  {"b": "c, d", "c": "b, e"}, 2.0),
+         (True,  True,  False, {"b": "c", "c": "b"},       1.0),
+         (True,  False, True,  {"b": "d", "c": "e"},       1.0),
+         (True,  False, False, {},                         0.0),
+         (False, True,  True,  {"b": "c, d", "c": "b, e"}, 2.0),
+         (False, True,  False, {"b": "c", "c": "b"},       1.0),
+         (False, False, True,  {"b": "d", "c": "e"},       1.0),
+         (False, False, False, {},                         0.0)]
+    )
+    def test_create_scenarios(self, historical_predictions, xcorr, additional_regressors, expected_extra_regressors,
+                                expected_value):
+
+        try:
+            os.remove("test_hist_pred_saves/test_create_scenarios.pkl")
+        except FileNotFoundError:
+            pass
+
+        param_config = {
+            "input_parameters": {
+                "datetime_column_name": "date",
+                "index_column_name": "date",
+            },
+            "model_parameters": {
+                "test_values": 5,
+                "delta_training_percentage": 30,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "mockup",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        if historical_predictions:
+            param_config["historical_prediction_parameters"] = {
+                "initial_index": "2000-01-15",
+                "save_path": "test_hist_pred_saves/test_create_scenarios.pkl"
+            }
+
+        if xcorr:
+            param_config["xcorr_parameters"] = {
+                "xcorr_max_lags": 5,
+                "xcorr_extra_regressor_threshold": 0.0,  # Force the predictor to use it
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            }
+
+        if additional_regressors:
+            param_config["additional_regressors"] = {
+                "b": "test_datasets/test_create_scenarios_extrareg_d.csv",
+                "c": "test_datasets/test_create_scenarios_extrareg_e.csv",
+            }
+
+        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+                              "b": np.arange(30, 60), "c": np.arange(60, 90)})
+        ing_data.set_index("a", inplace=True)
+        ing_data = add_freq(ing_data, "D")
+
+        scenarios = create_scenarios(ing_data, param_config)
+
+        assert len(scenarios) == 2
+        for scenario in scenarios:
+            name = scenario.scenario_data.columns[0]
+
+            if expected_extra_regressors != {}:
+                assert scenario.models['mockup'].characteristics['extra_regressors'] == expected_extra_regressors[name]
+
+            if historical_predictions:
+                hp = scenario.historical_prediction['mockup']
+                assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].all() == expected_value
+            else:
+                assert scenario.historical_prediction is None
+
+        try:
+            os.remove("test_hist_pred_saves/test_create_scenarios.pkl")
+        except FileNotFoundError:
+            pass
+
+
+

@@ -8,6 +8,9 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 import pandas as pd
+from timex.data_prediction.mockup_predictor import MockUpModel
+
+from timex.data_ingestion.data_ingestion import ingest_from_url
 from timex.data_prediction.neuralprophet_predictor import NeuralProphetModel
 
 from timex.data_prediction.arima_predictor import ARIMA
@@ -151,9 +154,15 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
     iterations = 0
     best_forecasts_found = 0
 
-    xcorr_mode_target = param_config["xcorr_parameters"]["xcorr_mode_target"]
-    xcorr_threshold = param_config["xcorr_parameters"]["xcorr_extra_regressor_threshold"]
-    main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
+    if total_xcorr is not None:
+        xcorr_mode_target = param_config["xcorr_parameters"]["xcorr_mode_target"]
+        xcorr_threshold = param_config["xcorr_parameters"]["xcorr_extra_regressor_threshold"]
+        main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
+
+    try:
+        additional_regressors = param_config["additional_regressors"]
+    except KeyError:
+        additional_regressors = None
 
     models = [*param_config["model_parameters"]["models"].split(",")]
 
@@ -173,30 +182,42 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
             best_forecasts_found = 0
 
             for col in ingested_data.columns:
-                local_xcorr = total_xcorr[col][xcorr_mode_target]
-
                 useful_extra_regressors = []
 
-                for extra_regressor in local_xcorr.columns:
-                    # Look only in correlation with future lags.
-                    index_of_max = local_xcorr[extra_regressor].abs().idxmax()
-                    corr = local_xcorr.loc[index_of_max, extra_regressor]
-                    if abs(corr) > xcorr_threshold and index_of_max >= 0:
-                        log.debug(
-                            f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
-                        useful_extra_regressors.append(extra_regressor)
+                log.debug(f"Look for extra regressors in other dataset's columns...")
+                try:
+                    local_xcorr = total_xcorr[col][xcorr_mode_target]
+
+                    # Add extra regressors from the original dataset
+                    for extra_regressor in local_xcorr.columns:
+                        # Look only in correlation with future lags.
+                        index_of_max = local_xcorr[extra_regressor].abs().idxmax()
+                        corr = local_xcorr.loc[index_of_max, extra_regressor]
+                        if abs(corr) > xcorr_threshold and index_of_max >= 0:
+                            log.debug(
+                                f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
+
+                            useful_extra_regressors.append(
+                                prepare_extra_regressor(next(filter(
+                                    lambda x: x.scenario_data.columns[0] == extra_regressor, scenarios)),
+                                                    model=model, testing_performance_target=main_accuracy_estimator))
+                except:
+                    local_xcorr = None
+
+                log.debug(f"Look for user-given additional regressors...")
+                try:
+                    additional_regressor_path = additional_regressors[col]
+                    useful_extra_regressors.append(ingest_from_url(additional_regressor_path, param_config))
+                except:
+                    pass
 
                 if len(useful_extra_regressors) == 0:
                     log.debug(f"No useful extra-regressor found for {col}: skipping...")
                     best_forecasts_found += 1
                 else:
-                    log.info(f"Found useful extra-regressors. Prepare them and re-compute the prediction for {col}")
-                    useful_extra_regressors = [
-                        prepare_extra_regressor(next(filter(lambda x: x.scenario_data.columns[0] == s, scenarios)),
-                                                model=model, testing_performance_target=main_accuracy_estimator)
-                        for s in useful_extra_regressors]
-
                     useful_extra_regressors = reduce(lambda x, y: x.join(y), useful_extra_regressors)
+                    log.info(f"Found useful extra-regressors: {useful_extra_regressors.columns}. "
+                             f"Re-compute the prediction for {col}")
 
                     scenario_data = ingested_data[[col]]
 
@@ -216,7 +237,7 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
                         log.info(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
                         new_model_results = old_this_scenario.models
                         new_model_results[model] = _result
-                        new_scenario = Scenario(scenario_data, new_model_results, total_xcorr[col])
+                        new_scenario = Scenario(scenario_data, new_model_results, local_xcorr)
                         scenarios = [new_scenario if x.scenario_data.columns[0] == col else x for x in scenarios]
                     else:
                         log.info(f"No improvements.")
@@ -237,7 +258,7 @@ def get_best_predictions(ingested_data: DataFrame, param_config: dict):
 
     best_transformations, scenarios = get_best_univariate_predictions(ingested_data, param_config, total_xcorr)
 
-    if total_xcorr is not None:
+    if total_xcorr is not None or "additional_regressors" in param_config:
         scenarios = get_best_multivariate_predictions(scenarios=scenarios, ingested_data=ingested_data,
                                                       best_transformations=best_transformations,
                                                       total_xcorr=total_xcorr,
@@ -368,5 +389,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return LSTM_model(param_config, transformation)
     if model_class == "neuralprophet":
         return NeuralProphetModel(param_config, transformation)
+    if model_class == "mockup":
+        return MockUpModel(param_config, transformation)
     else:
         return ARIMA(params=param_config, transformation=transformation)

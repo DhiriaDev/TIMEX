@@ -1,17 +1,13 @@
-import unittest
-
 import numpy
-from pandas import DataFrame, read_csv
+from pandas import DataFrame
 from pandas._libs.tslibs.timestamps import Timestamp
 
 from timex.data_ingestion.data_ingestion import data_ingestion
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
 from timex.tests.utilities import get_fake_df
-import pandas as pd
 
 
-class MyTestCase(unittest.TestCase):
-
+class TestDataSelection:
     def test_data_selection_univariate_1(self):
         # Select rows using init datetime.
         param_config = {
@@ -27,12 +23,12 @@ class MyTestCase(unittest.TestCase):
         df = get_fake_df(length=3)
         selected_df = data_selection(df, param_config)
 
-        self.assertEqual(selected_df.index.values[0], Timestamp("2000-01-02"))
-        self.assertEqual(selected_df.index.values[1], Timestamp("2000-01-03"))
+        assert selected_df.index.values[0] == Timestamp("2000-01-02")
+        assert selected_df.index.values[1] == Timestamp("2000-01-03")
 
-        self.assertEqual(df.iloc[1]["value"], selected_df.iloc[0]["value"])
-        self.assertEqual(df.iloc[2]["value"], selected_df.iloc[1]["value"])
-        self.assertEqual(len(selected_df), 2)
+        assert df.iloc[1]["value"] == selected_df.iloc[0]["value"]
+        assert df.iloc[2]["value"] == selected_df.iloc[1]["value"]
+        assert len(selected_df) == 2
 
     def test_data_selection_univariate_2(self):
         # Select rows using end datetime.
@@ -49,12 +45,12 @@ class MyTestCase(unittest.TestCase):
         df = get_fake_df(length=3)
         selected_df = data_selection(df, param_config)
 
-        self.assertEqual(selected_df.index.values[0], Timestamp("2000-01-01"))
-        self.assertEqual(selected_df.index.values[1], Timestamp("2000-01-02"))
+        assert selected_df.index.values[0] == Timestamp("2000-01-01")
+        assert selected_df.index.values[1] == Timestamp("2000-01-02")
 
-        self.assertEqual(df.iloc[0]["value"], selected_df.iloc[0]["value"])
-        self.assertEqual(df.iloc[1]["value"], selected_df.iloc[1]["value"])
-        self.assertEqual(len(selected_df), 2)
+        assert df.iloc[0]["value"] == selected_df.iloc[0]["value"]
+        assert df.iloc[1]["value"] == selected_df.iloc[1]["value"]
+        assert len(selected_df) == 2
 
     def test_data_selection_univariate_3(self):
         # Select rows using both init and end time.
@@ -71,15 +67,15 @@ class MyTestCase(unittest.TestCase):
         df = get_fake_df(length=5)
         selected_df = data_selection(df, param_config)
 
-        self.assertEqual(selected_df.index.values[0], Timestamp("2000-01-02"))
-        self.assertEqual(selected_df.index.values[1], Timestamp("2000-01-03"))
-        self.assertEqual(selected_df.index.values[2], Timestamp("2000-01-04"))
+        assert selected_df.index.values[0] == Timestamp("2000-01-02")
+        assert selected_df.index.values[1] == Timestamp("2000-01-03")
+        assert selected_df.index.values[2] == Timestamp("2000-01-04")
 
-        self.assertEqual(df.iloc[1]["value"], selected_df.iloc[0]["value"])
-        self.assertEqual(df.iloc[2]["value"], selected_df.iloc[1]["value"])
-        self.assertEqual(df.iloc[3]["value"], selected_df.iloc[2]["value"])
+        assert df.iloc[1]["value"] == selected_df.iloc[0]["value"]
+        assert df.iloc[2]["value"] == selected_df.iloc[1]["value"]
+        assert df.iloc[3]["value"] == selected_df.iloc[2]["value"]
 
-        self.assertEqual(len(selected_df), 3)
+        assert len(selected_df) == 3
 
     def test_data_selection_univariate_4(self):
         # Select rows based on value.
@@ -101,23 +97,25 @@ class MyTestCase(unittest.TestCase):
         df = data_ingestion(param_config)
         df = data_selection(df, param_config)
 
-        self.assertEqual(df.index.values[0], Timestamp("2020-02-25"))
+        assert df.index.values[0] == Timestamp("2020-02-25")
 
-        self.assertEqual(df.iloc[0]["third_column"], 3)
-        self.assertEqual(len(df), 1)
+        assert df.iloc[0]["third_column"] == 3
+        assert len(df) == 1
 
+
+class TestAddDiff:
     def test_add_diff_column_1(self):
         # Add a single diff column.
         df = get_fake_df(3)
 
         new_df = add_diff_column(df, ["value"])
-        self.assertEqual(df.iloc[1]["value"], new_df.iloc[0]["value"])
-        self.assertEqual(df.iloc[2]["value"], new_df.iloc[1]["value"])
+        assert df.iloc[1]["value"] == new_df.iloc[0]["value"]
+        assert df.iloc[2]["value"] == new_df.iloc[1]["value"]
 
-        self.assertEqual(new_df.iloc[0]["value_diff"], df.iloc[1]["value"]-df.iloc[0]["value"])
-        self.assertEqual(new_df.iloc[1]["value_diff"], df.iloc[2]["value"]-df.iloc[1]["value"])
+        assert new_df.iloc[0]["value_diff"] == df.iloc[1]["value"]-df.iloc[0]["value"]
+        assert new_df.iloc[1]["value_diff"] == df.iloc[2]["value"]-df.iloc[1]["value"]
 
-        self.assertEqual(len(new_df), 2)
+        assert len(new_df) == 2
 
     def test_add_diff_column_2(self):
         # Add a multiple diff column.
@@ -131,7 +129,7 @@ class MyTestCase(unittest.TestCase):
                             dtype=numpy.float)
         test_df.set_index("a", inplace=True, drop=True)
 
-        self.assertTrue(new_df.equals(test_df))
+        assert new_df.equals(test_df)
 
     def test_add_diff_column_3(self):
         # Add a multiple diff column. Group by.
@@ -147,8 +145,5 @@ class MyTestCase(unittest.TestCase):
                              "c_diff": [2, 4, 6, 10, 16, 26], "d_diff": [4, 6, 10, 16, 26, 42]}, dtype=numpy.float)
         test_df.set_index(["a", "b"], inplace=True, drop=True)
 
-        self.assertTrue(new_df.equals(test_df))
+        assert new_df.equals(test_df)
 
-
-if __name__ == '__main__':
-    unittest.main()

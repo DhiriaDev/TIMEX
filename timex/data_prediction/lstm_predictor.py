@@ -87,8 +87,8 @@ class LSTM_model(PredictionModel):
         self.scalers['y'] = MinMaxScaler(feature_range=(-1, 1))
         input_data['y'] = self.scalers['y'].fit_transform(input_data[['y']])
 
-        n_steps_in, n_steps_out = round(self.delta_training_values/4), 1
-        #
+        n_steps_in, n_steps_out = round(len(input_data)/4), 1
+
         train_inout_seq = split_sequences(input_data, n_steps_in, n_steps_out, n_features=n_features)
 
         for i in range(0, len(train_inout_seq)):
@@ -120,7 +120,6 @@ class LSTM_model(PredictionModel):
 
         self.values_for_prediction = train_inout_seq[-1][0]
         self.len_train_set = len(input_data)
-
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
