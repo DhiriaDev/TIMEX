@@ -186,8 +186,7 @@ class PredictionModel:
 
     def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
         """
-        Return a DataFrame with the shape of future_dataframe,
-        filled with predicted values.
+        Return a DataFrame with the shape of future_dataframe,  filled with predicted values.
 
         Returns
         -------
@@ -237,6 +236,14 @@ class PredictionModel:
                                          columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
                 forecast = self.predict(future_df, extra_regressors)
+
+                forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
+                try:
+                    forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_lower'])
+                    forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
+                except:
+                    pass
+
                 testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
                 first_used_index = tr.index.values[0]
@@ -319,6 +326,14 @@ class PredictionModel:
                                  columns=["yhat"], dtype=training_data.iloc[:, 0].dtype)
 
         forecast = self.predict(future_df, extra_regressors)
+        forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
+
+        try:
+            forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_lower'])
+            forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
+        except:
+            pass
+
         return forecast
 
     def launch_model(self, ingested_data: DataFrame, extra_regressors: DataFrame = None, max_threads: int = 1) -> ModelResult:

@@ -53,6 +53,4 @@ class ARIMA(PredictionModel):
         r.rename(columns={'predicted_mean': 'yhat'}, inplace=True)
         future_dataframe.update(r)
 
-        future_dataframe.loc[:, 'yhat'] = self.transformation.inverse(future_dataframe['yhat'])
-
         return future_dataframe

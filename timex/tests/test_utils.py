@@ -13,7 +13,7 @@ from timex.data_prediction.data_prediction import SingleResult, TestingPerforman
 from timex.data_prediction.prophet_predictor import suppress_stdout_stderr
 from timex.scenario.scenario import Scenario
 from timex.utils.utils import prepare_extra_regressor, get_best_univariate_predictions, \
-    get_best_multivariate_predictions, compute_historical_predictions, create_scenarios
+    get_best_multivariate_predictions, compute_historical_predictions, create_scenarios, get_best_predictions
 
 
 class TestGetPredictions:
@@ -270,6 +270,63 @@ class TestGetPredictions:
 
         # Make this test with a log_modified
 
+    def test_get_best_predictions(self):
+        # Test that log_modified transformation is applied and that the results are the expected ones.
+        # Ideally this should the same using other models or transformations; it'just to test that pre/post
+        # transformations are correctly applied and that predictions are the ones we would obtain manually.
+        # It's nice to use Prophet for this because its predictions are deterministic.
+
+        df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
+                             "b": np.arange(30, 60)})
+
+        local_df = df[["ds", "b"]].copy()
+        local_df.rename(columns={"b": "y"}, inplace=True)
+        local_df['y'] = local_df['y'].apply(lambda x: np.sign(x) * np.log(abs(x) + 1))
+
+        # Compute "best_prediction"
+        model = Prophet()
+        with suppress_stdout_stderr():
+            model.fit(local_df.copy())
+
+        future = model.make_future_dataframe(periods=5)
+        expected_best_prediction = model.predict(future)
+        expected_best_prediction.loc[:, 'yhat'] = expected_best_prediction['yhat'].apply(lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
+        expected_best_prediction.set_index("ds", inplace=True)
+
+        # Compute the prediction we should find in model_results.
+        model = Prophet()
+        with suppress_stdout_stderr():
+            model.fit(local_df.iloc[:-5].copy())
+
+        future = model.make_future_dataframe(periods=10)
+        expected_test_prediction = model.predict(future)
+        expected_test_prediction.loc[:, 'yhat'] = expected_test_prediction['yhat'].apply(lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
+        expected_test_prediction.set_index("ds", inplace=True)
+
+        # Use TIMEX
+        # yhat_lower and yhat_upper are not deterministic. See https://github.com/facebook/prophet/issues/1695
+        param_config = {
+            "input_parameters": {},
+            "model_parameters": {
+                "test_values": 5,
+                "delta_training_percentage": 100,
+                "prediction_lags": 5,
+                "possible_transformations": "log_modified",
+                "models": "fbprophet",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        ingested_data = df[["ds", "b"]].copy()
+        ingested_data.set_index("ds", inplace=True)
+
+        scenarios = get_best_predictions(ingested_data, param_config)
+        test_prediction = scenarios[0].models['fbprophet'].results[0].prediction
+        best_prediction = scenarios[0].models['fbprophet'].best_prediction
+
+        assert best_prediction[['yhat']].equals(expected_best_prediction[['yhat']])
+        assert test_prediction[['yhat']].equals(expected_test_prediction[['yhat']])
+
 
 class TestCreateScenarios:
     @pytest.mark.parametrize(
@@ -326,6 +383,8 @@ class TestCreateScenarios:
                 "c": "test_datasets/test_create_scenarios_extrareg_e.csv",
             }
 
+        # Having values like 30 -> 60 or 60 -> 90 will make multivariate Mockup model always win on the univariate one
+        # because it will return the number of used extra-regressors (the more the lower MAE).
         ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)

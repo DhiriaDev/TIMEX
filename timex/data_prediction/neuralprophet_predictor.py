@@ -87,9 +87,6 @@ class NeuralProphetModel(PredictionModel):
         forecast = self.neuralprophetmodel.predict(future)
         forecast.rename(columns={'yhat1': 'yhat'}, inplace=True)
 
-        forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
-        # forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_upper'])
-        # forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
         future_dataframe.iloc[-requested_prediction:, 0] = forecast.loc[:, 'yhat']
 
         return future_dataframe

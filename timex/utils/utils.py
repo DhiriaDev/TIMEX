@@ -250,8 +250,8 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
 
 def get_best_predictions(ingested_data: DataFrame, param_config: dict):
 
-    log.info(f"Computing the cross-correlation...")
     if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
+        log.info(f"Computing the cross-correlation...")
         total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
     else:
         total_xcorr = None

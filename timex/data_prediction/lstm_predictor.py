@@ -163,10 +163,6 @@ class LSTM_model(PredictionModel):
         actual_predictions = self.scalers['y'].inverse_transform(np.array(results).reshape(-1, 1))
         future_dataframe.iloc[-requested_prediction:, 0] = np.array(actual_predictions).flatten()
 
-        future_dataframe.loc[:, 'yhat'] = self.transformation.inverse(future_dataframe['yhat'])
-        # forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_upper'])
-        # forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
-
         return future_dataframe
 
 

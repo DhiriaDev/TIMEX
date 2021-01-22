@@ -131,9 +131,6 @@ class FBProphet(PredictionModel):
 
         forecast = self.fbmodel.predict(future)
 
-        forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
-        forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_upper'])
-        forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
 
         forecast.set_index('ds', inplace=True)
 
