@@ -578,7 +578,7 @@ def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
         ))
 
     fig = go.Figure(data=boxes)
-    fig.update_layout(title=_('Box plot'), xaxis_title=df.index.name, yaxis_title=_('Count'))
+    fig.update_layout(title=_('Box plot'), xaxis_title=df.index.name, yaxis_title=_('Count'), showlegend=False)
 
     g = dcc.Graph(
         figure=fig
@@ -630,7 +630,7 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
             ))
 
     fig = go.Figure(data=boxes)
-    fig.update_layout(title=_('Aggregate box plot'), yaxis_title=_('Count'))
+    fig.update_layout(title=_('Aggregate box plot'), yaxis_title=_('Count'), showlegend=False)
 
     g = dcc.Graph(
         figure=fig
