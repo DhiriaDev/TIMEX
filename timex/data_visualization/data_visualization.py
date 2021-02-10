@@ -741,8 +741,7 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
                                           predicted=predicted_data.loc[:last_real_index, scenario_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
-        show_errors(testing_performance),
-        html.Div(f"Mean: {np.mean(m)}")])
+        show_errors(testing_performance)])
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                              mode='lines+markers',
