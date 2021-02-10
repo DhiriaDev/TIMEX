@@ -176,6 +176,8 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
 
     for model in models:
         log.info(f"Checking optimal predictions with model {model}")
+        best_forecasts_found = 0
+        iterations = 0
 
         while best_forecasts_found != len(ingested_data.columns):
             log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
@@ -201,6 +203,7 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
                                 prepare_extra_regressor(next(filter(
                                     lambda x: x.scenario_data.columns[0] == extra_regressor, scenarios)),
                                                     model=model, testing_performance_target=main_accuracy_estimator))
+                    local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
                 except:
                     local_xcorr = None
 
@@ -283,6 +286,10 @@ def compute_historical_predictions(ingested_data, param_config):
     input_parameters = param_config["input_parameters"]
     models = [*param_config["model_parameters"]["models"].split(",")]
     save_path = param_config["historical_prediction_parameters"]["save_path"]
+    try:
+        hist_pred_delta = param_config["historical_prediction_parameters"]["delta"]
+    except KeyError:
+        hist_pred_delta = 1
 
     try:
         with open(save_path, 'rb') as file:
@@ -304,32 +311,73 @@ def compute_historical_predictions(ingested_data, param_config):
             historical_prediction[model] = DataFrame(columns=ingested_data.columns)
 
     final_index = ingested_data.index[-1]
-    delta_index = 1 * ingested_data.index.freq
+    log.info(f"Starting index: {current_index}")
+    log.info(f"Final index: {final_index}")
+    delta_time = 1 * ingested_data.index.freq
 
-    scenarios = []
+    if current_index == final_index:
+        log.warning(f"Initial and final index are the same. I am recomputing the last point of historical prediction.")
+        current_index = current_index - delta_time * hist_pred_delta
 
-    if current_index > final_index:
-        current_index -= delta_index
+    iterations = 0
+    cur = current_index
+    fin = final_index
 
-    while current_index <= final_index:
+    while cur + delta_time * hist_pred_delta <= fin:
+        cur += delta_time * hist_pred_delta
+        iterations += 1
+
+    additional_computation = cur != fin
+    log.debug(f"Historical computations iterations: {iterations}")
+    log.debug(f"Historical additional computation: {additional_computation}")
+
+    for i in range(0, iterations):
         available_data = ingested_data[:current_index]  # Remember: this includes current_index
         log.info(f"Using data from {available_data.index[0]} to {current_index} for training...")
 
         scenarios = get_best_predictions(available_data, param_config)
 
-        log.info(f"Assigning the 1-step-ahead prediction for {current_index + delta_index}")
+        log.info(f"Assigning the historical predictions from {current_index + delta_time} to "
+                 f"{current_index + hist_pred_delta * delta_time}")
         for s in scenarios:
             for model in s.models:
                 p = s.models[model].best_prediction
                 scenario_name = s.scenario_data.columns[0]
-                prediction_for_next_row = p.loc[current_index + delta_index, 'yhat']
+                next_preds = p.loc[current_index + delta_time:current_index + hist_pred_delta * delta_time, 'yhat']
 
-                historical_prediction[model].loc[current_index + delta_index, scenario_name] = prediction_for_next_row
+                for index, value in next_preds.items():
+                    historical_prediction[model].loc[index, scenario_name] = value
 
-        current_index += delta_index
+        current_index += delta_time * hist_pred_delta
+
         log.info(f"Saving partial historical prediction to file...")
         with open(save_path, 'wb') as file:
             pickle.dump(historical_prediction, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    if additional_computation:
+        log.info(f"Remaining data less than requested delta time. Computing the best predictions with last data...")
+        available_data = ingested_data[:current_index]  # Remember: this includes current_index
+        log.info(f"Using data from {available_data.index[0]} to {current_index} for training...")
+
+        scenarios = get_best_predictions(available_data, param_config)
+
+        log.info(f"Assigning the historical predictions from {current_index + delta_time} to "
+                 f"{final_index}")
+        for s in scenarios:
+            for model in s.models:
+                p = s.models[model].best_prediction
+                scenario_name = s.scenario_data.columns[0]
+                next_preds = p.loc[current_index + delta_time:final_index, 'yhat']
+
+                for index, value in next_preds.items():
+                    historical_prediction[model].loc[index, scenario_name] = value
+
+        log.info(f"Saving partial historical prediction to file...")
+        with open(save_path, 'wb') as file:
+            pickle.dump(historical_prediction, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    available_data = ingested_data
+    scenarios = get_best_predictions(available_data, param_config)
 
     for s in scenarios:
         scenario_name = s.scenario_data.columns[0]

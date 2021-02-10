@@ -52,7 +52,7 @@ class TestGetPredictions:
         param_config = {
             "xcorr_parameters": {
                 "xcorr_max_lags": 120,
-                "xcorr_extra_regressor_threshold": 0.8,
+                "xcorr_extra_regressor_threshold": 0.0,  # Force predictor to use extra-regressors
                 "xcorr_mode": "pearson",
                 "xcorr_mode_target": "pearson"
             },
@@ -76,12 +76,21 @@ class TestGetPredictions:
         assert best_transformations["mockup"]["b"] in ["log_modified", "none"]
         assert best_transformations["mockup"]["c"] in ["log_modified", "none"]
 
+        # Small trick: fool TIMEX in thinking that none is the best transformation for MockUp model. This way
+        # we can check its predictions, which are hardcoded and always 0.0 for univariate and len(extra_regressors) for
+        # multivariate... with log_modified values would not be exactly len(extra_regressors).
+        best_transformations["mockup"]["b"] = "none"
+        best_transformations["mockup"]["c"] = "none"
+
         assert len(scenarios) == 2
         assert scenarios[0].scenario_data.columns[0] == "b"
         assert scenarios[1].scenario_data.columns[0] == "c"
 
         assert len(scenarios[0].models) == 2
         assert len(scenarios[1].models) == 2
+
+        assert scenarios[0].models['mockup'].best_prediction.iloc[-1, 0] == 0.0  # Check predictions are univariate
+        assert scenarios[1].models['mockup'].best_prediction.iloc[-1, 0] == 0.0
 
         scenarios = get_best_multivariate_predictions(best_transformations=best_transformations, ingested_data=ing_data,
                                                       scenarios=scenarios, param_config=param_config,
@@ -90,11 +99,15 @@ class TestGetPredictions:
         assert scenarios[0].scenario_data.columns[0] == "b"
         assert scenarios[1].scenario_data.columns[0] == "c"
 
+        assert scenarios[0].models['mockup'].best_prediction.iloc[-1, 0] == 1.0  # Check predictions are multivariate
+        assert scenarios[1].models['mockup'].best_prediction.iloc[-1, 0] == 1.0
+
         assert len(scenarios[0].models) == 2
         assert len(scenarios[1].models) == 2
 
     def test_compute_predictions(self):
         # Check results are in the correct form and test the function to save historic predictions to file.
+        # Delta will be 1, by default.
         ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
@@ -113,11 +126,11 @@ class TestGetPredictions:
                 "delta_training_percentage": 20,
                 "prediction_lags": 10,
                 "possible_transformations": "log_modified,none",
-                "models": "fbprophet,mockup",
+                "models": "mockup,fbprophet",
                 "main_accuracy_estimator": "mae",
             },
             "historical_prediction_parameters": {
-                "initial_index": "2000-01-29",
+                "initial_index": "2000-01-28",
                 "save_path": "test_hist_pred_saves/test1.pkl"
             }
         }
@@ -144,8 +157,8 @@ class TestGetPredictions:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 2
-                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
-                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
+                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
+                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
 
         # Simulate a 1-step ahead in time, so we have collected a new point.
         # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
@@ -161,9 +174,9 @@ class TestGetPredictions:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 3
-                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
-                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
-                assert hist_prediction.index[2] == pandas.to_datetime('2000-02-01', format="%Y-%m-%d")
+                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
+                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction.index[2] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
         assert b_old_hist['fbprophet'].iloc[0, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[0, 0]
@@ -270,9 +283,121 @@ class TestGetPredictions:
 
         # Make this test with a log_modified
 
+    def test_compute_predictions_3(self):
+        # Test with an historical predictions delta > 1
+        # This means that historical predictions are not computed starting from initial index 1-step ahead at time,
+        # but they are computed every $delta time points.
+        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+                              "b": np.arange(30, 60), "c": np.arange(60, 90)})
+        ing_data.set_index("a", inplace=True)
+        ing_data = add_freq(ing_data, "D")
+
+        param_config = {
+            "input_parameters": {},
+            "model_parameters": {
+                "test_values": 2,
+                "delta_training_percentage": 100,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "fbprophet,mockup",
+                "main_accuracy_estimator": "mae",
+            },
+            "historical_prediction_parameters": {
+                "initial_index": "2000-01-20",
+                "save_path": "test_hist_pred_saves/test3.pkl",
+                "delta": 3
+            }
+        }
+
+        # Cleanup eventual dumps.
+        try:
+            os.remove("test_hist_pred_saves/test3.pkl")
+        except FileNotFoundError:
+            pass
+
+        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+
+        assert len(scenarios) == 2
+        assert scenarios[0].scenario_data.columns[0] == "b"
+        assert scenarios[1].scenario_data.columns[0] == "c"
+
+        assert len(scenarios[0].models) == 2
+        assert len(scenarios[1].models) == 2
+
+        for s in scenarios:
+            scen_name = s.scenario_data.columns[0]
+            for model in s.historical_prediction:
+                hist_prediction = s.historical_prediction[model]
+                assert len(hist_prediction) == 10
+                id = 0
+                for i in pandas.date_range('2000-01-21', periods=10):
+                    assert hist_prediction.index[id] == i
+                    id += 1
+
+            for endpoint in [*pandas.date_range('2000-01-20', periods=4, freq="3d")]:
+                tr = ing_data.copy()
+                fb_tr = tr.loc[:endpoint]
+                fb_tr = fb_tr[[scen_name]]
+                fbmodel = Prophet()
+                fb_tr.reset_index(inplace=True)
+                fb_tr.columns = ['ds', 'y']
+
+                with suppress_stdout_stderr():
+                    fbmodel.fit(fb_tr)
+
+                future_df = pd.DataFrame(index=pd.date_range(freq="1d",
+                                                             start=endpoint + pandas.Timedelta(days=1),
+                                                             periods=3),
+                                         columns=["yhat"])
+                future = future_df.reset_index()
+                future.rename(columns={'index': 'ds'}, inplace=True)
+                forecast = fbmodel.predict(future)
+                forecast.set_index('ds', inplace=True)
+                expected_hist_pred = forecast.loc[:, 'yhat']
+                expected_hist_pred = expected_hist_pred.astype(object)
+                expected_hist_pred.rename(scen_name, inplace=True)
+                if endpoint == pd.Timestamp('2000-01-29 00:00:00'):  # Last point, remove last 2 points
+                    expected_hist_pred = expected_hist_pred.iloc[0:1]
+
+                computed_hist_pred = s.historical_prediction['fbprophet'].loc[endpoint+pandas.Timedelta(days=1):endpoint+pandas.Timedelta(days=3), scen_name]
+
+                assert expected_hist_pred.equals(computed_hist_pred)
+
+        # # Simulate a 1-step ahead in time, so we have collected a new point.
+        # # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
+        # ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=31),
+        #                       "b": np.arange(20, 51), "c": np.arange(35, 66)})
+        # ing_data.set_index("a", inplace=True)
+        # ing_data = add_freq(ing_data, "D")
+        #
+        # # This time historical predictions will be loaded from file.
+        # scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+        #
+        # for s in scenarios:
+        #     for model in s.historical_prediction:
+        #         hist_prediction = s.historical_prediction[model]
+        #         assert len(hist_prediction) == 3
+        #         assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+        #         assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
+        #         assert hist_prediction.index[2] == pandas.to_datetime('2000-02-01', format="%Y-%m-%d")
+        #
+        # # Check that past predictions have not been touched.
+        # assert b_old_hist['fbprophet'].iloc[0, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[0, 0]
+        # assert b_old_hist['fbprophet'].iloc[1, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[1, 0]
+        # assert b_old_hist['mockup'].iloc[0, 0] == scenarios[0].historical_prediction['mockup'].iloc[0, 0]
+        # assert b_old_hist['mockup'].iloc[1, 0] == scenarios[0].historical_prediction['mockup'].iloc[1, 0]
+        #
+        # assert c_old_hist['fbprophet'].iloc[0, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[0, 0]
+        # assert c_old_hist['fbprophet'].iloc[1, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[1, 0]
+        # assert c_old_hist['mockup'].iloc[0, 0] == scenarios[1].historical_prediction['mockup'].iloc[0, 0]
+        # assert c_old_hist['mockup'].iloc[1, 0] == scenarios[1].historical_prediction['mockup'].iloc[1, 0]
+
+        # Cleanup.
+        os.remove("test_hist_pred_saves/test3.pkl")
+
     def test_get_best_predictions(self):
         # Test that log_modified transformation is applied and that the results are the expected ones.
-        # Ideally this should the same using other models or transformations; it'just to test that pre/post
+        # Ideally this should work the same using other models or transformations; it's just to test that pre/post
         # transformations are correctly applied and that predictions are the ones we would obtain manually.
         # It's nice to use Prophet for this because its predictions are deterministic.
 
@@ -396,6 +521,9 @@ class TestCreateScenarios:
         for scenario in scenarios:
             name = scenario.scenario_data.columns[0]
 
+            if xcorr:
+                assert type(scenario.xcorr) == dict
+
             if expected_extra_regressors != {}:
                 assert scenario.models['mockup'].characteristics['extra_regressors'] == expected_extra_regressors[name]
 
@@ -409,6 +537,47 @@ class TestCreateScenarios:
             os.remove("test_hist_pred_saves/test_create_scenarios.pkl")
         except FileNotFoundError:
             pass
+
+    @pytest.mark.parametrize(
+        "xcorr",
+        [True, False]
+    )
+    def test_create_scenarios_onlyvisual(self, xcorr):
+
+        param_config = {
+            "input_parameters": {
+                "datetime_column_name": "date",
+                "index_column_name": "date",
+            },
+        }
+
+        if xcorr:
+            param_config["xcorr_parameters"] = {
+                "xcorr_max_lags": 5,
+                "xcorr_extra_regressor_threshold": 0.5,
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            }
+
+        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+                              "b": np.arange(30, 60), "c": np.arange(60, 90)})
+        ing_data.set_index("a", inplace=True)
+        ing_data = add_freq(ing_data, "D")
+
+        scenarios = create_scenarios(ing_data, param_config)
+
+        assert len(scenarios) == 2
+        for scenario in scenarios:
+            name = scenario.scenario_data.columns[0]
+            assert scenario.models is None
+            assert scenario.historical_prediction is None
+            if xcorr:
+                assert scenario.xcorr is not None
+            else:
+                assert scenario.xcorr is None
+            assert scenario.scenario_data.equals(ing_data[[name]])
+
+
 
 
 

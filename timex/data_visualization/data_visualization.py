@@ -135,7 +135,7 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
         for model in scenario.historical_prediction:
             children.extend([
                 html.H4(f"{model}"),
-                historical_prediction_plot(scenario_data, scenario.historical_prediction[model])
+                historical_prediction_plot(scenario_data, scenario.historical_prediction[model], scenario.models[model].best_prediction)
             ])
 
     return children
@@ -693,13 +693,13 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
                              mode='markers',
                              name=_('unused data')))
     fig.add_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
-                             line=dict(color='green'),
+                             line=dict(color='green', width=4, dash='dash'),
                              mode='markers',
-                             name=_('training data')))
+                             name=_('training data'),
+                             ))
 
     fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
-                             line=dict(color='red'),
-                             mode='markers',
+                             line=dict(color='green', width=3, dash='dot'),
                              name=_('validation data')))
     fig.update_layout(title=_("Best prediction for the validation set"), xaxis_title=df.index.name,
                       yaxis_title=df.columns[0])
@@ -709,7 +709,7 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     return g
 
 
-def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) -> html.Div:
+def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, best_prediction: DataFrame) -> html.Div:
     """
     Create and return a plot which contains the best prediction found by this model for this time series.
 
@@ -741,7 +741,8 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) 
                                           predicted=predicted_data.loc[:last_real_index, scenario_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
-        show_errors(testing_performance)])
+        show_errors(testing_performance),
+        html.Div(f"Mean: {np.mean(m)}")])
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                              mode='lines+markers',
@@ -751,6 +752,13 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame) 
                              line=dict(color='red'),
                              mode='markers',
                              name=_('real data')))
+
+    best_prediction.loc[predicted_data.index[-1], 'yhat'] = predicted_data.iloc[-1, 0]
+    best_prediction = best_prediction.loc[predicted_data.index[-1]:, :]
+
+    fig.add_trace(go.Scatter(x=best_prediction.index, y=best_prediction['yhat'],
+                             mode='lines+markers',
+                             name=_('yhat')))
 
     # try:
     #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
