@@ -2,47 +2,52 @@
   "activity_title": "Covid-19 Italy Analysis",
   "verbose": "INFO",
   "input_parameters": {
-      "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
-      "columns_to_load_from_url": "data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
-      "datetime_column_name": "data",
-      "index_column_name": "data",
-      "add_diff_column": "terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
-      "scenarios_names":
-        {
-          "nuovi_positivi": "Daily cases",
-          "totale_positivi": "Total positives",
-          "variazione_totale_positivi": "Total positives variation",
-          "terapia_intensiva": "Total intensive care",
-          "totale_ospedalizzati": "Total hospitalized",
-          "deceduti": "Total deaths",
-          "tamponi": "Tests",
-          "terapia_intensiva_diff": "Daily intensive care",
-          "totale_ospedalizzati_diff": "Daily hospitalized",
-          "deceduti_diff": "Daily deaths",
-          "tamponi_diff": "Daily tests"
-        }
+    "source_data_url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv",
+    "columns_to_load_from_url": "data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
+    "datetime_column_name": "data",
+    "index_column_name": "data",
+    "add_diff_column": "terapia_intensiva,totale_ospedalizzati,deceduti,tamponi",
+    "scenarios_names":
+    {
+      "data": "Date",
+      "nuovi_positivi": "Daily cases",
+      "totale_positivi": "Total positives",
+      "variazione_totale_positivi": "Total positives variation",
+      "terapia_intensiva": "Total intensive care",
+      "totale_ospedalizzati": "Total hospitalized",
+      "deceduti": "Total deaths",
+      "tamponi": "Tests",
+      "terapia_intensiva_diff": "Daily intensive care",
+      "totale_ospedalizzati_diff": "Daily hospitalized",
+      "deceduti_diff": "Daily deaths",
+      "tamponi_diff": "Daily tests"
+    }
   },
   "selection_parameters": {
-      "init_datetime": "2020-01-01T17:00:00",
-      "end_datetime": "2021-12-09T17:00:00"
-  },
-  "xcorr_parameters": {
-      "xcorr_max_lags": 120,
-      "xcorr_extra_regressor_threshold": 0.8,
-      "xcorr_mode": "pearson,kendall,spearman,matlab_normalized",
-      "xcorr_mode_target": "pearson"
+    "init_datetime": "2020-01-01T17:00:00",
+    "end_datetime": "2023-01-22T17:00:00"
   },
   "model_parameters": {
-      "test_values": 5,
-      "delta_training_percentage": 5,
-      "prediction_lags": 10,
-      "transformation": "log",
-      "main_accuracy_estimator": "mae"
+    "test_values": 5,
+    "delta_training_percentage": 5,
+    "prediction_lags": 10,
+    "possible_transformations" : "none,log_modified",
+    "models": "LSTM",
+    "main_accuracy_estimator": "mae"
+  },
+  "xcorr_parameters": {
+    "xcorr_max_lags": 120,
+    "xcorr_extra_regressor_threshold": 0.8,
+    "xcorr_mode": "pearson",
+    "xcorr_mode_target": "pearson"
+  },
+  "historical_prediction_parameters": {
+    "initial_index": "2020-08-18",
+    "save_path": "historical_predictions_italy.pkl"
   },
   "visualization_parameters": {
-      "xcorr_graph_threshold": 0.8,
-      "box_plot_frequency": "1W",
-      "periodic_plot_horizon": "month,week"
+    "xcorr_graph_threshold": 0.8,
+    "box_plot_frequency": "1W",
+    "periodic_plot_horizon": "month,week"
   }
 }
-
