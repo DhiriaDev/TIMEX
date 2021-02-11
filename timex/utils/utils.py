@@ -22,23 +22,23 @@ from timex.scenario.scenario import Scenario
 log = logging.getLogger(__name__)
 
 
-def prepare_extra_regressor(scenario: Scenario, model: str, testing_performance_target: str = 'MAE') -> DataFrame:
+def prepare_extra_regressor(scenario: Scenario, model: str) -> DataFrame:
     """
-    This function receives a Scenario object which includes a prediction for a time-series and indications on the
-    prediction errors, along with the entire ingested dataset.
-    Then, the best possible prediction (w.r.t a specific indicator, i.e MAE) is taken and appended to the original
-    time-series, in order to obtain a DataFrame with the original time series and the best possible prediction.
+    This function receives a Scenario object, which includes the time-series historical data and the various predictions
+    for the future.
+
+    The best prediction for the model 'model' is taken and appended to the original time-series, in order to obtain a
+    DataFrame with the original time series and the best possible prediction.
 
     The resulting DataFrame is returned.
 
     Parameters
     ----------
-    model
-    testing_performance_target : str
-    Testing performance indicator to use in order to select the best forecast. Default MAE.
-
     scenario : Scenario
     Scenario from which an extra-regressor should be extracted.
+
+    model
+    The model from which get the best available prediction.
 
     Returns
     -------
@@ -46,11 +46,10 @@ def prepare_extra_regressor(scenario: Scenario, model: str, testing_performance_
     DataFrame with the length of the original time-series + prediction lags.
     """
     name = scenario.scenario_data.columns[0]
-    model_results = scenario.models[model].results
-    model_results.sort(key=lambda x: getattr(x.testing_performances, testing_performance_target.upper()))
+    best_prediction = scenario.models[model].best_prediction
 
     original_ts = scenario.scenario_data
-    f = model_results[0].prediction.loc[:, ['yhat']]
+    f = best_prediction.loc[:, ['yhat']]
     f.rename(columns={'yhat': name}, inplace=True)
 
     best_entire_forecast = original_ts.combine_first(f)
@@ -201,8 +200,7 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
 
                             useful_extra_regressors.append(
                                 prepare_extra_regressor(next(filter(
-                                    lambda x: x.scenario_data.columns[0] == extra_regressor, scenarios)),
-                                                    model=model, testing_performance_target=main_accuracy_estimator))
+                                    lambda x: x.scenario_data.columns[0] == extra_regressor, scenarios)), model=model))
                     local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
                 except:
                     local_xcorr = None
