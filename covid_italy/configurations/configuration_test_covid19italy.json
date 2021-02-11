@@ -29,10 +29,10 @@
   },
   "model_parameters": {
     "test_values": 5,
-    "delta_training_percentage": 5,
+    "delta_training_percentage": 20,
     "prediction_lags": 10,
     "possible_transformations" : "none,log_modified",
-    "models": "LSTM",
+    "models": "fbprophet,LSTM",
     "main_accuracy_estimator": "mae"
   },
   "xcorr_parameters": {
@@ -43,7 +43,7 @@
   },
   "historical_prediction_parameters": {
     "initial_index": "2020-08-18",
-    "save_path": "historical_predictions_italy.pkl"
+    "save_path": "historical_predictions_italy_covid.pkl"
   },
   "visualization_parameters": {
     "xcorr_graph_threshold": 0.8,

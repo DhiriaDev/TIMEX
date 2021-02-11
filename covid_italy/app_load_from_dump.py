@@ -7,9 +7,13 @@ import dash
 import dash_html_components as html
 from datetime import datetime, timezone
 import dash_core_components as dcc
+import dateparser
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-from timex.data_visualization.data_visualization import create_scenario_children
+from pandas import read_csv
+
+from timex.data_preparation.data_preparation import add_diff_column
+from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
 
 log = logging.getLogger(__name__)
 
@@ -24,11 +28,41 @@ with open(param_file_nameJSON) as json_file:  # opening the config_file_name
 with open(f"scenarios.pkl", 'rb') as input_file:
     scenarios = pickle.load(input_file)
 
-# data visualization
+# Data visualization
 children_for_each_scenario = [{
     'name': s.scenario_data.columns[0],
     'children': create_scenario_children(s, param_config)
 } for s in scenarios]
+
+#######################################################################################################################
+#### CUSTOM SCENARIO ##
+#######################################################################################################################
+regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
+                   header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
+regions.reset_index(inplace=True)
+regions['data'] = regions['data'].apply(lambda x: dateparser.parse(x))
+regions.set_index(['data', 'denominazione_regione'], inplace=True, drop=True)
+
+regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
+
+regions.rename(columns={'nuovi_positivi': 'Daily cases', 'tamponi': 'Tests',
+                        "tamponi_diff": "Daily tests"}, inplace=True)
+
+regions["New cases/tests ratio"] = [100*(ndc/tamp) if tamp > ndc > 0 else "nan" for ndc, tamp in
+                                    zip(regions['Daily cases'], regions['Daily tests'])]
+
+regions_children = [
+    html.H2(children='Regions' + " analysis", id='Regions'),
+    html.Em("You can select a specific region by doucle-clicking on its label (in the right list); clicking "
+            "on other regions, you can select only few of them."),
+    html.H3("Data visualization"),
+    line_plot_multiIndex(regions[['Daily cases']]),
+    line_plot_multiIndex(regions[['Daily tests']]),
+    line_plot_multiIndex(regions[['New cases/tests ratio']])
+]
+
+
+children_for_each_scenario.append({'name': 'Regions', 'children': regions_children})
 
 # Initialize Dash app.
 app = dash.Dash(__name__)
