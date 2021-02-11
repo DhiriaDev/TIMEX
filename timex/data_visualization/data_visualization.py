@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 
 # Default method to get a translated text.
 global _
+_ = lambda x: x
 
 
 def create_scenario_children(scenario: Scenario, param_config: dict):

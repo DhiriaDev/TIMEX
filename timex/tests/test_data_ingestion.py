@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import dateparser
 from pandas._libs.tslibs.timestamps import Timestamp
 import pandas as pd
 import numpy as np
@@ -242,6 +243,57 @@ class TestDataIngestion:
 
         assert df.index.freq == 'MS'
 
+    def test_data_ingestion_univariate_10(self):
+        # Check that data is interpolated.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_6.csv",
+                "columns_to_load_from_url": "first_column,second_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+            }
+        }
+
+        df = data_ingestion(param_config)
+        assert df.index.name == "first_column"
+        # assert df.index.values[0] == Timestamp("2020-11-01")
+        # assert df.index.values[1] == Timestamp("2020-12-01")
+        # assert df.index.values[2] == Timestamp("2021-01-01")
+        #
+        # assert df.columns[0] == "third_column"
+        # assert df.iloc[0]["third_column"] == 3
+        # assert df.iloc[1]["third_column"] == 6
+        # assert df.iloc[2]["third_column"] == 9
+
+        assert df.index.freq == 'D'
+        assert df.iloc[:, 0].isnull().sum() == 0
+
+    def test_data_ingestion_univariate_11(self):
+        # Check that no dataset exits data_ingestion without a frequency and with nan values.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_temporary.csv",
+                "columns_to_load_from_url": "date,a,b",
+                "datetime_column_name": "date",
+                "index_column_name": "date",
+            }
+        }
+
+        ing_df = pd.read_csv("test_datasets/test_7.csv")
+        ing_df['date'] = ing_df['date'].apply(lambda x: dateparser.parse(x))
+        ing_df.set_index("date", inplace=True, drop=True)
+
+        for i in range(0, 40):
+            df = ing_df.copy()
+            for j in range(0, i):
+                df = df.drop(df.sample(1).index)
+
+            df.to_csv("test_datasets/test_temporary.csv")
+            df = data_ingestion(param_config)
+
+            assert df.iloc[:, 0].isnull().sum() == 0
+            assert df.index.freq == "D"
+
 
 class TestAddFreq:
     def test_add_freq_1(self):
@@ -289,7 +341,7 @@ class TestAddFreq:
 
     def test_add_freq_5(self):
         # df has no clear frequency.
-        # Check if it is not set so.
+        # Check if it is set daily.
         dates = [pd.Timestamp(datetime(year=2020, month=1, day=1, hour=10, minute=00)),
                  pd.Timestamp(datetime(year=2020, month=1, day=3, hour=12, minute=21)),
                  pd.Timestamp(datetime(year=2020, month=1, day=7, hour=13, minute=30)),
@@ -298,6 +350,5 @@ class TestAddFreq:
         ts = pd.DataFrame(np.random.randn(4), index=dates)
 
         new_ts = add_freq(ts)
-        assert new_ts.equals(ts)
-        assert new_ts.index.freq == None
+        assert new_ts.index.freq == "D"
 

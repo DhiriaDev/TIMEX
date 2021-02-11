@@ -98,6 +98,7 @@ def ingest_from_url(source_data_url, param_config, columns_to_load_from_url=""):
             df_ingestion.set_index(index_column_name, inplace=True)
 
     df_ingestion = add_freq(df_ingestion, freq)
+    df_ingestion = df_ingestion.interpolate()
     return df_ingestion
 
 
@@ -133,10 +134,7 @@ def add_freq(df, freq=None) -> DataFrame:
 
         if freq is None:
             log.warning(f"No discernible frequency found for the dataframe.")
-            return df
-        else:
-            if freq == "D":
-                local_df.index = local_df.index.normalize()
+            freq = "D"
 
-            local_df = local_df.asfreq(freq=freq)
-            return local_df
+        local_df = local_df.asfreq(freq=freq)
+        return local_df
