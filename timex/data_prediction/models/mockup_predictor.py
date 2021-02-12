@@ -1,11 +1,8 @@
 import logging
-import os
 
-from fbprophet import Prophet
-import pandas as pd
 from pandas import DataFrame
 
-from timex.data_prediction.data_prediction import PredictionModel
+from timex.data_prediction import PredictionModel
 log = logging.getLogger(__name__)
 
 

@@ -1,23 +1,21 @@
 import logging
 import os
 import pickle
-from collections import defaultdict
 from functools import reduce
 from typing import Tuple
 
 import dateparser
 from pandas import DataFrame
-import pandas as pd
-from timex.data_prediction.mockup_predictor import MockUpModel
 
 from timex.data_ingestion import ingest_additional_regressors
-from timex.data_prediction.neuralprophet_predictor import NeuralProphetModel
-
-from timex.data_prediction.arima_predictor import ARIMA
-from timex.data_prediction.data_prediction import calc_all_xcorr, PredictionModel
-from timex.data_prediction.lstm_predictor import LSTM_model
-from timex.data_prediction.prophet_predictor import FBProphet
-from timex.scenario.scenario import Scenario
+from timex.data_prediction import PredictionModel
+from timex.data_prediction.models.arima_predictor import ARIMA
+from timex.data_prediction.models.lstm_predictor import LSTM_model
+from timex.data_prediction.models.mockup_predictor import MockUpModel
+from timex.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
+from timex.data_prediction.models.prophet_predictor import FBProphet
+from timex.data_prediction.xcorr import calc_all_xcorr
+from timex.scenario import Scenario
 
 log = logging.getLogger(__name__)
 

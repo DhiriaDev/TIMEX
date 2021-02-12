@@ -9,13 +9,13 @@ import numpy
 
 from pandas import read_csv, DataFrame
 
-from timex import data_ingestion
-from timex.data_ingestion.functions import add_freq
-from timex.data_prediction.data_prediction import calc_xcorr
-from timex.data_prediction.prophet_predictor import FBProphet
-from timex.data_preparation.data_preparation import data_selection, add_diff_column
-from timex.scenario.scenario import Scenario
-from timex.utils.utils import create_scenarios
+import timex.data_ingestion
+from timex.data_prediction.xcorr import calc_xcorr
+
+from timex.data_ingestion import add_freq, data_selection, add_diff_column
+from timex.data_prediction.models.prophet_predictor import FBProphet
+from timex.scenario import Scenario
+from timex.data_prediction import create_scenarios
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def compute():
 
     # data ingestion
     log.info(f"Started data ingestion.")
-    ingested_data = data_ingestion.ingest_timeseries(param_config)  # ingestion of data
+    ingested_data = timex.data_ingestion.ingest_timeseries(param_config)  # ingestion of data
 
     # data selection
     log.info(f"Started data selection.")

@@ -1,7 +1,5 @@
 from pandas import DataFrame
 
-from timex.data_prediction.data_prediction import ModelResult
-
 
 class Scenario:
     """
@@ -17,11 +15,11 @@ class Scenario:
     xcorr : dict
         Cross-correlation between the data of this scenario and all the other ones.
     """
-    def __init__(self, scenario_data: DataFrame, models: dict, xcorr: dict):
+    def __init__(self, scenario_data: DataFrame, models: dict, xcorr: dict, historical_prediction: dict = None):
         self.scenario_data = scenario_data
         self.models = models
         self.xcorr = xcorr
-        self.historical_prediction = None
+        self.historical_prediction = historical_prediction
 
     def set_historical_prediction(self, historical_prediction):
         self.historical_prediction = historical_prediction

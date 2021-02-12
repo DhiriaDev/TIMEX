@@ -1,15 +1,10 @@
-import itertools
-import json
-import pkgutil
 import logging
 import os
 from neuralprophet import NeuralProphet
 import pandas as pd
-from fbprophet.diagnostics import cross_validation, performance_metrics
 from pandas import DataFrame
-import numpy as np
 
-from timex.data_prediction.data_prediction import PredictionModel, TestingPerformance
+from timex.data_prediction import PredictionModel
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 

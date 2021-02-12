@@ -9,11 +9,10 @@ from datetime import datetime, timezone
 import dash_core_components as dcc
 import dateparser
 from dash.dependencies import Input, Output
-import dash_bootstrap_components as dbc
 from pandas import read_csv
 
-from timex.data_preparation.data_preparation import add_diff_column
-from timex.data_visualization.data_visualization import create_scenario_children, line_plot_multiIndex
+from timex.data_ingestion import add_diff_column
+from timex.data_visualization.functions import create_scenario_children, line_plot_multiIndex
 
 log = logging.getLogger(__name__)
 

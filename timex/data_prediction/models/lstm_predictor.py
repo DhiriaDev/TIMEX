@@ -1,4 +1,3 @@
-import os
 import logging
 
 from pandas import DataFrame
@@ -7,7 +6,7 @@ import torch
 import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
 
-from timex.data_prediction.data_prediction import PredictionModel
+from timex.data_prediction import PredictionModel
 log = logging.getLogger(__name__)
 
 

@@ -10,7 +10,6 @@ import numpy as np
 
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.express as px
 from plotly.subplots import make_subplots
 import networkx as nx
 import dash_bootstrap_components as dbc
@@ -18,8 +17,9 @@ import dash_bootstrap_components as dbc
 from colorhash import ColorHash
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-from timex.data_prediction.data_prediction import TestingPerformance, SingleResult
-from timex.scenario.scenario import Scenario
+from timex.data_prediction import ValidationPerformance
+from timex.data_prediction.models.predictor import SingleResult
+from timex.scenario import Scenario
 import calendar
 
 log = logging.getLogger(__name__)
@@ -737,7 +737,7 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     first_predicted_index = predicted_data.index[0]
     last_real_index = real_data.index[-1]
 
-    testing_performance = TestingPerformance(first_predicted_index)
+    testing_performance = ValidationPerformance(first_predicted_index)
     testing_performance.set_testing_stats(actual=real_data.loc[first_predicted_index:, scenario_name],
                                           predicted=predicted_data.loc[:last_real_index, scenario_name])
     new_children.extend([
@@ -794,7 +794,7 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     return html.Div(new_children)
 
 
-def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [TestingPerformance],
+def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [ValidationPerformance],
                      test_values: int) -> dcc.Graph:
     """
     Create and return the performance plot of the model; for every error kind (i.e. MSE, MAE, etc)
@@ -809,8 +809,8 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     predicted_data : DataFrame
     Prediction created by a model.
 
-    testing_performances : [TestingPerformance]
-    List of TestingPerformance object. Every object is related to a specific training windows, hence
+    testing_performances : [ValidationPerformance]
+    List of ValidationPerformance object. Every object is related to a specific training windows, hence
     it shows the performance using that window.
 
     test_values : int
@@ -891,7 +891,7 @@ def plot_every_prediction(df: DataFrame, model_results: [SingleResult],
     return new_childrens
 
 
-def characteristics_list(model_characteristics: dict, testing_performances: [TestingPerformance]) -> html.Div:
+def characteristics_list(model_characteristics: dict, testing_performances: [ValidationPerformance]) -> html.Div:
     """
     Create and return an HTML Div which contains a list of natural language characteristic
     relative to a prediction model.
@@ -901,7 +901,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
     model_characteristics : dict
     key-value for each characteristic to write in natural language.
 
-    testing_performances : [TestingPerformance]
+    testing_performances : [ValidationPerformance]
     Useful to write also information about the testing performances.
 
     Returns
@@ -931,7 +931,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Tes
     return html.Div(elems)
 
 
-def show_errors(testing_performances: TestingPerformance) -> html.Div:
+def show_errors(testing_performances: ValidationPerformance) -> html.Div:
     """
 
     Parameters

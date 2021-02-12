@@ -4,7 +4,7 @@ import itertools
 import statsmodels.api as sm
 import pandas as pd
 
-from timex.data_prediction.data_prediction import PredictionModel
+from timex.data_prediction import PredictionModel
 
 
 class ARIMA(PredictionModel):
