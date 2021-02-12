@@ -11,7 +11,7 @@ import dateparser
 from dash.dependencies import Input, Output
 from pandas import read_csv
 
-from timex.data_ingestion import add_diff_column
+from timex.data_ingestion import add_diff_columns
 from timex.data_visualization.functions import create_scenario_children, line_plot_multiIndex
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ regions.reset_index(inplace=True)
 regions['data'] = regions['data'].apply(lambda x: dateparser.parse(x))
 regions.set_index(['data', 'denominazione_regione'], inplace=True, drop=True)
 
-regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
+regions = add_diff_columns(regions, ['tamponi'], group_by='denominazione_regione')
 
 regions.rename(columns={'nuovi_positivi': 'Daily cases', 'tamponi': 'Tests',
                         "tamponi_diff": "Daily tests"}, inplace=True)

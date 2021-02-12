@@ -9,7 +9,7 @@ import numpy as np
 
 from .context import timex
 
-from timex.data_ingestion import ingest_timeseries, add_freq, data_selection, add_diff_column
+from timex.data_ingestion import ingest_timeseries, add_freq, select_timeseries_portion, add_diff_columns
 from .utilities import get_fake_df
 
 
@@ -371,7 +371,7 @@ class TestDataSelection:
         }
 
         df = get_fake_df(length=3)
-        selected_df = data_selection(df, param_config)
+        selected_df = select_timeseries_portion(df, param_config)
 
         assert selected_df.index.values[0] == Timestamp("2000-01-02")
         assert selected_df.index.values[1] == Timestamp("2000-01-03")
@@ -393,7 +393,7 @@ class TestDataSelection:
         }
 
         df = get_fake_df(length=3)
-        selected_df = data_selection(df, param_config)
+        selected_df = select_timeseries_portion(df, param_config)
 
         assert selected_df.index.values[0] == Timestamp("2000-01-01")
         assert selected_df.index.values[1] == Timestamp("2000-01-02")
@@ -415,7 +415,7 @@ class TestDataSelection:
         }
 
         df = get_fake_df(length=5)
-        selected_df = data_selection(df, param_config)
+        selected_df = select_timeseries_portion(df, param_config)
 
         assert selected_df.index.values[0] == Timestamp("2000-01-02")
         assert selected_df.index.values[1] == Timestamp("2000-01-03")
@@ -445,7 +445,7 @@ class TestDataSelection:
         }
 
         df = ingest_timeseries(param_config)
-        df = data_selection(df, param_config)
+        df = select_timeseries_portion(df, param_config)
 
         assert df.index.values[0] == Timestamp("2020-02-25")
 
@@ -458,7 +458,7 @@ class TestAddDiff:
         # Add a single diff column.
         df = get_fake_df(3)
 
-        new_df = add_diff_column(df, ["value"])
+        new_df = add_diff_columns(df, ["value"])
         assert df.iloc[1]["value"] == new_df.iloc[0]["value"]
         assert df.iloc[2]["value"] == new_df.iloc[1]["value"]
 
@@ -473,7 +473,7 @@ class TestAddDiff:
         df = DataFrame({"a": [0, 1, 2], "b": [10, 30, 60], "c": [5, 10, 20]}, dtype=numpy.float)
         df.set_index("a", inplace=True, drop=True)
 
-        new_df = add_diff_column(df, ["b", "c"])
+        new_df = add_diff_columns(df, ["b", "c"])
 
         test_df = DataFrame({"a": [1, 2], "b": [30, 60], "c": [10, 20], "b_diff": [20, 30], "c_diff": [5, 10]},
                             dtype=numpy.float)
@@ -488,7 +488,7 @@ class TestAddDiff:
                         "c": [1, 1, 2, 3, 5, 8, 13, 21, 34], "d": [1, 2, 3, 5, 8, 13, 21, 34, 55]}, dtype=numpy.float)
         df.set_index(["a", "b"], inplace=True, drop=True)
 
-        new_df = add_diff_column(df, ["c", "d"], group_by="b")
+        new_df = add_diff_columns(df, ["c", "d"], group_by="b")
 
         test_df = DataFrame({"a": [1, 1, 1, 2, 2, 2], "b": [10, 20, 30, 10, 20, 30],
                              "c": [3, 5, 8, 13, 21, 34], "d": [5, 8, 13, 21, 34, 55],

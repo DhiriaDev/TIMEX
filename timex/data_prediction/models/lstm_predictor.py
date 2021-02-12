@@ -51,7 +51,7 @@ class LSTM(nn.Module):
         return predictions[-1]
 
 
-class LSTM_model(PredictionModel):
+class LSTMModel(PredictionModel):
     """LSTM prediction model."""
     def __init__(self, params: dict, transformation: str = None):
         super().__init__(params, name="LSTM", transformation=transformation)

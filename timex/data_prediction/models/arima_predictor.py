@@ -7,7 +7,7 @@ import pandas as pd
 from timex.data_prediction import PredictionModel
 
 
-class ARIMA(PredictionModel):
+class ARIMAModel(PredictionModel):
     """ARIMA prediction model."""
 
     # NOT WORKING

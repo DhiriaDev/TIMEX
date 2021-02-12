@@ -9,11 +9,11 @@ from pandas import DataFrame
 
 from timex.data_ingestion import ingest_additional_regressors
 from timex.data_prediction import PredictionModel
-from timex.data_prediction.models.arima_predictor import ARIMA
-from timex.data_prediction.models.lstm_predictor import LSTM_model
+from timex.data_prediction.models.arima_predictor import ARIMAModel
+from timex.data_prediction.models.lstm_predictor import LSTMModel
 from timex.data_prediction.models.mockup_predictor import MockUpModel
 from timex.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from timex.data_prediction.models.prophet_predictor import FBProphet
+from timex.data_prediction.models.prophet_predictor import FBProphetModel
 from timex.data_prediction.xcorr import calc_all_xcorr
 from timex.scenario import Scenario
 
@@ -428,12 +428,12 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     PredictionModel
     """
     if model_class == "fbprophet":
-        return FBProphet(params=param_config, transformation=transformation)
+        return FBProphetModel(params=param_config, transformation=transformation)
     if model_class == "LSTM":
-        return LSTM_model(param_config, transformation)
+        return LSTMModel(param_config, transformation)
     if model_class == "neuralprophet":
         return NeuralProphetModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
     else:
-        return ARIMA(params=param_config, transformation=transformation)
+        return ARIMAModel(params=param_config, transformation=transformation)

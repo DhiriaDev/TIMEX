@@ -17,7 +17,7 @@ logging.getLogger('fbprophet').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-class FBProphet(PredictionModel):
+class FBProphetModel(PredictionModel):
     """Facebook's Prophet prediction model."""
 
     def __init__(self, params: dict, transformation: str = None):

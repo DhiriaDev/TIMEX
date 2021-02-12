@@ -11,8 +11,8 @@ import pandas as pd
 import numpy as np
 from scipy.stats import yeojohnson
 
-from timex.data_prediction.models.arima_predictor import ARIMA
-from timex.data_prediction.models.lstm_predictor import LSTM_model
+from timex.data_prediction.models.arima_predictor import ARIMAModel
+from timex.data_prediction.models.lstm_predictor import LSTMModel
 from timex.data_prediction.models.mockup_predictor import MockUpModel
 from timex.data_prediction.models.predictor import ModelResult
 from timex.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
@@ -26,7 +26,7 @@ from timex.data_prediction.models.neuralprophet_predictor import NeuralProphetMo
 # from timex.data_prediction import MockUpModel
 from timex.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, create_scenarios
-from timex.data_prediction.models.prophet_predictor import FBProphet, suppress_stdout_stderr
+from timex.data_prediction.models.prophet_predictor import FBProphetModel, suppress_stdout_stderr
 from timex.data_prediction.transformation import transformation_factory, Identity
 from timex.scenario import Scenario
 
@@ -433,7 +433,7 @@ class Test_Models_General:
 class Test_Models_Specific:
     @pytest.mark.parametrize(
         "model_class,check_multivariate",
-        [(FBProphet, True), (LSTM_model, True), (ARIMA, False), (NeuralProphetModel, False), (MockUpModel, True)]
+        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, False), (MockUpModel, True)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)

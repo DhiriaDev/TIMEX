@@ -12,8 +12,8 @@ from pandas import read_csv, DataFrame
 import timex.data_ingestion
 from timex.data_prediction.xcorr import calc_xcorr
 
-from timex.data_ingestion import add_freq, data_selection, add_diff_column
-from timex.data_prediction.models.prophet_predictor import FBProphet
+from timex.data_ingestion import add_freq, select_timeseries_portion, add_diff_columns
+from timex.data_prediction.models.prophet_predictor import FBProphetModel
 from timex.scenario import Scenario
 from timex.data_prediction import create_scenarios
 
@@ -41,7 +41,7 @@ def compute():
 
     # data selection
     log.info(f"Started data selection.")
-    ingested_data = data_selection(ingested_data, param_config)
+    ingested_data = select_timeseries_portion(ingested_data, param_config)
 
     # Custom columns
     log.info(f"Adding custom columns.")
@@ -61,7 +61,7 @@ def compute():
     regions['data'] = regions['data'].apply(lambda x: dateparser.parse(x))
     regions.set_index(['data', 'denominazione_regione'], inplace=True, drop=True)
 
-    regions = add_diff_column(regions, ['tamponi'], group_by='denominazione_regione')
+    regions = add_diff_columns(regions, ['tamponi'], group_by='denominazione_regione')
 
     regions.rename(columns={'nuovi_positivi': 'Daily cases', 'tamponi': 'Tests',
                             "tamponi_diff": "Daily tests"}, inplace=True)
@@ -110,7 +110,7 @@ def compute():
         xcorr = calc_xcorr(region, daily_cases_regions, max_lags, modes)
 
         log.info(f"Computing univariate prediction for {region}...")
-        predictor = FBProphet(param_config, transformation="none")
+        predictor = FBProphetModel(param_config, transformation="none")
         prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
         model_results['fbprophet'] = prophet_result
         #
