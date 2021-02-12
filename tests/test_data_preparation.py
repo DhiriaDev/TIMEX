@@ -2,9 +2,11 @@ import numpy
 from pandas import DataFrame
 from pandas._libs.tslibs.timestamps import Timestamp
 
-from timex.data_ingestion.data_ingestion import data_ingestion
+# from timex.data_ingestion import data_ingestion
+from tests.utilities import get_fake_df
+from timex.data_ingestion import ingest_timeseries
 from timex.data_preparation.data_preparation import data_selection, add_diff_column
-from timex.tests.utilities import get_fake_df
+# from tests import get_fake_df
 
 
 class TestDataSelection:
@@ -94,7 +96,7 @@ class TestDataSelection:
             },
         }
 
-        df = data_ingestion(param_config)
+        df = ingest_timeseries(param_config)
         df = data_selection(df, param_config)
 
         assert df.index.values[0] == Timestamp("2020-02-25")

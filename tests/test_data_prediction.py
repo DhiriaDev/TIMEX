@@ -5,6 +5,8 @@ from pandas import Series, DataFrame
 import pandas as pd
 import numpy as np
 from scipy.stats import yeojohnson
+
+from tests.utilities import get_fake_df
 from timex.data_prediction.neuralprophet_predictor import NeuralProphetModel
 
 from timex.data_prediction.arima_predictor import ARIMA
@@ -12,8 +14,8 @@ from timex.data_prediction.data_prediction import calc_xcorr
 from timex.data_prediction.lstm_predictor import LSTM_model
 from timex.data_prediction.mockup_predictor import MockUpModel
 from timex.data_prediction.prophet_predictor import FBProphet
-from timex.data_prediction.transformation import transformation_factory, Log, Identity
-from timex.tests.utilities import get_fake_df
+from timex.data_prediction.transformation import transformation_factory, Identity
+# from tests import get_fake_df
 
 xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 

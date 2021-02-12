@@ -8,7 +8,7 @@ from pandas import DataFrame
 import numpy as np
 import pandas as pd
 
-from timex.data_ingestion.data_ingestion import add_freq
+from timex.data_ingestion.functions import add_freq
 from timex.data_prediction.data_prediction import SingleResult, TestingPerformance, ModelResult, calc_all_xcorr
 from timex.data_prediction.prophet_predictor import suppress_stdout_stderr
 from timex.scenario.scenario import Scenario

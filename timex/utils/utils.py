@@ -10,7 +10,7 @@ from pandas import DataFrame
 import pandas as pd
 from timex.data_prediction.mockup_predictor import MockUpModel
 
-from timex.data_ingestion.data_ingestion import ingest_from_url
+from timex.data_ingestion import ingest_additional_regressors
 from timex.data_prediction.neuralprophet_predictor import NeuralProphetModel
 
 from timex.data_prediction.arima_predictor import ARIMA
@@ -208,7 +208,7 @@ def get_best_multivariate_predictions(scenarios: [Scenario], ingested_data: Data
                 log.debug(f"Look for user-given additional regressors...")
                 try:
                     additional_regressor_path = additional_regressors[col]
-                    useful_extra_regressors.append(ingest_from_url(additional_regressor_path, param_config))
+                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
                 except:
                     pass
 
