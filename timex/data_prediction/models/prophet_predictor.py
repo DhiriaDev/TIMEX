@@ -36,9 +36,9 @@ class FBProphetModel(PredictionModel):
 
         if self.fbprophet_parameters is not None:
             try:
-                scenario_name = input_data.columns[0]
+                timeseries_name = input_data.columns[0]
                 date_format = self.fbprophet_parameters["holidays_dataframes"]["date_format"]
-                holidays = pd.read_csv(self.fbprophet_parameters["holidays_dataframes"][scenario_name])
+                holidays = pd.read_csv(self.fbprophet_parameters["holidays_dataframes"][timeseries_name])
                 holidays.loc[:, "ds"].apply(lambda x: pd.to_datetime(x, format=date_format))
                 self.fbmodel = Prophet(holidays=holidays)
                 log.debug(f"Using a dataframe for holidays...")

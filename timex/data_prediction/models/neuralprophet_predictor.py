@@ -28,9 +28,9 @@ class NeuralProphetModel(PredictionModel):
 
         if self.neuralprophet_parameters is not None:
             try:
-                scenario_name = input_data.columns[0]
+                timeseries_name = input_data.columns[0]
                 date_format = self.neuralprophet_parameters["holidays_dataframes"]["date_format"]
-                holidays = pd.read_csv(self.neuralprophet_parameters["holidays_dataframes"][scenario_name])
+                holidays = pd.read_csv(self.neuralprophet_parameters["holidays_dataframes"][timeseries_name])
                 holidays.loc[:, "ds"].apply(lambda x: pd.to_datetime(x, format=date_format))
                 self.neuralprophetmodel = NeuralProphet(holidays=holidays)
                 log.debug(f"Using a dataframe for holidays...")

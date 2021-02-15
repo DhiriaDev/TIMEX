@@ -25,10 +25,10 @@ from timex.data_prediction.models.neuralprophet_predictor import NeuralProphetMo
 # from timex.data_prediction import LSTM_model
 # from timex.data_prediction import MockUpModel
 from timex.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
-    get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, create_scenarios
+    get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, create_timeseries_containers
 from timex.data_prediction.models.prophet_predictor import FBProphetModel, suppress_stdout_stderr
 from timex.data_prediction.transformation import transformation_factory, Identity
-from timex.scenario import Scenario
+from timex.timeseries_container import TimeSeriesContainer
 
 xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 
@@ -474,14 +474,14 @@ class TestGetPredictions:
         ing_data = DataFrame({"a": np.arange(0, 10), "b": np.arange(10, 20)})
         ing_data.set_index("a", inplace=True)
 
-        # Simulate the best forecast with overlapping index with scenario data...
+        # Simulate the best forecast with overlapping index with time-series data...
         forecast = DataFrame({"a": np.arange(8, 15), "yhat": np.arange(40, 47)})
         forecast.set_index("a", inplace=True)
 
         models = {'fbprophet': ModelResult(None, None, forecast)}
-        scenario = Scenario(ing_data, models, None)
+        timeseries_container = TimeSeriesContainer(ing_data, models, None)
 
-        result = prepare_extra_regressor(scenario, 'fbprophet')
+        result = prepare_extra_regressor(timeseries_container, 'fbprophet')
 
         expected = DataFrame({"a": np.arange(0, 15),
                               "b": np.array([10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 42.0, 43.0,
@@ -517,7 +517,7 @@ class TestGetPredictions:
 
         total_xcorr = calc_all_xcorr(ingested_data=ing_data, param_config=param_config)
 
-        best_transformations, scenarios = get_best_univariate_predictions(ing_data, param_config, total_xcorr)
+        best_transformations, timeseries_containers = get_best_univariate_predictions(ing_data, param_config, total_xcorr)
 
         assert len(best_transformations) == 2
         assert best_transformations["fbprophet"]["b"] in ["log_modified", "none"]
@@ -531,28 +531,28 @@ class TestGetPredictions:
         best_transformations["mockup"]["b"] = "none"
         best_transformations["mockup"]["c"] = "none"
 
-        assert len(scenarios) == 2
-        assert scenarios[0].scenario_data.columns[0] == "b"
-        assert scenarios[1].scenario_data.columns[0] == "c"
+        assert len(timeseries_containers) == 2
+        assert timeseries_containers[0].timeseries_data.columns[0] == "b"
+        assert timeseries_containers[1].timeseries_data.columns[0] == "c"
 
-        assert len(scenarios[0].models) == 2
-        assert len(scenarios[1].models) == 2
+        assert len(timeseries_containers[0].models) == 2
+        assert len(timeseries_containers[1].models) == 2
 
-        assert scenarios[0].models['mockup'].best_prediction.iloc[-1, 0] == 0.0  # Check predictions are univariate
-        assert scenarios[1].models['mockup'].best_prediction.iloc[-1, 0] == 0.0
+        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[-1, 0] == 0.0  # Check predictions are univariate
+        assert timeseries_containers[1].models['mockup'].best_prediction.iloc[-1, 0] == 0.0
 
-        scenarios = get_best_multivariate_predictions(best_transformations=best_transformations, ingested_data=ing_data,
-                                                      scenarios=scenarios, param_config=param_config,
+        timeseries_containers = get_best_multivariate_predictions(best_transformations=best_transformations, ingested_data=ing_data,
+                                                      timeseries_containers=timeseries_containers, param_config=param_config,
                                                       total_xcorr=total_xcorr)
-        assert len(scenarios) == 2
-        assert scenarios[0].scenario_data.columns[0] == "b"
-        assert scenarios[1].scenario_data.columns[0] == "c"
+        assert len(timeseries_containers) == 2
+        assert timeseries_containers[0].timeseries_data.columns[0] == "b"
+        assert timeseries_containers[1].timeseries_data.columns[0] == "c"
 
-        assert scenarios[0].models['mockup'].best_prediction.iloc[-1, 0] == 1.0  # Check predictions are multivariate
-        assert scenarios[1].models['mockup'].best_prediction.iloc[-1, 0] == 1.0
+        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[-1, 0] == 1.0  # Check predictions are multivariate
+        assert timeseries_containers[1].models['mockup'].best_prediction.iloc[-1, 0] == 1.0
 
-        assert len(scenarios[0].models) == 2
-        assert len(scenarios[1].models) == 2
+        assert len(timeseries_containers[0].models) == 2
+        assert len(timeseries_containers[1].models) == 2
 
     def test_compute_predictions(self):
         # Check results are in the correct form and test the function to save historic predictions to file.
@@ -590,19 +590,19 @@ class TestGetPredictions:
         except FileNotFoundError:
             pass
 
-        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+        timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
-        assert len(scenarios) == 2
-        assert scenarios[0].scenario_data.columns[0] == "b"
-        assert scenarios[1].scenario_data.columns[0] == "c"
+        assert len(timeseries_containers) == 2
+        assert timeseries_containers[0].timeseries_data.columns[0] == "b"
+        assert timeseries_containers[1].timeseries_data.columns[0] == "c"
 
-        assert len(scenarios[0].models) == 2
-        assert len(scenarios[1].models) == 2
+        assert len(timeseries_containers[0].models) == 2
+        assert len(timeseries_containers[1].models) == 2
 
-        b_old_hist = scenarios[0].historical_prediction
-        c_old_hist = scenarios[1].historical_prediction
+        b_old_hist = timeseries_containers[0].historical_prediction
+        c_old_hist = timeseries_containers[1].historical_prediction
 
-        for s in scenarios:
+        for s in timeseries_containers:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 2
@@ -617,9 +617,9 @@ class TestGetPredictions:
         ing_data = add_freq(ing_data, "D")
 
         # This time historical predictions will be loaded from file.
-        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+        timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
-        for s in scenarios:
+        for s in timeseries_containers:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 3
@@ -628,15 +628,15 @@ class TestGetPredictions:
                 assert hist_prediction.index[2] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
-        assert b_old_hist['fbprophet'].iloc[0, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[0, 0]
-        assert b_old_hist['fbprophet'].iloc[1, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[1, 0]
-        assert b_old_hist['mockup'].iloc[0, 0] == scenarios[0].historical_prediction['mockup'].iloc[0, 0]
-        assert b_old_hist['mockup'].iloc[1, 0] == scenarios[0].historical_prediction['mockup'].iloc[1, 0]
+        assert b_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[0, 0]
+        assert b_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[1, 0]
+        assert b_old_hist['mockup'].iloc[0, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[0, 0]
+        assert b_old_hist['mockup'].iloc[1, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[1, 0]
 
-        assert c_old_hist['fbprophet'].iloc[0, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[0, 0]
-        assert c_old_hist['fbprophet'].iloc[1, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[1, 0]
-        assert c_old_hist['mockup'].iloc[0, 0] == scenarios[1].historical_prediction['mockup'].iloc[0, 0]
-        assert c_old_hist['mockup'].iloc[1, 0] == scenarios[1].historical_prediction['mockup'].iloc[1, 0]
+        assert c_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[0, 0]
+        assert c_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[1, 0]
+        assert c_old_hist['mockup'].iloc[0, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[0, 0]
+        assert c_old_hist['mockup'].iloc[1, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[1, 0]
 
         # Cleanup.
         os.remove("test_hist_pred_saves/test1.pkl")
@@ -719,13 +719,13 @@ class TestGetPredictions:
         historical_prediction = forecast[['yhat']]
 
         # Let TIMEX do this thing.
-        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+        timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
-        scenario = scenarios[1]
-        training_results = scenario.models['fbprophet'].results
+        timeseries_container = timeseries_containers[1]
+        training_results = timeseries_container.models['fbprophet'].results
         training_results.sort(key=lambda x: getattr(x.testing_performances, 'MAE'))
 
-        assert historical_prediction.equals(scenario.models['fbprophet'].best_prediction[['yhat']])
+        assert historical_prediction.equals(timeseries_container.models['fbprophet'].best_prediction[['yhat']])
 
         # Cleanup.
         os.remove("test_hist_pred_saves/test2.pkl")
@@ -764,17 +764,17 @@ class TestGetPredictions:
         except FileNotFoundError:
             pass
 
-        scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
+        timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
-        assert len(scenarios) == 2
-        assert scenarios[0].scenario_data.columns[0] == "b"
-        assert scenarios[1].scenario_data.columns[0] == "c"
+        assert len(timeseries_containers) == 2
+        assert timeseries_containers[0].timeseries_data.columns[0] == "b"
+        assert timeseries_containers[1].timeseries_data.columns[0] == "c"
 
-        assert len(scenarios[0].models) == 2
-        assert len(scenarios[1].models) == 2
+        assert len(timeseries_containers[0].models) == 2
+        assert len(timeseries_containers[1].models) == 2
 
-        for s in scenarios:
-            scen_name = s.scenario_data.columns[0]
+        for s in timeseries_containers:
+            scen_name = s.timeseries_data.columns[0]
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 10
@@ -894,9 +894,9 @@ class TestGetPredictions:
         ingested_data = df[["ds", "b"]].copy()
         ingested_data.set_index("ds", inplace=True)
 
-        scenarios = get_best_predictions(ingested_data, param_config)
-        test_prediction = scenarios[0].models['fbprophet'].results[0].prediction
-        best_prediction = scenarios[0].models['fbprophet'].best_prediction
+        timeseries_containers = get_best_predictions(ingested_data, param_config)
+        test_prediction = timeseries_containers[0].models['fbprophet'].results[0].prediction
+        best_prediction = timeseries_containers[0].models['fbprophet'].best_prediction
 
         assert best_prediction[['yhat']].equals(expected_best_prediction[['yhat']])
         assert test_prediction[['yhat']].equals(expected_test_prediction[['yhat']])
@@ -914,11 +914,11 @@ class TestCreateScenarios:
          (False, False, True,  {"b": "d", "c": "e"},       1.0),
          (False, False, False, {},                         0.0)]
     )
-    def test_create_scenarios(self, historical_predictions, xcorr, additional_regressors, expected_extra_regressors,
-                                expected_value):
+    def test_create_containers(self, historical_predictions, xcorr, additional_regressors, expected_extra_regressors,
+                               expected_value):
 
         try:
-            os.remove("test_hist_pred_saves/test_create_scenarios.pkl")
+            os.remove("test_hist_pred_saves/test_create_containers.pkl")
         except FileNotFoundError:
             pass
 
@@ -940,7 +940,7 @@ class TestCreateScenarios:
         if historical_predictions:
             param_config["historical_prediction_parameters"] = {
                 "initial_index": "2000-01-15",
-                "save_path": "test_hist_pred_saves/test_create_scenarios.pkl"
+                "save_path": "test_hist_pred_saves/test_create_containers.pkl"
             }
 
         if xcorr:
@@ -953,8 +953,8 @@ class TestCreateScenarios:
 
         if additional_regressors:
             param_config["additional_regressors"] = {
-                "b": "test_datasets/test_create_scenarios_extrareg_d.csv",
-                "c": "test_datasets/test_create_scenarios_extrareg_e.csv",
+                "b": "test_datasets/test_create_containers_extrareg_d.csv",
+                "c": "test_datasets/test_create_containers_extrareg_e.csv",
             }
 
         # Having values like 30 -> 60 or 60 -> 90 will make multivariate Mockup model always win on the univariate one
@@ -964,26 +964,26 @@ class TestCreateScenarios:
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
 
-        scenarios = create_scenarios(ing_data, param_config)
+        timeseries_containers = create_timeseries_containers(ing_data, param_config)
 
-        assert len(scenarios) == 2
-        for scenario in scenarios:
-            name = scenario.scenario_data.columns[0]
+        assert len(timeseries_containers) == 2
+        for container in timeseries_containers:
+            name = container.timeseries_data.columns[0]
 
             if xcorr:
-                assert type(scenario.xcorr) == dict
+                assert type(container.xcorr) == dict
 
             if expected_extra_regressors != {}:
-                assert scenario.models['mockup'].characteristics['extra_regressors'] == expected_extra_regressors[name]
+                assert container.models['mockup'].characteristics['extra_regressors'] == expected_extra_regressors[name]
 
             if historical_predictions:
-                hp = scenario.historical_prediction['mockup']
+                hp = container.historical_prediction['mockup']
                 assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].all() == expected_value
             else:
-                assert scenario.historical_prediction is None
+                assert container.historical_prediction is None
 
         try:
-            os.remove("test_hist_pred_saves/test_create_scenarios.pkl")
+            os.remove("test_hist_pred_saves/test_create_containers.pkl")
         except FileNotFoundError:
             pass
 
@@ -991,7 +991,7 @@ class TestCreateScenarios:
         "xcorr",
         [True, False]
     )
-    def test_create_scenarios_onlyvisual(self, xcorr):
+    def test_create_containers_onlyvisual(self, xcorr):
 
         param_config = {
             "input_parameters": {
@@ -1013,15 +1013,15 @@ class TestCreateScenarios:
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
 
-        scenarios = create_scenarios(ing_data, param_config)
+        timeseries_containers = create_timeseries_containers(ing_data, param_config)
 
-        assert len(scenarios) == 2
-        for scenario in scenarios:
-            name = scenario.scenario_data.columns[0]
-            assert scenario.models is None
-            assert scenario.historical_prediction is None
+        assert len(timeseries_containers) == 2
+        for container in timeseries_containers:
+            name = container.timeseries_data.columns[0]
+            assert container.models is None
+            assert container.historical_prediction is None
             if xcorr:
-                assert scenario.xcorr is not None
+                assert container.xcorr is not None
             else:
-                assert scenario.xcorr is None
-            assert scenario.scenario_data.equals(ing_data[[name]])
+                assert container.xcorr is None
+            assert container.timeseries_data.equals(ing_data[[name]])

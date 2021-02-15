@@ -42,7 +42,7 @@ def ingest_timeseries(param_config: dict):
     - `add_diff_column`: comma-separated string of columns' names for which a corresponding column containing the diff
       values should be created. They will be created with the name `col_name'_diff. Note that the first row of the
       dataset will be discarded;
-    - `scenarios_names`: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;
+    - `timeseries_names`: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;
     - `dateparser_options`: dictionary of key-values which will be given to `dateparser.parse()`.
 
     Examples
@@ -53,7 +53,7 @@ def ingest_timeseries(param_config: dict):
     ...    "columns_to_load_from_url": "data,nuovi_positivi,terapia_intensiva",
     ...    "index_column_name": "data",
     ...    "add_diff_column": "terapia_intensiva",
-    ...    "scenarios_names": {
+    ...    "timeseries_names": {
     ...        "data": "Date",
     ...        "nuovi_positivi": "Daily cases",
     ...        "terapia_intensiva": "Total intensive care",
@@ -116,7 +116,7 @@ def ingest_timeseries(param_config: dict):
         pass
 
     try:
-        mappings = input_parameters["scenarios_names"]
+        mappings = input_parameters["timeseries_names"]
         df_ingestion.reset_index(inplace=True)
         df_ingestion.rename(columns=mappings, inplace=True)
         try:

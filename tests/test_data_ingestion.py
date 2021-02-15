@@ -145,7 +145,7 @@ class TestDataIngestion:
                     "date_formats": ["%Y-%m-%dT%H:%M:%S"]
                 },
                 "add_diff_column": "third_column,second_column",
-                "scenarios_names":
+                "timeseries_names":
                     {
                         "first_column": "A",
                         "second_column": "B",

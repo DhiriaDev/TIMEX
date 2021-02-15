@@ -1,22 +1,22 @@
 from pandas import DataFrame
 
 
-class Scenario:
+class TimeSeriesContainer:
     """
-    A scenario represents a full analysis of a single univariate time series.
+    A TimeSeriesContainer represents a full analysis of a single univariate time series.
     It includes all the relevant information needed to characterize the study case.
 
     Parameters
     ----------
-    scenario_data : DataFrame
+    timeseries_data : DataFrame
         Initial time series, in the form of a DataFrame with a index and a single data column.
     models : dict
-        Dict of ModelResult objects, all trained on this scenario.
+        Dict of ModelResult objects, all trained on this time-series.
     xcorr : dict
-        Cross-correlation between the data of this scenario and all the other ones.
+        Cross-correlation between the data of this time-series and all the other ones.
     """
-    def __init__(self, scenario_data: DataFrame, models: dict, xcorr: dict, historical_prediction: dict = None):
-        self.scenario_data = scenario_data
+    def __init__(self, timeseries_data: DataFrame, models: dict, xcorr: dict, historical_prediction: dict = None):
+        self.timeseries_data = timeseries_data
         self.models = models
         self.xcorr = xcorr
         self.historical_prediction = historical_prediction

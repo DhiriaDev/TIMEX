@@ -14,8 +14,8 @@ from timex.data_prediction.xcorr import calc_xcorr
 
 from timex.data_ingestion import add_freq, select_timeseries_portion, add_diff_columns
 from timex.data_prediction.models.prophet_predictor import FBProphetModel
-from timex.scenario import Scenario
-from timex.data_prediction import create_scenarios
+from timex.data_prediction import create_timeseries_containers
+from timex.timeseries_container import TimeSeriesContainer
 
 log = logging.getLogger(__name__)
 
@@ -49,11 +49,11 @@ def compute():
                                               zip(ingested_data['Daily cases'], ingested_data['Daily tests'])]
 
     # data prediction
-    scenarios = create_scenarios(ingested_data=ingested_data, param_config=param_config)
+    containers = create_timeseries_containers(ingested_data=ingested_data, param_config=param_config)
 
     ####################################################################################################################
-    # Custom scenario #########
-    log.info(f"Computing the custom scenarios.")
+    # Custom time-series #########
+    log.info(f"Computing the custom time-series.")
 
     regions = read_csv("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv",
                        header=0, index_col=0, usecols=['data', 'denominazione_regione', 'nuovi_positivi', 'tamponi'])
@@ -103,7 +103,7 @@ def compute():
             max_threads = 1
 
     for region in daily_cases_regions.columns:
-        scenario_data = daily_cases_regions[[region]]
+        timeseries_data = daily_cases_regions[[region]]
 
         model_results = {}
 
@@ -111,15 +111,15 @@ def compute():
 
         log.info(f"Computing univariate prediction for {region}...")
         predictor = FBProphetModel(param_config, transformation="none")
-        prophet_result = predictor.launch_model(scenario_data.copy(), max_threads=max_threads)
+        prophet_result = predictor.launch_model(timeseries_data.copy(), max_threads=max_threads)
         model_results['fbprophet'] = prophet_result
         #
         # predictor = ARIMA(param_config)
         # arima_result = predictor.launch_model(scenario_data.copy())
         # model_results.append(arima_result)
 
-        s = Scenario(scenario_data, model_results, xcorr)
-        scenarios.append(s)
+        s = TimeSeriesContainer(timeseries_data, model_results, xcorr)
+        containers.append(s)
 
         # children_for_each_scenario.append({
         #     'name': region,
@@ -128,11 +128,11 @@ def compute():
 
     ####################################################################################################################
 
-    # Save the children; these are the scenarios objects from which a nice Dash page can be built.
+    # Save the children; these are the TimeSeriesContainer objects from which a nice Dash page can be built.
     # They can be loaded by "app_load_from_dump.py" to start the app
     # without re-computing all the data.
-    with open(f"scenarios.pkl", 'wb') as input_file:
-        pickle.dump(scenarios, input_file)
+    with open(f"containers.pkl", 'wb') as input_file:
+        pickle.dump(containers, input_file)
 
 
 if __name__ == '__main__':

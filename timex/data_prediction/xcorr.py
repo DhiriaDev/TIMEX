@@ -7,7 +7,7 @@ from statsmodels.tsa.stattools import grangercausalitytests
 def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str] = ["pearson"]) -> dict:
     """
     Calculate the cross-correlation for the ingested data.
-    Use the scenario column as target; the correlation is computed against all lags of all the other columns which
+    Use the time-series column as target; the correlation is computed against all lags of all the other columns which
     include numbers. NaN values, introduced by the various shifts, are replaced with 0.
 
     Parameters

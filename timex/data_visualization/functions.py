@@ -19,8 +19,9 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 
 from timex.data_prediction import ValidationPerformance
 from timex.data_prediction.models.predictor import SingleResult
-from timex.scenario import Scenario
 import calendar
+
+from timex.timeseries_container import TimeSeriesContainer
 
 log = logging.getLogger(__name__)
 
@@ -29,15 +30,15 @@ global _
 # _ = lambda x: x
 
 
-def create_scenario_children(scenario: Scenario, param_config: dict):
+def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, param_config: dict):
     """
-    Creates the Dash children for a specific scenario. They include a line plot,
-    histogram, box plot and autocorrelation plot. For each model on the scenario
+    Creates the Dash children for a specific time-series. They include a line plot,
+    histogram, box plot and autocorrelation plot. For each model on the time-series
     the prediction plot and performance plot are also added.
     
     Parameters
     ----------
-    scenario: Scenario
+    timeseries_container: Scenario
     
     param_config : dict
     
@@ -50,9 +51,9 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
     children = []
 
     visualization_parameters = param_config["visualization_parameters"]
-    scenario_data = scenario.scenario_data
+    timeseries_data = timeseries_container.timeseries_data
 
-    name = scenario_data.columns[0]
+    name = timeseries_data.columns[0]
 
     locale_dir = pathlib.Path(os.path.abspath(__file__)).parent / "locales"
 
@@ -69,16 +70,16 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
     children.extend([
         html.H2(children=name + _(' analysis'), id=name),
         html.H3(_("Data visualization")),
-        line_plot(scenario_data),
-        histogram_plot(scenario_data, visualization_parameters),
-        box_plot(scenario_data, visualization_parameters),
-        box_plot_aggregate(scenario_data, visualization_parameters),
-        components_plot(scenario_data),
-        autocorrelation_plot(scenario_data),
+        line_plot(timeseries_data),
+        histogram_plot(timeseries_data, visualization_parameters),
+        box_plot(timeseries_data, visualization_parameters),
+        box_plot_aggregate(timeseries_data, visualization_parameters),
+        components_plot(timeseries_data),
+        autocorrelation_plot(timeseries_data),
     ])
 
     # Plot cross-correlation plot and graphs, if requested.
-    if scenario.xcorr is not None:
+    if timeseries_container.xcorr is not None:
         graph_corr_threshold = visualization_parameters[
             "xcorr_graph_threshold"] if "xcorr_graph_threshold" in visualization_parameters else None
 
@@ -88,16 +89,16 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
                        "others.")),
             html.Div(_("Meanwhile, positive lags (right part) shows the correlation between this scenario "
                        "and the past of the others.")),
-            cross_correlation_plot(scenario.xcorr),
+            cross_correlation_plot(timeseries_container.xcorr),
             html.Div(_("The peaks found using each cross-correlation modality are shown in the graphs:")),
-            cross_correlation_graph(name, scenario.xcorr, graph_corr_threshold)
+            cross_correlation_graph(name, timeseries_container.xcorr, graph_corr_threshold)
         ])
 
     # Plot the prediction results, if requested.
-    if scenario.models is not None:
+    if timeseries_container.models is not None:
         model_parameters = param_config["model_parameters"]
 
-        models = scenario.models
+        models = timeseries_container.models
 
         children.append(
             html.H3(_("Training & Validation results")),
@@ -120,34 +121,34 @@ def create_scenario_children(scenario: Scenario, param_config: dict):
                 characteristics_list(model_characteristic, testing_performances),
                 # html.Div("Testing performance:"),
                 # html.Ul([html.Li(key + ": " + str(testing_performances[key])) for key in testing_performances]),
-                prediction_plot(scenario_data, best_prediction, test_values),
-                performance_plot(scenario_data, best_prediction, testing_performances, test_values),
+                prediction_plot(timeseries_data, best_prediction, test_values),
+                performance_plot(timeseries_data, best_prediction, testing_performances, test_values),
             ])
 
             # EXTRA
             # Warning: this will plot every model result, with every training set used!
             # children.extend(plot_every_prediction(ingested_data, model_results, main_accuracy_estimator, test_values))
 
-    if scenario.historical_prediction is not None:
+    if timeseries_container.historical_prediction is not None:
         children.extend([
             html.H3(_("Prediction")),
             html.Div(_("For every model the best predictions for each past date are plotted."))
         ])
-        for model in scenario.historical_prediction:
+        for model in timeseries_container.historical_prediction:
             children.extend([
                 html.H4(f"{model}"),
-                historical_prediction_plot(scenario_data, scenario.historical_prediction[model], scenario.models[model].best_prediction)
+                historical_prediction_plot(timeseries_data, timeseries_container.historical_prediction[model], timeseries_container.models[model].best_prediction)
             ])
 
     return children
 
 
-def create_dash_children(scenarios: [Scenario], param_config: dict):
+def create_dash_children(timeseries_containers: [TimeSeriesContainer], param_config: dict):
     """
     Create Dash children, in order, for a list of Scenarios.
     Parameters
     ----------
-    scenarios : [Scenario]
+    timeseries_containers : [Scenario]
 
     param_config : dict
 
@@ -157,8 +158,8 @@ def create_dash_children(scenarios: [Scenario], param_config: dict):
 
     """
     children = []
-    for s in scenarios:
-        children.extend(create_scenario_children(s, param_config))
+    for s in timeseries_containers:
+        children.extend(create_timeseries_dash_children(s, param_config))
 
     return children
 
@@ -359,7 +360,7 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
 def cross_correlation_plot(xcorr: dict):
     """
     Create and return the cross-correlation plot for all the columns in the dataframe.
-    The scenario column is used as target; the correlation is shown in a subplot for every modality used to compute the
+    The time-series column is used as target; the correlation is shown in a subplot for every modality used to compute the
     x-correlation.
 
     Parameters
@@ -734,15 +735,15 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     # training_data = df.loc[predicted_data.index[0]:]
     # training_data = training_data.iloc[:-test_values]
     # test_data = df.iloc[-test_values:]
-    scenario_name = real_data.columns[0]
+    timeseries_name = real_data.columns[0]
     first_predicted_index = predicted_data.index[0]
     last_real_index = real_data.index[-1]
 
-    validation_real_data = real_data.loc[first_predicted_index:, scenario_name]
+    validation_real_data = real_data.loc[first_predicted_index:, timeseries_name]
 
     testing_performance = ValidationPerformance(first_predicted_index)
     testing_performance.set_testing_stats(actual=validation_real_data,
-                                          predicted=predicted_data.loc[:last_real_index, scenario_name])
+                                          predicted=predicted_data.loc[:last_real_index, timeseries_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
         show_errors(testing_performance),
