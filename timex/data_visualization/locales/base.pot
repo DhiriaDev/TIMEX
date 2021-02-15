@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-01-20 17:21+0100\n"
+"POT-Creation-Date: 2021-02-15 15:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,236 +17,243 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.9.0\n"
 
-#: data_visualization.py:69
+#: functions.py:70
 msgid " analysis"
 msgstr ""
 
-#: data_visualization.py:70
+#: functions.py:71
 msgid "Data visualization"
 msgstr ""
 
-#: data_visualization.py:85
+#: functions.py:86
 msgid "Cross-correlation"
 msgstr ""
 
-#: data_visualization.py:86
+#: functions.py:87
 msgid ""
 "Negative lags (left part) show the correlation between this scenario and "
 "the future of the others."
 msgstr ""
 
-#: data_visualization.py:88
+#: functions.py:89
 msgid ""
 "Meanwhile, positive lags (right part) shows the correlation between this "
 "scenario and the past of the others."
 msgstr ""
 
-#: data_visualization.py:91
+#: functions.py:92
 msgid ""
 "The peaks found using each cross-correlation modality are shown in the "
 "graphs:"
 msgstr ""
 
-#: data_visualization.py:102
+#: functions.py:103
 msgid "Training & Validation results"
 msgstr ""
 
-#: data_visualization.py:132
+#: functions.py:133
 msgid "Prediction"
 msgstr ""
 
-#: data_visualization.py:133
+#: functions.py:134
 msgid "For every model the best predictions for each past date are plotted."
 msgstr ""
 
-#: data_visualization.py:179 data_visualization.py:207
+#: functions.py:180 functions.py:208
 msgid "Line plot"
 msgstr ""
 
-#: data_visualization.py:239
+#: functions.py:240
 msgid "Histogram"
 msgstr ""
 
-#: data_visualization.py:239 data_visualization.py:583
-#: data_visualization.py:635
+#: functions.py:240 functions.py:582 functions.py:634
 msgid "Count"
 msgstr ""
 
-#: data_visualization.py:265
+#: functions.py:266
 msgid "Trend"
 msgstr ""
 
-#: data_visualization.py:265
+#: functions.py:266
 msgid "Seasonality"
 msgstr ""
 
-#: data_visualization.py:265
+#: functions.py:266
 msgid "Residual"
 msgstr ""
 
-#: data_visualization.py:296
+#: functions.py:297
 msgid "Components decomposition"
 msgstr ""
 
-#: data_visualization.py:296
+#: functions.py:297
 msgid "Decomposition model"
 msgstr ""
 
-#: data_visualization.py:297
+#: functions.py:298
 msgid "Additive"
 msgstr ""
 
-#: data_visualization.py:298
+#: functions.py:299
 msgid "Multiplicative"
 msgstr ""
 
-#: data_visualization.py:306
+#: functions.py:305
 msgid ""
 "Multiplicative model is not available for series which contain zero or "
 "negative values."
 msgstr ""
 
-#: data_visualization.py:346
+#: functions.py:345
 msgid "autocorrelation"
 msgstr ""
 
-#: data_visualization.py:351
+#: functions.py:350
 msgid "Autocorrelation plot"
 msgstr ""
 
-#: data_visualization.py:351
-msgid "Autocorrelation"
-msgstr ""
-
-#: data_visualization.py:405
-msgid "Cross-correlation using different algorithms"
-msgstr ""
-
-#: data_visualization.py:406
+#: functions.py:350 functions.py:405
 msgid "Lags"
 msgstr ""
 
-#: data_visualization.py:407
+#: functions.py:350
+msgid "Autocorrelation"
+msgstr ""
+
+#: functions.py:404
+msgid "Cross-correlation using different algorithms"
+msgstr ""
+
+#: functions.py:406
 msgid "Correlation"
 msgstr ""
 
-#: data_visualization.py:509
+#: functions.py:508
 msgid "Lag: "
 msgstr ""
 
-#: data_visualization.py:583
+#: functions.py:582
 msgid "Box plot"
 msgstr ""
 
-#: data_visualization.py:635
+#: functions.py:634
 msgid "Aggregate box plot"
 msgstr ""
 
-#: data_visualization.py:682
-msgid "yhat"
-msgstr ""
-
-#: data_visualization.py:686
-msgid "yhat_lower"
-msgstr ""
-
-#: data_visualization.py:689
-msgid "yhat_upper"
-msgstr ""
-
-#: data_visualization.py:696
+#: functions.py:682
 msgid "unused data"
 msgstr ""
 
-#: data_visualization.py:700 data_visualization.py:848
+#: functions.py:686 functions.py:860
 msgid "training data"
 msgstr ""
 
-#: data_visualization.py:705
+#: functions.py:690
 msgid "validation data"
 msgstr ""
 
-#: data_visualization.py:706
+#: functions.py:695
+msgid "yhat"
+msgstr ""
+
+#: functions.py:699
+msgid "yhatlower"
+msgstr ""
+
+#: functions.py:702
+msgid "yhatupper"
+msgstr ""
+
+#: functions.py:706
 msgid "Best prediction for the validation set"
 msgstr ""
 
-#: data_visualization.py:745
+#: functions.py:747
 msgid "This model, during the history, reached these performances on unseen data:"
 msgstr ""
 
-#: data_visualization.py:750
-msgid "prediction"
+#: functions.py:749
+msgid "Range of validation data: "
 msgstr ""
 
-#: data_visualization.py:755
+#: functions.py:754
 msgid "real data"
 msgstr ""
 
-#: data_visualization.py:780
+#: functions.py:759
+msgid "historical prediction"
+msgstr ""
+
+#: functions.py:767
+msgid "future yhat"
+msgstr ""
+
+#: functions.py:792
 msgid "Historical prediction"
 msgstr ""
 
-#: data_visualization.py:861
+#: functions.py:873
 msgid "Performances with different training windows"
 msgstr ""
 
-#: data_visualization.py:909
+#: functions.py:921
 msgid "Model type: "
 msgstr ""
 
-#: data_visualization.py:910
+#: functions.py:922
 msgid "Values used for testing: last "
 msgstr ""
 
-#: data_visualization.py:910
+#: functions.py:922
 msgid " values"
 msgstr ""
 
-#: data_visualization.py:911
+#: functions.py:923
 msgid "The length of the training windows is the "
 msgstr ""
 
-#: data_visualization.py:912
+#: functions.py:924
 msgid " of the length of the time series."
 msgstr ""
 
-#: data_visualization.py:913
+#: functions.py:925
 msgid "Training windows are composed of "
 msgstr ""
 
-#: data_visualization.py:913
+#: functions.py:925
 msgid " values."
 msgstr ""
 
-#: data_visualization.py:914
+#: functions.py:926
 msgid "The model has used "
 msgstr ""
 
-#: data_visualization.py:914
+#: functions.py:926
 msgid " as extra-regressor(s) to improve the training."
 msgstr ""
 
-#: data_visualization.py:915
+#: functions.py:927
 msgid "The model has used a "
 msgstr ""
 
-#: data_visualization.py:915
+#: functions.py:927
 msgid " transformation on the input data."
 msgstr ""
 
-#: data_visualization.py:916
+#: functions.py:928
 msgid "The model has not used any pre/post transformation on input data."
 msgstr ""
 
-#: data_visualization.py:920
+#: functions.py:932
 msgid "Model characteristics:"
 msgstr ""
 
-#: data_visualization.py:922
+#: functions.py:934
 msgid "This model, using the best training window, reaches these performances:"
 msgstr ""
 
-#: data_visualization.py:946
+#: functions.py:958
 msgid "Arithmetic mean of errors:"
 msgstr ""
 

@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 # Default method to get a translated text.
 global _
-_ = lambda x: x
+# _ = lambda x: x
 
 
 def create_scenario_children(scenario: Scenario, param_config: dict):
@@ -676,19 +676,6 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     training_data = training_data.iloc[:-test_values]
     test_data = df.iloc[-test_values:]
 
-    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
-                             mode='lines+markers',
-                             name=_('yhat')))
-    try:
-        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
-                                 line=dict(color='lightgreen', dash='dash'),
-                                 name=_('yhat_lower')))
-        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
-                                 line=dict(color='lightgreen', dash='dash'),
-                                 name=_('yhat_upper')))
-    except:
-        pass
-
     fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
                              line=dict(color='black'),
                              mode='markers',
@@ -698,10 +685,24 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
                              mode='markers',
                              name=_('training data'),
                              ))
-
     fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
                              line=dict(color='green', width=3, dash='dot'),
                              name=_('validation data')))
+
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
+                             line=dict(color='blue'),
+                             mode='lines+markers',
+                             name=_('yhat')))
+    try:
+        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name=_('yhatlower')))
+        fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name=_('yhatupper')))
+    except:
+        pass
+
     fig.update_layout(title=_("Best prediction for the validation set"), xaxis_title=df.index.name,
                       yaxis_title=df.columns[0])
     g = dcc.Graph(
@@ -737,28 +738,33 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     first_predicted_index = predicted_data.index[0]
     last_real_index = real_data.index[-1]
 
+    validation_real_data = real_data.loc[first_predicted_index:, scenario_name]
+
     testing_performance = ValidationPerformance(first_predicted_index)
-    testing_performance.set_testing_stats(actual=real_data.loc[first_predicted_index:, scenario_name],
+    testing_performance.set_testing_stats(actual=validation_real_data,
                                           predicted=predicted_data.loc[:last_real_index, scenario_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
-        show_errors(testing_performance)])
-
-    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
-                             mode='lines+markers',
-                             name=_('prediction')))
+        show_errors(testing_performance),
+        html.Div(_("Range of validation data: ") + str(validation_real_data.max() - validation_real_data.min()))])
 
     fig.add_trace(go.Scatter(x=real_data.index, y=real_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
                              name=_('real data')))
 
+    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
+                             line=dict(color='blue'),
+                             mode='lines+markers',
+                             name=_('historical prediction')))
+
     best_prediction.loc[predicted_data.index[-1], 'yhat'] = predicted_data.iloc[-1, 0]
     best_prediction = best_prediction.loc[predicted_data.index[-1]:, :]
 
     fig.add_trace(go.Scatter(x=best_prediction.index, y=best_prediction['yhat'],
+                             line=dict(color='lightgreen'),
                              mode='lines+markers',
-                             name=_('yhat')))
+                             name=_('future yhat')))
 
     # try:
     #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
