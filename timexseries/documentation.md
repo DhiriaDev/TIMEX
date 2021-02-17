@@ -16,5 +16,5 @@ Documentation is still a work in progress.
 ## Get started
 Refer to the Examples section of the GitHub repository, or check the 
 [source code](https://github.com/AlexMV12/covid-timex.it) of 
-[covid-timex.it](covid-timex.it).
+[covid-timex.it](https://covid-timex.it).
 
