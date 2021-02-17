@@ -1,7 +1,0 @@
-{
-  "test_percentage": 10,
-  "delta_training_percentage": 20,
-  "prediction_lags": 10,
-  "transformation": "log",
-  "main_accuracy_estimator": "mae"
-}

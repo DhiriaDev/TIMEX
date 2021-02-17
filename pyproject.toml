@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "timexseries"
+version = "1.0.0"
+description = "TIMEX is a framework for time-series-forecasting-as-a-service."
+authors = ["Alessandro Falcetta <alessandro.falcetta@polimi.it>", "Manuel Roveri <manuel.roveri@polimi.it>"]
+license = "Apache-2.0"
+
+readme = "README.md"
+
+repository = "https://github.com/AlexMV12/TIMEX"
+homepage = "https://alexmv12.github.io/TIMEX/timex/index.html"
+
+keywords = ["time-series", "time", "forecasting", "as-a-service"]
+
+classifiers = [
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fbprophet = "^0.7.1"
+dash = "^1.19.0"
+torch = "^1.7.0"
+dash-bootstrap-components = "^0.11.3"
+gunicorn = "^20.0.4"
+colorhash = "^1.0.3"
+dateparser = "^1.0.0"
+scipy = "^1.6.0"
+sklearn = "^0.0"
+statsmodels = "^0.12.2"
+networkx = "^2.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+pytest-cov = "^2.11.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

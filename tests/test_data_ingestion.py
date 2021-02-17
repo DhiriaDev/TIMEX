@@ -7,9 +7,9 @@ from pandas._libs.tslibs.timestamps import Timestamp
 import pandas as pd
 import numpy as np
 
-from .context import timex
+from .context import timexseries
 
-from timex.data_ingestion import ingest_timeseries, add_freq, select_timeseries_portion, add_diff_columns
+from timexseries.data_ingestion import ingest_timeseries, add_freq, select_timeseries_portion, add_diff_columns
 from .utilities import get_fake_df
 
 
@@ -297,6 +297,28 @@ class TestDataIngestion:
 
             assert df.iloc[:, 0].isnull().sum() == 0
             assert df.index.freq == "D"
+
+    def test_ingest_timeseries_univariate_12(self):
+        # Check that all columns are loaded if `columns_to_load_from_url` is not specified.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/test_1.csv",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+                "dateparser_options": {
+                    "date_formats": ["%Y-%m-%dT%H:%M:%S"]
+                }
+            }
+        }
+
+        df = ingest_timeseries(param_config)
+        assert len(df.columns) == 2
+        assert df.index.name == "first_column"
+        assert df.columns[0] == "second_column"
+        assert df.columns[1] == "third_column"
+        assert len(df) == 3
+
+        assert df.index.freq == '1d'
 
 
 class TestAddFreq:
