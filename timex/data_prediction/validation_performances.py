@@ -1,19 +1,21 @@
 from math import sqrt
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 class ValidationPerformance:
     """
-    Class for the summary of various statistical indexes relative
-    to the performance of a prediction model.
+    Class for the summary of various statistical indexes relative to the performance of a prediction model.
+
+    Parameters
+    ----------
+    first_used_index, optional, default None
+        Index of the first value used in the time series to generate these results. This is a convenience if you already
+        know that initial index of the data this performance will refer to.
 
     Attributes
     ----------
-    first_used_index :
-        Index of the first value used in the time series to generate
-        these results.
     MSE : float
         Mean Squared Error. Default 0
     RMSE: float
@@ -23,25 +25,44 @@ class ValidationPerformance:
     AM: float
         Arithmetic Mean of error. Default 0
     """
-
-    def __init__(self, first_used_index):
+    def __init__(self, first_used_index=None):
         self.first_used_index = first_used_index
         self.MSE = 0
         self.RMSE = 0
         self.MAE = 0
         self.AM = 0
 
-    def set_testing_stats(self, actual: DataFrame, predicted: DataFrame):
+    def set_testing_stats(self, actual: Series, predicted: Series):
         """
-        Set all the statistical indexes according do input data.
+        Set all the statistical indexes according to input data.
 
         Parameters
         ----------
-        actual : DataFrame
-            Actual data stored in a DataFrame.
-        predicted : DataFrame
-            Data predicted by a model, stored in a DataFrame.
+        actual : Series
+            Actual data stored in a Pandas Series.
+        predicted : Series
+            Data predicted by a model, stored in a Pandas Series.
+
+        Examples
+        --------
+        >>> dates = pd.date_range('2000-01-01', periods=5)  # Last index is 2000-01-30
+        >>> ds = pd.DatetimeIndex(dates, freq="D")
+        >>> actual = np.array([1, 1, 1, 1, 1])
+        >>> predicted = np.array([3, 3, 3, 3, 3])
+        >>> actual_dataframe = DataFrame(data={"a": actual}, index=ds)
+        >>> predicted_dataframe = DataFrame(data={"yhat": predicted}, index=ds)
+
+        Calculate the performances.
+        >>> perf = ValidationPerformance()
+        >>> perf.set_testing_stats(actual_dataframe['a'], predicted_dataframe['yhat'])
+
+        >>> print(perf.MAE)
+        2.0
+
+        >>> print(perf.MSE)
+        4.0
         """
+
         self.MSE = mean_squared_error(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
         self.RMSE = sqrt(self.MSE)
@@ -52,8 +73,16 @@ class ValidationPerformance:
         Return all the parameters, in a dict.
 
         Returns
+        -------
         d : dict
             All the statistics, in a dict.
+
+        Examples
+        --------
+        >>> perf = ValidationPerformance()
+        >>> perf.set_testing_stats(actual_dataframe['a'], predicted_dataframe['yhat'])
+        >>> perf.get_dict()
+        {'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0}
         """
         d = {}
         for attribute, value in self.__dict__.items():

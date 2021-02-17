@@ -26,27 +26,53 @@ from timex.timeseries_container import TimeSeriesContainer
 log = logging.getLogger(__name__)
 
 # Default method to get a translated text.
-global _
-# _ = lambda x: x
+_ = lambda x: x
 
 
 def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, param_config: dict):
     """
-    Creates the Dash children for a specific time-series. They include a line plot,
-    histogram, box plot and autocorrelation plot. For each model on the time-series
-    the prediction plot and performance plot are also added.
+    Creates the Dash children for a specific time-series. They include a line plot, histogram, box plot and
+    autocorrelation plot. For each model on the time-series the prediction plot and performance plot are also added.
+
+    Cross-correlation plots and graphs are shown, if the the `timeseries_container` have it.
+
+    If the `timeseries_container` also have the `historical_prediction`, it is shown in a plot.
     
     Parameters
     ----------
-    timeseries_container: Scenario
+    timeseries_container: TimeSeriesContainer
+        Time-series for which the various plots and graphs will be returned.
     
     param_config : dict
-    
-    True to display the cross-correlation plot. Default True.
+        TIMEX configuration parameters dictionary, used for `visualization_parameters` which contains settings to
+        customize some plots and graphs.
 
     Returns
     -------
-    List of Dash children.
+    list
+        List of Dash children.
+
+    Examples
+    --------
+    Given a `timex.timeseries_container.TimeSeriesContainer` object, obtained for example through
+    `timex.pipeline.create_timeseries_containers`, create all the Dash object which could be shown in a Dash app:
+    >>> param_config = {
+    ...  "input_parameters": {},
+    ...  "model_parameters": {
+    ...      "models": "fbprophet",
+    ...      "possible_transformations": "none,log_modified",
+    ...      "main_accuracy_estimator": "mae",
+    ...      "delta_training_percentage": 20,
+    ...      "test_values": 5,
+    ...      "prediction_lags": 7,
+    ...  },
+    ...  "historical_prediction_parameters": {
+    ...      "initial_index": "2000-01-25",
+    ...      "save_path": "example.pkl"
+    ...  },
+    ...  "visualization_parameters": {}
+    ...}
+    >>>  plots = create_timeseries_dash_children(timeseries_container, param_config)
     """
     children = []
 
@@ -57,6 +83,7 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
 
     locale_dir = pathlib.Path(os.path.abspath(__file__)).parent / "locales"
 
+    global _
     try:
         gt = gettext.translation('messages', localedir=locale_dir, languages=[visualization_parameters["language"]])
         gt.install()
@@ -145,16 +172,20 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
 
 def create_dash_children(timeseries_containers: [TimeSeriesContainer], param_config: dict):
     """
-    Create Dash children, in order, for a list of Scenarios.
+    Create Dash children, in order, for a list of `timex.timeseries_container.TimeSeriesContainer`.
+
     Parameters
     ----------
-    timeseries_containers : [Scenario]
+    timeseries_containers : [TimeSeriesContainer]
+        Time-series for which all the plots and graphs will be created.
 
     param_config : dict
+        TIMEX configuration parameters dictionary.
 
     Returns
     -------
-    List of Dash children.
+    list
+        List of Dash children.
 
     """
     children = []
@@ -171,11 +202,18 @@ def line_plot(df: DataFrame) -> dcc.Graph:
     Parameters
     ----------
     df : DataFrame
-    Dataframe to plot.
+        Dataframe to plot.
 
     Returns
     -------
     g : dcc.Graph
+        Dash object containing the line plot.
+
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> line_plot = line_plot(timeseries_container.timeseries_data).figure
+    >>> line_plot.show()
     """
     fig = go.Figure(data=go.Scatter(x=df.index, y=df.iloc[:, 0], mode='lines+markers'))
     fig.update_layout(title=_('Line plot'), xaxis_title=df.index.name, yaxis_title=df.columns[0])
@@ -189,13 +227,13 @@ def line_plot(df: DataFrame) -> dcc.Graph:
 def line_plot_multiIndex(df: DataFrame) -> dcc.Graph:
     """
     Returns a line plot for a dataframe with a MultiIndex.
-    It is assumed that the first-level index is the real index,
-    and that data should be grouped using the second-level one.
+    It is assumed that the first-level index is the real index, and that data should be grouped using the
+    second-level one.
 
     Parameters
     ----------
     df : DataFrame
-    Dataframe to plot. It is a multiIndex dataframe.
+        Dataframe to plot. It is a multiIndex dataframe.
 
     Returns
     -------
@@ -221,16 +259,22 @@ def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     Parameters
     ----------
     df : DataFrame
-    Dataframe to plot.
+        Dataframe to plot.
 
     visualization_parameters : dict
-    Options set by the user.
+        Options set by the user, in particular if `nbinsx` is specified, then this number will be used for the number
+        of histogram bins.
 
     Returns
     -------
     g : dcc.Graph
-    """
 
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> hist_plot = hist_plot(timeseries_container.timeseries_data).figure
+    >>> hist_plot.show()
+    """
     try:
         p = {'nbinsx': visualization_parameters["histogram_bins"]}
     except KeyError:
@@ -258,6 +302,12 @@ def components_plot(ingested_data: DataFrame) -> html.Div:
     Returns
     -------
     g : dcc.Graph
+
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> comp_plot = components_plot(timeseries_container.timeseries_data)[0].figure
+    >>> comp_plot.show()
     """
     modes = ["additive", "multiplicative"]
 
@@ -315,13 +365,18 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
     Parameters
     ----------
     df : DataFrame
-    Dataframe to use in the autocorrelation plot.
+        Dataframe to use in the autocorrelation plot.
 
     Returns
     -------
     g : dcc.Graph
-    """
 
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> auto_plot = autocorrelation_plot(timeseries_container.timeseries_data).figure
+    >>> auto_plot.show()
+    """
     # Code from https://github.com/pandas-dev/pandas/blob/v1.1.4/pandas/plotting/_matplotlib/misc.py
     n = len(df)
     data = np.asarray(df)
@@ -360,17 +415,23 @@ def autocorrelation_plot(df: DataFrame) -> dcc.Graph:
 def cross_correlation_plot(xcorr: dict):
     """
     Create and return the cross-correlation plot for all the columns in the dataframe.
-    The time-series column is used as target; the correlation is shown in a subplot for every modality used to compute the
-    x-correlation.
+    The time-series column is used as target; the correlation is shown in a subplot for every modality used to compute
+    the x-correlation.
 
     Parameters
     ----------
     xcorr : dict
-    Cross-correlation values.
+        Cross-correlation values.
 
     Returns
     -------
     g : dcc.Graph
+
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> xcorr_plot = cross_correlation_plot(timeseries_container.xcorr).figure
+    >>> xcorr_plot.show()
     """
     subplots = len(xcorr)
     combs = [(1, 1), (1, 2), (2, 1), (2, 2)]
@@ -412,25 +473,34 @@ def cross_correlation_plot(xcorr: dict):
     return g
 
 
-def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.Graph:
+def cross_correlation_graph(name: str, xcorr: dict, threshold: float = 0) -> dcc.Graph:
     """
     Create and return the cross-correlation graphs for all the columns in the dataframe.
     A graph is created for each mode used to compute the x-correlation.
 
+    The nodes are all the time-series which can be found in `xcorr`; an arc is drawn from `target` node to another node
+    if the cross-correlation with that time-series, at any lag, is above the `threshold`. The arc contains also the
+    information on the lag.
+
     Parameters
     ----------
     name : str
-    Name of the target.
+        Name of the target.
 
     xcorr : dict
-    Cross-correlation dataframe.
+        Cross-correlation dataframe.
 
     threshold : int
-    Minimum value of correlation for which a edge should be drawn. Default 0.
+        Minimum value of correlation for which a edge should be drawn. Default 0.
 
     Returns
     -------
     g : dcc.Graph
+
+    Examples
+    --------
+    This is thought to be shown in a Dash app, so it could be difficult to show in Jupyter.
+    >>> xcorr_graph = cross_correlation_graph("a", timeseries_container.xcorr, 0.7)
     """
     figures = []
 
@@ -549,19 +619,26 @@ def cross_correlation_graph(name: str, xcorr: dict, threshold: int = 0) -> dcc.G
 
 def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     """
-    Create and return the box plot for a dataframe.
+    Create and return the box-and-whisker plot for a dataframe.
 
     Parameters
     ----------
     df : DataFrame
-    Dataframe to use in the box plot.
+        Dataframe to use in the box plot.
 
     visualization_parameters : dict
-    Options set by the user.
+        Options set by the user. In particular, `box_plot_frequency` is used to determine the number of boxes. The
+        default value is `1W`.
 
     Returns
     -------
     g : dcc.Graph
+
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> box_plot = box_plot(timeseries_container.timeseries_data, param_config["visualization_parameters"]).figure
+    >>> box_plot.show()
     """
     try:
         freq = visualization_parameters['box_plot_frequency']
@@ -596,14 +673,21 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
     Parameters
     ----------
     df : DataFrame
-    Dataframe to use in the box plot.
+        Dataframe to use in the box plot.
 
     visualization_parameters : dict
-    Options set by the user.
+        Options set by the user. In particular, `aggregate_box_plot_frequency` is used. Default `weekday`.
 
     Returns
     -------
     g : dcc.Graph
+
+    Examples
+    --------
+    Get the `figure` attribute if you want to display this in a Jupyter notebook.
+    >>> abox_plot = box_plot_aggregate(timeseries_container.timeseries_data,
+    ...                                param_config["visualization_parameters"]).figure
+    >>> abox_plot.show()
     """
 
     temp = df.iloc[:, 0]
@@ -643,32 +727,36 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
 def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) -> dcc.Graph:
     """
     Create and return a plot which contains the prediction for a dataframe.
-    The plot is built using two dataframe: ingested_data and predicted_data.
+    The plot is built using two dataframe: `ingested_data` and `predicted_data`.
 
-    ingested_data includes the raw data ingested by the app, while predicted_data
-    contains the actual prediction made by a model.
+    `ingested_data` includes the raw data ingested by the app, while `predicted_data` contains the actual prediction
+    made by a model.
 
-    Note that predicted_data starts at the first value used for training.
+    Note that `predicted_data` starts at the first value used for training.
 
-    The data not used for training is plotted in black, the data used for training
-    is plotted in green and the test values are red.
+    The data not used for training is plotted in black, the data used for training is plotted in green and the
+    validation values dashed.
 
-    Note that predicted_data may or not have the columns "yhat_lower" and "yhat_upper".
+    Note that `predicted_data` may or not have the columns "yhat_lower" and "yhat_upper".
 
     Parameters
     ----------
     df : DataFrame
-    Raw values ingested by the app.
+        Raw values ingested by the app.
 
     predicted_data : DataFrame
-    Prediction created by a model.
+        Prediction created by a model.
 
     test_values : int
-    Number of test values used in the testing.
+        Number of validation values used in the testing.
 
     Returns
     -------
     g : dcc.Graph
+
+    See Also
+    --------
+    Check `create_timeseries_dash_children` to check the use.
     """
     fig = go.Figure()
 
@@ -714,19 +802,30 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
 
 def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, best_prediction: DataFrame) -> html.Div:
     """
-    Create and return a plot which contains the best prediction found by this model for this time series.
+    Create and return a plot which contains the best prediction found by this model for this time series, along with
+    the historical prediction.
 
-    Note that predicted_data may or not have the columns "yhat_lower" and "yhat_upper".
+    Note that `predicted_data` may or not have the columns "yhat_lower" and "yhat_upper".
 
     Parameters
     ----------
-    predicted_data
     real_data : DataFrame
-    Raw values ingested by the app.
+        Raw values ingested by the app.
+
+    predicted_data : DataFrame
+        Historical prediction.
+
+    best_prediction : DataFrame
+        Best prediction, corresponding to the `best_prediction` attribute of a
+        `timex.data_prediction.models.predictor.ModelResult`.
 
     Returns
     -------
     g : dcc.Graph
+
+    See Also
+    --------
+    Check `create_timeseries_dash_children` to check the use.
     """
     new_children = []
     fig = go.Figure()
@@ -804,28 +903,32 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
 def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [ValidationPerformance],
                      test_values: int) -> dcc.Graph:
     """
-    Create and return the performance plot of the model; for every error kind (i.e. MSE, MAE, etc)
-    plot the values it assumes using different training windows.
+    Create and return the performance plot of the model; for every error kind (i.e. MSE, MAE, etc) plot the values it
+    assumes using different training windows.
     Plot the training data in the end.
 
     Parameters
     ----------
     df : DataFrame
-    Raw values ingested by the app.
+        Raw values ingested by the app.
 
     predicted_data : DataFrame
-    Prediction created by a model.
+        Prediction created by a model.
 
     testing_performances : [ValidationPerformance]
-    List of ValidationPerformance object. Every object is related to a specific training windows, hence
-    it shows the performance using that window.
+        List of ValidationPerformance object. Every object is related to a specific training windows, hence
+        it shows the performance using that window.
 
     test_values : int
-    Number of values used for testing performance.
+        Number of values used for testing performance.
 
     Returns
     -------
     g : dcc.Graph
+
+    See Also
+    --------
+    Check `create_timeseries_dash_children` to check the use.
     """
     fig = make_subplots(rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
@@ -906,16 +1009,15 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Val
     Parameters
     ----------
     model_characteristics : dict
-    key-value for each characteristic to write in natural language.
+        key-value for each characteristic to write in natural language.
 
     testing_performances : [ValidationPerformance]
-    Useful to write also information about the testing performances.
+        Useful to write also information about the testing performances.
 
     Returns
     -------
     html.Div()
     """
-
     def get_text_char(key: str, value: any) -> str:
         value = str(value)
         switcher = {
@@ -938,17 +1040,19 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Val
     return html.Div(elems)
 
 
-def show_errors(testing_performances: ValidationPerformance) -> html.Div:
+def show_errors(testing_performances: ValidationPerformance) -> html.Ul:
     """
+    Create an HTML list with each error-metric in `testing_performances`.
 
     Parameters
     ----------
-    testing_performances
+    testing_performances : ValidationPerformance
+        Error metrics to show.
 
     Returns
     -------
-
-
+    html.Ul
+        HTML list with all the error-metrics.
     """
 
     def get_text_perf(key: str, value: any) -> str:

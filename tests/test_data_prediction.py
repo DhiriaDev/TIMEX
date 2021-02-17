@@ -517,7 +517,8 @@ class TestGetPredictions:
 
         total_xcorr = calc_all_xcorr(ingested_data=ing_data, param_config=param_config)
 
-        best_transformations, timeseries_containers = get_best_univariate_predictions(ing_data, param_config, total_xcorr)
+        best_transformations, timeseries_containers = get_best_univariate_predictions(ing_data, param_config,
+                                                                                      total_xcorr)
 
         assert len(best_transformations) == 2
         assert best_transformations["fbprophet"]["b"] in ["log_modified", "none"]

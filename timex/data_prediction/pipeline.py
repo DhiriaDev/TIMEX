@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 
 def prepare_extra_regressor(container: TimeSeriesContainer, model: str) -> DataFrame:
     """
-    This function receives a Scenario object, which includes the time-series historical data and the various predictions
-    for the future.
+    This function receives a `timex.timeseries_container.TimeSeriesContainer` object, which includes the time-series
+    historical data and the various predictions for the future.
 
     The best prediction for the model 'model' is taken and appended to the original time-series, in order to obtain a
     DataFrame with the original time series and the best possible prediction.
@@ -32,16 +32,16 @@ def prepare_extra_regressor(container: TimeSeriesContainer, model: str) -> DataF
 
     Parameters
     ----------
-    container : Scenario
-    Scenario from which an extra-regressor should be extracted.
+    container : TimeSeriesContainer
+        `timex.timeseries_container.TimeSeriesContainer` from which an extra-regressor should be extracted.
 
     model
-    The model from which get the best available prediction.
+        The model from which get the best available prediction.
 
     Returns
     -------
     df : DataFrame
-    DataFrame with the length of the original time-series + prediction lags.
+        DataFrame with the length of the original time-series + prediction lags.
     """
     name = container.timeseries_data.columns[0]
     best_prediction = container.models[model].best_prediction
@@ -55,25 +55,77 @@ def prepare_extra_regressor(container: TimeSeriesContainer, model: str) -> DataF
     return best_entire_forecast
 
 
-def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict, total_xcorr: dict) -> \
+def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict, total_xcorr: dict = None) -> \
         Tuple[dict, list]:
     """
-    Compute, for every column in ingested_data (every time-series) the best univariate prediction possible.
-    This is done using the models specified in param_config and testing the effect of the different transformations
-    specified in param_config.
+    Compute, for every column in `ingested_data` (every time-series) the best univariate prediction possible.
+    This is done using the models specified in `param_config` and testing the effect of the different transformations
+    specified in `param_config`. Moreover, the best feature transformation found, across the possible ones, will be
+    returned.
 
     Parameters
     ----------
     ingested_data : DataFrame
-    param_config : TIMEX configuration dictionary
-    total_xcorr : dict
+        Initial data of the time-series.
+    param_config : dict
+        TIMEX configuration dictionary. In particular, the `model_parameters` sub-dictionary will be used. In
+        `model_parameters` the following options has to be specified:
+
+        - `possible_transformations`: comma-separated list of transformations keywords (e.g. "none,log_modified").
+        - `main_accuracy_estimator`: error metric which will be minimized as target by the procedure. E.g. "mae".
+        - `models`: comma-separated list of the models to use (e.g. "fbprophet,arima").
+
+    total_xcorr : dict, optional, default None
+        Cross-correlation dictionary computed by `calc_all_xcorr`. The cross-correlation is actually not used in this
+        function, however it is used to build the returned `timex.timeseries_container.TimeSeriesContainer`, if given.
 
     Returns
     -------
     dict
         Dictionary which assigns the best transformation for every used prediction model, for every time-series.
     list
-        A list of TimeSeriesContainer objects, one for each time-series.
+        A list of `timex.timeseries_container.TimeSeriesContainer` objects, one for each time-series.
+
+    Examples
+    --------
+    Create some fake data:
+    >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
+    >>> ds = pd.DatetimeIndex(dates, freq="D")
+    >>> a = np.arange(30, 60)
+    >>> b = np.arange(60, 90)
+    >>> timeseries_dataframe = DataFrame(data={"a": a, "b": b}, index=ds)
+
+    And create the model configuration part of the TIMEX configuration dictionary:
+    >>> param_config = {
+    ...   "model_parameters": {
+    ...     "models": "fbprophet",  # Model(s) which will be tested.
+    ...     "possible_transformations": "none,log_modified",  # Possible feature transformation to test.
+    ...     "main_accuracy_estimator": "mae",
+    ...     "delta_training_percentage": 20,  # Training windows will be incremented by the 20% each step...
+    ...     "test_values": 5,  # Use the last 5 values as validation set.
+    ...     "prediction_lags": 7,  # Predict the next 7 points after 2000-01-30.
+    ...     }
+    ... }
+
+    Now, get the univariate predictions:
+    >>> best_transformations, timeseries_outputs = get_best_univariate_predictions(timeseries_dataframe, param_config)
+
+    Let's inspect the results. `best_transformations` contains the suggested feature transformations to use:
+    >>> best_transformations
+    {'fbprophet': {'a': 'none', 'b': 'none'}}
+
+    It is reasonable with this simple data that no transformation is the best transformation.
+    We have the `timex.timeseries_container.TimeSeriesContainer` list as well:
+    >>> timeseries_outputs
+    [<timex.timeseries_container.TimeSeriesContainer at 0x7f62f45d1fa0>,
+     <timex.timeseries_container.TimeSeriesContainer at 0x7f62d4e97cd0>]
+
+    These are the `timex.timeseries_container.TimeSeriesContainer` objects, one for time-series `a` and one for `b`.
+    Each one has various fields, in this case the most interesting one is `models`:
+    >>> timeseries_outputs[0].models
+    {'fbprophet': <timex.data_prediction.models.predictor.ModelResult at 0x7f62f45d1d90>}
+
+    This is the `timex.data_prediction.models.predictor.ModelResult` object for FBProphet that we have just computed.
     """
     transformations_to_test = [*param_config["model_parameters"]["possible_transformations"].split(",")]
     main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
@@ -131,22 +183,101 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
 def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContainer], ingested_data: DataFrame,
                                       best_transformations: dict, total_xcorr: dict, param_config: dict):
     """
-    Starting from the a list of TimeSeriesContainers, use the available univariated predictions to compute new
-    multivariate predictions. These new predictions will be used only if better than the univariate ones.
+    Starting from the a list of `timex.timeseries_container.TimeSeriesContainer`, use the available univariated
+    predictions and the time-series in `ingested_data`, plus eventual user-given additional regressors to compute new
+    multivariate predictions.
 
-    Returns the updated list of TimeSeriesContainers.
+    These new predictions will be used only if better than the univariate ones.
+
+    Returns the updated list of `timex.timeseries_container.TimeSeriesContainer`.
 
     Parameters
     ----------
     timeseries_containers : [TimeSeriesContainer]
+        Initial `timex.timeseries_container.TimeSeriesContainer` list from which the computation of multivariate
+        predictions start. Some univariate predictions should be already present in each object: more formally, each
+        `timex.timeseries_container.TimeSeriesContainer` should have the `model_results` attribute.
     ingested_data : DataFrame
+        Initial data of the time-series.
     best_transformations : dict
+        Dictionary which assigns the best transformation for every used prediction model, for every time-series. It
+        should be returned by `get_best_univariate_predictions`.
     total_xcorr : dict
+        Cross-correlation dictionary computed by `timex.data_prediction.xcorr.calc_all_xcorr`. The cross-correlation is
+        used in this function, to find, among all the time-series in `ingested_data`, additional regressors for each
+        time-series, if there are some.
     param_config : dict
+        TIMEX configuration dictionary. In particular, the `xcorr_parameters` sub-dictionary will be used. In
+        `xcorr_parameters` the following options has to be specified if `total_xcorr` parameter is not None:
+
+        - `xcorr_mode_target`: which cross-correlation algorithm should be used as target in evaluating useful
+          additional regressors. E.g. "pearson".
+        - `xcorr_extra_regressor_threshold`: the minimum absolute value of cross-correlation which indicates a useful
+          extra-regressor. E.g. 0.8.
+
+        Additionally, the `additional_regressors` part of the TIMEX configuration parameter dictionary can be used by
+        the user to specify additional CSV paths to time-series data to use as extra-regressor.
+        It should be a dictionary in the form "target time-series": "path of the additional extra-regressors".
 
     Returns
     -------
     list
+        A list of `timex.timeseries_container.TimeSeriesContainer` objects, one for each time-series.
+
+    Examples
+    --------
+    We will create ad-hoc time-series in which using a multivariate model will perform better than using a univariate
+    one.
+
+    >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
+    >>> ds = pd.DatetimeIndex(dates, freq="D")
+    >>>
+    >>> x = np.linspace(0, 2 * np.pi, 60)
+    >>> y = np.sin(x)
+    >>>
+    >>> np.random.seed(0)
+    >>> noise = np.random.normal(0, 2.0, 60)
+    >>> y = y + noise
+    >>>
+    >>> a = y[:30]
+    >>> b = y[5:35]
+    >>>
+    >>> timeseries_dataframe = DataFrame(data={"a": a, "b": b}, index=ds)
+
+    In this dataset the time-series `b` can be used to better predict `a`... simply because it is the same series, but
+    traslated!
+
+    Try to perform the computations.
+
+    >>> param_config = {
+    ...     "model_parameters": {
+    ...         "models": "LSTM",
+    ...         "possible_transformations": "none,log_modified",
+    ...         "main_accuracy_estimator": "mae",
+    ...         "delta_training_percentage": 20,
+    ...         "test_values": 5,
+    ...         "prediction_lags": 7,
+    ...     },
+    ...     "xcorr_parameters": {
+    ...         "xcorr_mode_target": "pearson",
+    ...         "xcorr_extra_regressor_threshold": 0.7,
+    ...         "xcorr_max_lags": 6,
+    ...         "xcorr_mode": "pearson"
+    ...     }
+    ... }
+    >>> xcorr = calc_all_xcorr(timeseries_dataframe, param_config)
+    >>> best_transformations, timeseries_outputs = get_best_univariate_predictions(timeseries_dataframe, param_config)
+    >>> timeseries_outputs = get_best_multivariate_predictions(timeseries_outputs, timeseries_dataframe,
+    >>>                                                        best_transformations, xcorr, param_config)
+
+    From the log, we can see:
+    >>> "INFO:timex.data_prediction.pipeline:Found useful extra-regressors: Index(['b'], dtype='object'). Re-compute the prediction for a"
+    >>> "INFO:timex.data_prediction.models.predictor:Creating a LSTM model..."
+    >>> "INFO:timex.data_prediction.models.predictor:Model will use 5 different training sets..."
+    >>> "INFO:timex.data_prediction.models.predictor:LSTM/NeuralProphet model. Cant use multiprocessing."
+    >>> "INFO:timex.data_prediction.pipeline:Obtained a better error: 1.6009327718008979 vs old 1.9918351002921089"
+
+    This means that using `b` as additional regressor for `a` made us obtain a better error.
     """
     iterations = 0
     best_forecasts_found = 0
@@ -154,7 +285,6 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
     if total_xcorr is not None:
         xcorr_mode_target = param_config["xcorr_parameters"]["xcorr_mode_target"]
         xcorr_threshold = param_config["xcorr_parameters"]["xcorr_extra_regressor_threshold"]
-        main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
 
     try:
         additional_regressors = param_config["additional_regressors"]
@@ -248,14 +378,49 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
 
 
 def get_best_predictions(ingested_data: DataFrame, param_config: dict):
+    """
+    Starting from `ingested_data`, using the models/cross correlation settings set in `param_config`, return the best
+    possible predictions in a `timex.timeseries_container.TimeSeriesContainer` for each time-series in `ingested_data`.
 
+    Parameters
+    ----------
+    ingested_data : DataFrame
+        Initial data of the time-series.
+
+    param_config : dict
+        TIMEX configuration dictionary. `get_best_univariate_predictions` and `get_best_multivariate_predictions` will
+        use the various settings in `param_config`.
+
+    Returns
+    -------
+    list
+        A list of `timex.timeseries_container.TimeSeriesContainer` objects, one for each time-series.
+
+    Examples
+    --------
+    This is basically the function on top of `get_best_univariate_predictions` and `get_best_multivariate_predictions`:
+    it will call first the univariate and then the multivariate if the cross-correlation section is present
+    in `param_config`.
+
+    Create some data:
+    >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
+    >>> ds = pd.DatetimeIndex(dates, freq="D")
+    >>> a = np.arange(30, 60)
+    >>> b = np.arange(60, 90)
+    >>>
+    >>> timeseries_dataframe = DataFrame(data={"a": a, "b": b}, index=ds)
+
+    Simply compute the predictions and get the returned `timex.timeseries_container.TimeSeriesContainer` objects:
+    >>> timeseries_outputs = get_best_predictions(timeseries_dataframe, param_config)
+    """
     if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
         log.info(f"Computing the cross-correlation...")
         total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
     else:
         total_xcorr = None
 
-    best_transformations, timeseries_containers = get_best_univariate_predictions(ingested_data, param_config, total_xcorr)
+    best_transformations, timeseries_containers = get_best_univariate_predictions(ingested_data, param_config,
+                                                                                  total_xcorr)
 
     if total_xcorr is not None or "additional_regressors" in param_config:
         timeseries_containers = get_best_multivariate_predictions(timeseries_containers=timeseries_containers, ingested_data=ingested_data,
@@ -268,16 +433,93 @@ def get_best_predictions(ingested_data: DataFrame, param_config: dict):
 
 def compute_historical_predictions(ingested_data, param_config):
     """
+    Compute the historical predictions, i.e. the predictions for (part) of the history of the time-series.
 
     Parameters
     ----------
-    ingested_data
-    param_config
-    total_xcorr
+    ingested_data : DataFrame
+        Initial data of the time-series.
+    param_config : dict
+        TIMEX configuration dictionary. In particular, the `historical_prediction_parameters` sub-dictionary will be
+        used. In `historical_prediction_parameters` the following options has to be specified:
+
+        - `initial_index`: the point from which the historical computations will be made;
+        - `save_path`: the historical computations are saved on a file, serialized with pickle. This allows the re-use
+        of these predictions if TIMEX is restarted in the future.
+
+        Additionally, the parameter `delta` can be specified: this indicates how many data points should be predicted
+        every run. The default is `1`; a number greater than `1` will reduce the accuracy of the predictions because
+        multiple points are predicted with the same model, but it will speed up the computation.
+
+        `input_parameters` will be used because the `initial_index` date will be parsed with the same format provided in
+        `input_parameters`, if any. Otherwise the standard `yyyy-mm-dd` format will be used.
 
     Returns
     -------
+    list
+        A list of `timex.timeseries_container.TimeSeriesContainer` objects, one for each time-series. These containers
+        have the `historical_prediction` attribute; the predictions in `model_results` are the more recent available
+        ones.
 
+    Notes
+    -----
+    Historical predictions are predictions computed on past points of the time-series, but using only the data available
+    until that point.
+
+    Consider a time-series with length `p`. Consider that we want to find the historical predictions starting from the
+    middle of the time-series, i.e. from index `s=p/2`.
+
+    To do that, we take the data available from the start of the time-series to `s`, compute the prediction for the
+    instant `s + 1`, and then move forward.
+
+    When all the data has been used, we have `s` predictions, but also the real data corresponding to that predictions;
+    this allows the user to check error metrics and understand the real performances of a model, on data never seen.
+
+    These metrics can give an idea of the future performance of the model.
+
+    Examples
+    --------
+    Create some sample data.
+    >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
+    >>> ds = pd.DatetimeIndex(dates, freq="D")
+    >>> a = np.arange(30, 60)
+    >>> b = np.arange(60, 90)
+    >>>
+    >>> timeseries_dataframe = DataFrame(data={"a": a, "b": b}, index=ds)
+
+    Create the configuration parameters dictionary:
+    >>> param_config = {
+    ...     "input_parameters": {
+    ...     },
+    ...     "model_parameters": {
+    ...         "models": "fbprophet",
+    ...         "possible_transformations": "none,log_modified",
+    ...         "main_accuracy_estimator": "mae",
+    ...         "delta_training_percentage": 20,
+    ...         "test_values": 5,
+    ...         "prediction_lags": 7,
+    ...     },
+    ...     "historical_prediction_parameters": {
+    ...         "initial_index": "2000-01-25",
+    ...         "save_path": "example.pkl"
+    ...     }
+    ... }
+
+    Launch the computation.
+    >>> timeseries_outputs = compute_historical_predictions(timeseries_dataframe, param_config)
+
+    Similarly to `get_best_predictions`, we have a list of `timex.timeseries_container.TimeSeriesContainer` objects.
+    However, these objects also have an historical prediction:
+    >>> timeseries_outputs[0].historical_prediction
+    {'fbprophet':                  a
+                 2000-01-26       55
+                 2000-01-27       56
+                 2000-01-28  56.3552
+                 2000-01-29  58.1709
+                 2000-01-30  58.9167
+    }
+
+    If multiple models were specified, `historical_prediction` dictionary would have other entries.
     """
     input_parameters = param_config["input_parameters"]
     models = [*param_config["model_parameters"]["models"].split(",")]
@@ -386,7 +628,66 @@ def compute_historical_predictions(ingested_data, param_config):
 
 
 def create_timeseries_containers(ingested_data: DataFrame, param_config: dict):
+    """
+    Entry points of the pipeline; it will compute univariate/multivariate predictions, historical predictions, or only
+    create the containers with the time-series data, according to the content of `param_config`, with this logic:
 
+    - if `historical_prediction_parameters` is in `param_config`, then `compute_historical_predictions` will be called;
+    - else, if `model_parameters` is in `param_config`, then `get_best_predictions` will be called;
+    - else, create a list of `timex.timeseries_container.TimeSeriesContainer` with only the time-series data and, if
+      `xcorr_parameters` is in `param_config`, with also the cross-correlation.
+
+    Parameters
+    ----------
+    ingested_data : DataFrame
+        Initial data of the time-series.
+
+    param_config : dict
+        TIMEX configuration dictionary.
+
+    Returns
+    -------
+    list
+        A list of `timex.timeseries_container.TimeSeriesContainer` objects, one for each time-series.
+
+    Examples
+    --------
+    The first example of `compute_historical_predictions` applies also here; calling `create_timeseries_containers` will
+    produce the same identical result.
+
+    If we remove `historical_prediction_parameters` from the `param_config`, then calling this function is the same as
+    calling `get_best_predictions`.
+
+    However, if no predictions should be made but we just want the time-series containers:
+    >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
+    >>> ds = pd.DatetimeIndex(dates, freq="D")
+    >>> a = np.arange(30, 60)
+    >>> b = np.arange(60, 90)
+    >>> timeseries_dataframe = DataFrame(data={"a": a, "b": b}, index=ds)
+
+    Create the containers:
+    >>> param_config = {}
+    >>> timeseries_outputs = create_timeseries_containers(timeseries_dataframe, param_config)
+
+    Check that no models, no historical predictions and no cross-correlation are present in the containers:
+    >>> print(timeseries_outputs[0].models)
+    None
+    >>> print(timeseries_outputs[0].historical_prediction)
+    None
+    >>> print(timeseries_outputs[0].xcorr)
+    None
+
+    If `xcorr_parameters` was specified, then the last command would not return None.
+    Check that the time-series data is there:
+
+    >>> print(timeseries_outputs[0].timeseries_data)
+                 a
+    2000-01-01  30
+    2000-01-02  31
+    ...
+    2000-01-29  58
+    2000-01-30  59
+    """
     if "historical_prediction_parameters" in param_config:
         log.debug(f"Requested the computation of historical predictions.")
         timeseries_containers = compute_historical_predictions(ingested_data, param_config)
@@ -418,14 +719,33 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
 
     Parameters
     ----------
-    transformation
-    param_config
     model_class : str
-        Model type.
+        Model type, e.g. "fbprophet"
+    param_config : dict
+        TIMEX configuration dictionary, to pass to the just created model.
+    transformation : str, optional, default None
+        Optional `transformation` parameter to pass to the just created model.
 
     Returns
     -------
     PredictionModel
+        Prediction model of the class specified in `model_class`.
+
+    Examples
+    --------
+    >>> param_config = {
+    ...    "model_parameters": {
+    ...        "possible_transformations": "none,log_modified",
+    ...        "main_accuracy_estimator": "mae",
+    ...        "delta_training_percentage": 20,
+    ...        "test_values": 5,
+    ...        "prediction_lags": 7,
+    ...    },
+    ...}
+
+    >>> model = model_factory("fbprophet", param_config, "none")
+    >>> print(type(model))
+    <class 'timex.data_prediction.models.prophet_predictor.FBProphetModel'>
     """
     if model_class == "fbprophet":
         return FBProphetModel(params=param_config, transformation=transformation)
