@@ -11,13 +11,5 @@ While `TIMEX` is intended to be use in a fully automatic way (which means that e
 step is automatically computed, without user intervention), users can also take
 advantage of single part of the framework.
 
-
-
-Why?
-----
-Lorem ipsum! Documentation is WIP.
-
-### Goals
-
-
+Documentation is still a work in progress.
 

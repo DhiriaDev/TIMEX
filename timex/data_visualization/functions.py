@@ -55,7 +55,8 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
     Examples
     --------
     Given a `timex.timeseries_container.TimeSeriesContainer` object, obtained for example through
-    `timex.pipeline.create_timeseries_containers`, create all the Dash object which could be shown in a Dash app:
+    `timex.data_prediction.pipeline.create_timeseries_containers`, create all the Dash object which could be shown in a
+    Dash app:
     >>> param_config = {
     ...  "input_parameters": {},
     ...  "model_parameters": {

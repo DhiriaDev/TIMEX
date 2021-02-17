@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>timex.data_ingestion API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>timex.data_ingestion</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import logging
+
+import dateparser
+import pandas as pd
+from pandas import DataFrame
+
+log = logging.getLogger(__name__)
+
+
+def ingest_timeseries(param_config: dict):
+    &#34;&#34;&#34;Retrieve the time-series data at the URL specified in `param_config[&#39;input parameters&#39;]` and return it in a
+    Pandas&#39; DataFrame.
+    This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
+
+    Parameters
+    ----------
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df_ingestion : DataFrame
+        Pandas DataFrame corresponding to the CSV files specified in param_config, with the various pre-processing steps
+        applied. In particular, a frequency has been forced to the datetime index, NaN values have been interpolated.
+
+    Notes
+    -----
+    In particular, the `input_parameters` sub-dictionary part of `param_config` will be used. In `input_parameters`, the
+    following options has to be specified:
+
+    - `source_data_url`: local or remote URL pointing to a CSV file;
+
+    Additionally, some other parameters can be specified:
+
+    - `index_column_name`: the name of the column to use as index for the DataFrame. If not specified the first one will
+      be used. This column&#39;s values will be parsed with dateparser to obtain a DateTimeIndex;
+    - `frequency`: if specified, the corresponding frequency will be imposed. Refer to
+      https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases for a list of possible
+      values. If not specified the frequency will be infered.
+    - `columns_to_load_from_url`: comma-separated string of columns&#39; names which will be read from the CSV file. If not
+      specified, all columns will be read;
+    - `add_diff_column`: comma-separated string of columns&#39; names for which a corresponding column containing the diff
+      values should be created. They will be created with the name `col_name&#39;_diff. Note that the first row of the
+      dataset will be discarded;
+    - `timeseries_names`: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;
+    - `dateparser_options`: dictionary of key-values which will be given to `dateparser.parse()`.
+
+    Examples
+    --------
+    &gt;&gt;&gt; timex_dict = {
+    ...  &#34;input_parameters&#34;: {
+    ...    &#34;source_data_url&#34;: &#34;tests/test_datasets/covid_example_data_ingestion.csv&#34;,
+    ...    &#34;columns_to_load_from_url&#34;: &#34;data,nuovi_positivi,terapia_intensiva&#34;,
+    ...    &#34;index_column_name&#34;: &#34;data&#34;,
+    ...    &#34;add_diff_column&#34;: &#34;terapia_intensiva&#34;,
+    ...    &#34;timeseries_names&#34;: {
+    ...        &#34;data&#34;: &#34;Date&#34;,
+    ...        &#34;nuovi_positivi&#34;: &#34;Daily cases&#34;,
+    ...        &#34;terapia_intensiva&#34;: &#34;Total intensive care&#34;,
+    ...        &#34;terapia_intensiva_diff&#34;: &#34;Daily intensive care&#34;,
+    ...    }
+    ...  }
+    ...}
+    &gt;&gt;&gt; ingest_timeseries(timex_dict)
+                    Daily cases  Total intensive care  Daily intensive care
+    Date
+    2020-02-25           93                    35                   9.0
+    2020-02-26           78                    36                   1.0
+    ...                 ...                   ...                   ...
+    2021-02-10        12956                  2128                 -15.0
+    2021-02-11        15146                  2126                  -2.0
+
+    [353 rows x 3 columns]
+    &#34;&#34;&#34;
+    log.info(&#39;Starting the data ingestion phase.&#39;)
+    input_parameters = param_config[&#34;input_parameters&#34;]
+
+    source_data_url = input_parameters[&#39;source_data_url&#39;]
+
+    try:
+        columns_to_load_from_url = input_parameters[&#34;columns_to_load_from_url&#34;]
+        columns_to_read = list(columns_to_load_from_url.split(&#39;,&#39;))
+        # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
+        df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
+
+    except (KeyError, ValueError):
+        df_ingestion = pd.read_csv(source_data_url)
+
+    try:
+        index_column_name = input_parameters[&#34;index_column_name&#34;]
+    except KeyError:
+        index_column_name = df_ingestion.columns[0]
+
+    log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
+
+    if &#34;dateparser_options&#34; in input_parameters:
+        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x, **dateparser_options)
+        )
+    else:
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x)
+        )
+
+    df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+
+    log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
+    df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    try:
+        targets = list(input_parameters[&#34;add_diff_column&#34;].split(&#39;,&#39;))
+        log.debug(f&#34;Adding the diff columns...&#34;)
+        df_ingestion = add_diff_columns(df_ingestion, targets)
+    except KeyError:
+        pass
+
+    try:
+        mappings = input_parameters[&#34;timeseries_names&#34;]
+        df_ingestion.reset_index(inplace=True)
+        df_ingestion.rename(columns=mappings, inplace=True)
+        try:
+            df_ingestion.set_index(mappings.get(index_column_name), inplace=True)
+        except KeyError:
+            df_ingestion.set_index(index_column_name, inplace=True)
+    except KeyError:
+        pass
+
+    try:
+        freq = input_parameters[&#34;frequency&#34;]
+    except KeyError:
+        freq = None
+
+    df_ingestion = add_freq(df_ingestion, freq)
+    df_ingestion = df_ingestion.interpolate()
+
+    log.info(f&#34;Finished the data-ingestion phase. Some stats:\n&#34;
+             f&#34;-&gt; Number of rows: {len(df_ingestion)}\n&#34;
+             f&#34;-&gt; Number of columns: {len(df_ingestion.columns)}\n&#34;
+             f&#34;-&gt; Column names: {[*df_ingestion.columns]}\n&#34;
+             f&#34;-&gt; Number of missing data: {[*df_ingestion.isnull().sum()]}&#34;)
+
+    return df_ingestion
+
+
+def ingest_additional_regressors(source_data_url, param_config):
+    &#34;&#34;&#34;Create a DataFrame from the data specified at source_data_url, to be used as additional regressors.
+
+    Parameters
+    ----------
+    source_data_url : string
+        URL of the CSV file to retrieve. Local or remote.
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df_ingestion : DataFrame
+        Pandas DataFrame corresponding to the CSV files specified in source_data_url.
+
+    See Also
+    --------
+    ingest_timeseries :
+        The logic is very similar, but this is used only to load a time-series which will be used as additional
+        regressor for a multivariate prediction model.
+    &#34;&#34;&#34;
+
+    input_parameters = param_config[&#34;input_parameters&#34;]
+
+    df_ingestion = pd.read_csv(source_data_url)
+
+    try:
+        index_column_name = input_parameters[&#34;index_column_name&#34;]
+    except KeyError:
+        index_column_name = df_ingestion.columns[0]
+
+    log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
+
+    if &#34;dateparser_options&#34; in input_parameters:
+        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x, **dateparser_options)
+        )
+    else:
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x)
+        )
+
+    df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+
+    log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
+    df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    try:
+        freq = input_parameters[&#34;frequency&#34;]
+    except KeyError:
+        freq = None
+
+    df_ingestion = add_freq(df_ingestion, freq)
+    df_ingestion = df_ingestion.interpolate()
+
+    return df_ingestion
+
+
+def add_freq(df, freq=None) -&gt; DataFrame:
+    &#34;&#34;&#34;Add a frequency to the index of df. Pandas DatetimeIndex have a `frequency` attribute; this function tries to
+    assign a value to that attribute.
+
+    If the index of df is a DatetimeIndex, then this function is guaranteed to return a DataFrame with the `frequency`
+    attribute set. If it is not possible to assign the frequency, datetime may be normalized (i.e. keep only the date
+    part and remove hour) in order to obtain days.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Pandas DataFrame on which a frequency will be added.
+
+    freq : str, optional
+        If this attribute is specified, then the corresponding frequency will be forced on the DataFrame. If it is not
+        specified, than, the frequency will be estimated.
+        `freq` should be a so called &#39;offset alias&#39;; the possible values can be found at
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+
+    Returns
+    -------
+    local_df : DataFrame
+        df with the DatetimeIndex.freq set; if df did not have a DatetimeIndex, then df is returned unmodified.
+
+    Examples
+    --------
+    &gt;&gt;&gt; dates = [pd.Timestamp(datetime(year=2020, month=1, day=1, hour=10, minute=00)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=2, hour=12, minute=21)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=3, hour=13, minute=30)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=4, hour=11, minute=32))]
+    &gt;&gt;&gt; df = pd.DataFrame(data={&#34;a&#34;: [0, 1, 2, 3]}, index=dates)
+    &gt;&gt;&gt; df
+                         a
+    2020-01-01 10:00:00  0
+    2020-01-02 12:21:00  1
+    2020-01-03 13:30:00  2
+    2020-01-04 11:32:00  3
+
+    `df` does not have a fixed frequency in its DatetimeIndex:
+
+    &gt;&gt;&gt; df.index.freq
+    None
+
+    Try to apply it:
+
+    &gt;&gt;&gt; df_with_freq = add_freq(df)
+    &gt;&gt;&gt; df_with_freq
+                a
+    2020-01-01  0
+    2020-01-02  1
+    2020-01-03  2
+    2020-01-04  3
+
+    Hours have been removed. Check the frequency of the index:
+
+    &gt;&gt;&gt; df_with_freq.index.freq
+    &lt;Day&gt;
+    &#34;&#34;&#34;
+    local_df = df.copy()
+
+    # Check if df has a DatetimeIndex. If not, return without doing anything.
+    try:
+        i = local_df.index.freq
+    except:
+        return local_df
+
+    # Df has already a freq. Don&#39;t do anything.
+    if local_df.index.freq is not None:
+        return local_df
+
+    if freq is not None:
+        if freq == &#39;D&#39;:
+            local_df.index = local_df.index.normalize()
+
+        local_df = local_df.asfreq(freq=freq)
+        return local_df
+
+    if freq is None:
+        freq = pd.infer_freq(local_df.index)
+
+        if freq is None:
+            local_df.index = local_df.index.normalize()
+            freq = pd.infer_freq(local_df.index)
+
+        if freq is None:
+            log.warning(f&#34;No discernible frequency found for the dataframe.&#34;)
+            freq = &#34;D&#34;
+
+        local_df = local_df.asfreq(freq=freq)
+        return local_df
+
+
+def select_timeseries_portion(data_frame, param_config):
+    &#34;&#34;&#34;This allows the user to select only a part of a time-series DataFrame, according to some criteria (e.g. date).
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas DataFrame from which select a portion.
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df: DataFrame
+        Pandas&#39; DataFrame after the selection phase.
+
+    Notes
+    -----
+    In particular, the selection_parameters sub-dictionary part of param_config will be used. In selection_parameters,
+    the following options can to be specified:
+
+    - column_name_selection: if specified, only the rows in which the value of the column named `column_name_selection`
+    is equal to `value_selection` are kept. If this is specified, also `value_selection` has to be specified.
+    - init_datetime: if specified, only the rows where the Datetimeindex value is greater than `init_datetime` are kept.
+    - end_datetime: if specified, only the rows where the Datetimeindex value is less than `end_datetime` are kept.
+
+    Moreover, if `dateparser_options` is specified in `param_dict[input_parameters]&#39;, then the options will be passed to
+    dateparser to parse the dates.
+
+    Examples
+    --------
+    &gt;&gt;&gt; ds = pd.date_range(&#39;2000-01-01&#39;, periods=7)
+    &gt;&gt;&gt; a = numpy.arange(30, 37)
+    &gt;&gt;&gt; b = numpy.array([0, 0, 0, 1, 1, 1, 0])
+    &gt;&gt;&gt; df = DataFrame(data={&#34;a&#34;: a, &#34;b&#34;: b}, index=ds)
+    &gt;&gt;&gt; print(df)
+                 a  b
+    2000-01-01  30  0
+    2000-01-02  31  0
+    2000-01-03  32  0
+    2000-01-04  33  1
+    2000-01-05  34  1
+    2000-01-06  35  1
+    2000-01-07  36  0
+
+    Select using an initial time and an end time:
+
+    &gt;&gt;&gt; timex_config = {
+    ...   &#34;selection_parameters&#34; : {
+    ...     &#34;init_datetime&#34;: &#39;2000-01-02&#39;,
+    ...     &#34;end_datetime&#34;: &#39;2000-01-05&#39;
+    ...   }
+    ...}
+    &gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+                 a  b
+    2000-01-02  31  0
+    2000-01-03  32  0
+    2000-01-04  33  1
+    2000-01-05  34  1
+
+    Select using the value for a column:
+
+    &gt;&gt;&gt; timex_config = {
+    ...   &#34;selection_parameters&#34; : {
+    ...    &#34;column_name_selection&#34;: &#34;b&#34;,
+    ...    &#34;value_selection&#34;: 1
+    ...   }
+    ...}
+    &gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+                 a  b
+    2000-01-04  33  1
+    2000-01-05  34  1
+    2000-01-06  35  1
+    &#34;&#34;&#34;
+    try:
+        selection_parameters = param_config[&#34;selection_parameters&#34;]
+    except KeyError:
+        log.debug(f&#34;Selection phase not requested by user. Skip.&#34;)
+        return data_frame
+
+    try:
+        input_parameters = param_config[&#39;input_parameters&#39;]
+    except KeyError:
+        input_parameters = {}
+
+    log.info(f&#34;Total amount of rows before the selection phase: {len(data_frame)}&#34;)
+
+    if &#34;column_name_selection&#34; in selection_parameters and &#34;value_selection&#34; in selection_parameters:
+        column_name = param_config[&#39;selection_parameters&#39;][&#39;column_name_selection&#39;]
+        value = param_config[&#39;selection_parameters&#39;][&#39;value_selection&#39;]
+
+        log.debug(f&#34;Selection over column {column_name} with value = {value}&#34;)
+        data_frame = data_frame.loc[data_frame[column_name] == value]
+
+    if &#34;init_datetime&#34; in selection_parameters:
+        if &#34;dateparser_options&#34; in input_parameters:
+            dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+            init_datetime = dateparser.parse(selection_parameters[&#39;init_datetime&#39;], **dateparser_options)
+        else:
+            init_datetime = dateparser.parse(selection_parameters[&#39;init_datetime&#39;])
+
+        log.debug(f&#34;Selection over date, keep data after {init_datetime}&#34;)
+        mask = (data_frame.index.to_series() &gt;= init_datetime)
+        data_frame = data_frame.loc[mask]
+
+    if &#34;end_datetime&#34; in selection_parameters:
+        if &#34;dateparser_options&#34; in input_parameters:
+            dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+            end_datetime = dateparser.parse(selection_parameters[&#39;end_datetime&#39;], **dateparser_options)
+        else:
+            end_datetime = dateparser.parse(selection_parameters[&#39;end_datetime&#39;])
+
+        log.debug(f&#34;Selection over date, keep data before {end_datetime}&#34;)
+        mask = (data_frame.index.to_series() &lt;= end_datetime)
+        data_frame = data_frame.loc[mask]
+
+    log.info(f&#34;Total amount of rows after the selection phase: {len(data_frame)}&#34;)
+    return data_frame
+
+
+def add_diff_columns(data_frame: DataFrame, column_name_target_diff: [str], group_by: str = None):
+    &#34;&#34;&#34;Function for adding a 1-step diff column computed for each column name specified in `column_name_target_diff` of
+    the `data_frame`.
+
+    The function automatically removes the first row of the data_frame since the diff value is NaN.
+    If the group_by parameter is specified, the data is grouped by that sub-index and then the diff is applied.
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas dataframe to add the diff columns on.
+    column_name_target_diff : [str]
+        List columns&#39; names for which diff columns will be computed.
+    group_by : str, optional
+        If specified, data is grouped by this index and then the diff is applied.
+
+    Returns
+    -------
+    df: DataFrame
+        Pandas dataframe with the new diff columns (name of the new columns is &#39;name_diff&#39;) and without the first row.
+
+    Examples
+    --------
+    &gt;&gt;&gt; df = DataFrame(data={&#34;a&#34;: [1, 5, 11], &#34;b&#34;: [4, 7, 8]})
+    &gt;&gt;&gt; df_with_diff_columns = add_diff_columns(df, [&#34;a&#34;])
+    &gt;&gt;&gt; df_with_diff_columns
+        a  b  a_diff
+    1   5  7     4.0
+    2  11  8     6.0
+    &#34;&#34;&#34;
+    log.info(f&#34;Total number of rows before the add diff_columns phase: {len(data_frame)}&#34;)
+    log.info(f&#34;Total number of columns before the add diff_columns phase: {len(data_frame.columns)}&#34;)
+
+    for target in column_name_target_diff:
+        tmp = data_frame[target]
+        name = target + &#34;_diff&#34;
+        if group_by:
+            data_frame[name] = tmp.groupby(group_by).diff()
+        else:
+            data_frame[name] = tmp.diff()
+
+    if group_by:
+        nan_rows = len(data_frame.index.get_level_values(group_by).unique())
+    else:
+        nan_rows = 1
+
+    data_frame = data_frame.iloc[nan_rows:]
+
+    log.info(f&#34;Total number of rows after the add diff_columns phase: {len(data_frame)}&#34;)
+    log.info(f&#34;Total number of columns after the add diff_columns phase: {len(data_frame.columns)}&#34;)
+
+    return data_frame</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="timex.data_ingestion.add_diff_columns"><code class="name flex">
+<span>def <span class="ident">add_diff_columns</span></span>(<span>data_frame: pandas.core.frame.DataFrame, column_name_target_diff: [<class 'str'>], group_by: str = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function for adding a 1-step diff column computed for each column name specified in <code>column_name_target_diff</code> of
+the <code>data_frame</code>.</p>
+<p>The function automatically removes the first row of the data_frame since the diff value is NaN.
+If the group_by parameter is specified, the data is grouped by that sub-index and then the diff is applied.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_frame</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas dataframe to add the diff columns on.</dd>
+<dt><strong><code>column_name_target_diff</code></strong> :&ensp;<code>[str]</code></dt>
+<dd>List columns' names for which diff columns will be computed.</dd>
+<dt><strong><code>group_by</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>If specified, data is grouped by this index and then the diff is applied.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas dataframe with the new diff columns (name of the new columns is 'name_diff') and without the first row.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; df = DataFrame(data={&quot;a&quot;: [1, 5, 11], &quot;b&quot;: [4, 7, 8]})
+&gt;&gt;&gt; df_with_diff_columns = add_diff_columns(df, [&quot;a&quot;])
+&gt;&gt;&gt; df_with_diff_columns
+    a  b  a_diff
+1   5  7     4.0
+2  11  8     6.0
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_diff_columns(data_frame: DataFrame, column_name_target_diff: [str], group_by: str = None):
+    &#34;&#34;&#34;Function for adding a 1-step diff column computed for each column name specified in `column_name_target_diff` of
+    the `data_frame`.
+
+    The function automatically removes the first row of the data_frame since the diff value is NaN.
+    If the group_by parameter is specified, the data is grouped by that sub-index and then the diff is applied.
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas dataframe to add the diff columns on.
+    column_name_target_diff : [str]
+        List columns&#39; names for which diff columns will be computed.
+    group_by : str, optional
+        If specified, data is grouped by this index and then the diff is applied.
+
+    Returns
+    -------
+    df: DataFrame
+        Pandas dataframe with the new diff columns (name of the new columns is &#39;name_diff&#39;) and without the first row.
+
+    Examples
+    --------
+    &gt;&gt;&gt; df = DataFrame(data={&#34;a&#34;: [1, 5, 11], &#34;b&#34;: [4, 7, 8]})
+    &gt;&gt;&gt; df_with_diff_columns = add_diff_columns(df, [&#34;a&#34;])
+    &gt;&gt;&gt; df_with_diff_columns
+        a  b  a_diff
+    1   5  7     4.0
+    2  11  8     6.0
+    &#34;&#34;&#34;
+    log.info(f&#34;Total number of rows before the add diff_columns phase: {len(data_frame)}&#34;)
+    log.info(f&#34;Total number of columns before the add diff_columns phase: {len(data_frame.columns)}&#34;)
+
+    for target in column_name_target_diff:
+        tmp = data_frame[target]
+        name = target + &#34;_diff&#34;
+        if group_by:
+            data_frame[name] = tmp.groupby(group_by).diff()
+        else:
+            data_frame[name] = tmp.diff()
+
+    if group_by:
+        nan_rows = len(data_frame.index.get_level_values(group_by).unique())
+    else:
+        nan_rows = 1
+
+    data_frame = data_frame.iloc[nan_rows:]
+
+    log.info(f&#34;Total number of rows after the add diff_columns phase: {len(data_frame)}&#34;)
+    log.info(f&#34;Total number of columns after the add diff_columns phase: {len(data_frame.columns)}&#34;)
+
+    return data_frame</code></pre>
+</details>
+</dd>
+<dt id="timex.data_ingestion.add_freq"><code class="name flex">
+<span>def <span class="ident">add_freq</span></span>(<span>df, freq=None) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a frequency to the index of df. Pandas DatetimeIndex have a <code>frequency</code> attribute; this function tries to
+assign a value to that attribute.</p>
+<p>If the index of df is a DatetimeIndex, then this function is guaranteed to return a DataFrame with the <code>frequency</code>
+attribute set. If it is not possible to assign the frequency, datetime may be normalized (i.e. keep only the date
+part and remove hour) in order to obtain days.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas DataFrame on which a frequency will be added.</dd>
+<dt><strong><code>freq</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>If this attribute is specified, then the corresponding frequency will be forced on the DataFrame. If it is not
+specified, than, the frequency will be estimated.
+<code>freq</code> should be a so called 'offset alias'; the possible values can be found at
+<a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases">https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases</a></dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>local_df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>df with the DatetimeIndex.freq set; if df did not have a DatetimeIndex, then df is returned unmodified.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; dates = [pd.Timestamp(datetime(year=2020, month=1, day=1, hour=10, minute=00)),
+...          pd.Timestamp(datetime(year=2020, month=1, day=2, hour=12, minute=21)),
+...          pd.Timestamp(datetime(year=2020, month=1, day=3, hour=13, minute=30)),
+...          pd.Timestamp(datetime(year=2020, month=1, day=4, hour=11, minute=32))]
+&gt;&gt;&gt; df = pd.DataFrame(data={&quot;a&quot;: [0, 1, 2, 3]}, index=dates)
+&gt;&gt;&gt; df
+                     a
+2020-01-01 10:00:00  0
+2020-01-02 12:21:00  1
+2020-01-03 13:30:00  2
+2020-01-04 11:32:00  3
+</code></pre>
+<p><code>df</code> does not have a fixed frequency in its DatetimeIndex:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; df.index.freq
+None
+</code></pre>
+<p>Try to apply it:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; df_with_freq = add_freq(df)
+&gt;&gt;&gt; df_with_freq
+            a
+2020-01-01  0
+2020-01-02  1
+2020-01-03  2
+2020-01-04  3
+</code></pre>
+<p>Hours have been removed. Check the frequency of the index:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; df_with_freq.index.freq
+&lt;Day&gt;
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_freq(df, freq=None) -&gt; DataFrame:
+    &#34;&#34;&#34;Add a frequency to the index of df. Pandas DatetimeIndex have a `frequency` attribute; this function tries to
+    assign a value to that attribute.
+
+    If the index of df is a DatetimeIndex, then this function is guaranteed to return a DataFrame with the `frequency`
+    attribute set. If it is not possible to assign the frequency, datetime may be normalized (i.e. keep only the date
+    part and remove hour) in order to obtain days.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Pandas DataFrame on which a frequency will be added.
+
+    freq : str, optional
+        If this attribute is specified, then the corresponding frequency will be forced on the DataFrame. If it is not
+        specified, than, the frequency will be estimated.
+        `freq` should be a so called &#39;offset alias&#39;; the possible values can be found at
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+
+    Returns
+    -------
+    local_df : DataFrame
+        df with the DatetimeIndex.freq set; if df did not have a DatetimeIndex, then df is returned unmodified.
+
+    Examples
+    --------
+    &gt;&gt;&gt; dates = [pd.Timestamp(datetime(year=2020, month=1, day=1, hour=10, minute=00)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=2, hour=12, minute=21)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=3, hour=13, minute=30)),
+    ...          pd.Timestamp(datetime(year=2020, month=1, day=4, hour=11, minute=32))]
+    &gt;&gt;&gt; df = pd.DataFrame(data={&#34;a&#34;: [0, 1, 2, 3]}, index=dates)
+    &gt;&gt;&gt; df
+                         a
+    2020-01-01 10:00:00  0
+    2020-01-02 12:21:00  1
+    2020-01-03 13:30:00  2
+    2020-01-04 11:32:00  3
+
+    `df` does not have a fixed frequency in its DatetimeIndex:
+
+    &gt;&gt;&gt; df.index.freq
+    None
+
+    Try to apply it:
+
+    &gt;&gt;&gt; df_with_freq = add_freq(df)
+    &gt;&gt;&gt; df_with_freq
+                a
+    2020-01-01  0
+    2020-01-02  1
+    2020-01-03  2
+    2020-01-04  3
+
+    Hours have been removed. Check the frequency of the index:
+
+    &gt;&gt;&gt; df_with_freq.index.freq
+    &lt;Day&gt;
+    &#34;&#34;&#34;
+    local_df = df.copy()
+
+    # Check if df has a DatetimeIndex. If not, return without doing anything.
+    try:
+        i = local_df.index.freq
+    except:
+        return local_df
+
+    # Df has already a freq. Don&#39;t do anything.
+    if local_df.index.freq is not None:
+        return local_df
+
+    if freq is not None:
+        if freq == &#39;D&#39;:
+            local_df.index = local_df.index.normalize()
+
+        local_df = local_df.asfreq(freq=freq)
+        return local_df
+
+    if freq is None:
+        freq = pd.infer_freq(local_df.index)
+
+        if freq is None:
+            local_df.index = local_df.index.normalize()
+            freq = pd.infer_freq(local_df.index)
+
+        if freq is None:
+            log.warning(f&#34;No discernible frequency found for the dataframe.&#34;)
+            freq = &#34;D&#34;
+
+        local_df = local_df.asfreq(freq=freq)
+        return local_df</code></pre>
+</details>
+</dd>
+<dt id="timex.data_ingestion.ingest_additional_regressors"><code class="name flex">
+<span>def <span class="ident">ingest_additional_regressors</span></span>(<span>source_data_url, param_config)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a DataFrame from the data specified at source_data_url, to be used as additional regressors.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>source_data_url</code></strong> :&ensp;<code>string</code></dt>
+<dd>URL of the CSV file to retrieve. Local or remote.</dd>
+<dt><strong><code>param_config</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary corresponding to a TIMEX JSON configuration file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>df_ingestion</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas DataFrame corresponding to the CSV files specified in source_data_url.</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<dl>
+<dt><code><a title="timex.data_ingestion.ingest_timeseries" href="#timex.data_ingestion.ingest_timeseries">ingest_timeseries()</a></code></dt>
+<dd>The logic is very similar, but this is used only to load a time-series which will be used as additional regressor for a multivariate prediction model.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ingest_additional_regressors(source_data_url, param_config):
+    &#34;&#34;&#34;Create a DataFrame from the data specified at source_data_url, to be used as additional regressors.
+
+    Parameters
+    ----------
+    source_data_url : string
+        URL of the CSV file to retrieve. Local or remote.
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df_ingestion : DataFrame
+        Pandas DataFrame corresponding to the CSV files specified in source_data_url.
+
+    See Also
+    --------
+    ingest_timeseries :
+        The logic is very similar, but this is used only to load a time-series which will be used as additional
+        regressor for a multivariate prediction model.
+    &#34;&#34;&#34;
+
+    input_parameters = param_config[&#34;input_parameters&#34;]
+
+    df_ingestion = pd.read_csv(source_data_url)
+
+    try:
+        index_column_name = input_parameters[&#34;index_column_name&#34;]
+    except KeyError:
+        index_column_name = df_ingestion.columns[0]
+
+    log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
+
+    if &#34;dateparser_options&#34; in input_parameters:
+        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x, **dateparser_options)
+        )
+    else:
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x)
+        )
+
+    df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+
+    log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
+    df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    try:
+        freq = input_parameters[&#34;frequency&#34;]
+    except KeyError:
+        freq = None
+
+    df_ingestion = add_freq(df_ingestion, freq)
+    df_ingestion = df_ingestion.interpolate()
+
+    return df_ingestion</code></pre>
+</details>
+</dd>
+<dt id="timex.data_ingestion.ingest_timeseries"><code class="name flex">
+<span>def <span class="ident">ingest_timeseries</span></span>(<span>param_config: dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieve the time-series data at the URL specified in <code>param_config['input parameters']</code> and return it in a
+Pandas' DataFrame.
+This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>param_config</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary corresponding to a TIMEX JSON configuration file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>df_ingestion</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas DataFrame corresponding to the CSV files specified in param_config, with the various pre-processing steps
+applied. In particular, a frequency has been forced to the datetime index, NaN values have been interpolated.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>In particular, the <code>input_parameters</code> sub-dictionary part of <code>param_config</code> will be used. In <code>input_parameters</code>, the
+following options has to be specified:</p>
+<ul>
+<li><code>source_data_url</code>: local or remote URL pointing to a CSV file;</li>
+</ul>
+<p>Additionally, some other parameters can be specified:</p>
+<ul>
+<li><code>index_column_name</code>: the name of the column to use as index for the DataFrame. If not specified the first one will
+be used. This column's values will be parsed with dateparser to obtain a DateTimeIndex;</li>
+<li><code>frequency</code>: if specified, the corresponding frequency will be imposed. Refer to
+<a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases</a> for a list of possible
+values. If not specified the frequency will be infered.</li>
+<li><code>columns_to_load_from_url</code>: comma-separated string of columns' names which will be read from the CSV file. If not
+specified, all columns will be read;</li>
+<li><code>add_diff_column</code>: comma-separated string of columns' names for which a corresponding column containing the diff
+values should be created. They will be created with the name `col_name'_diff. Note that the first row of the
+dataset will be discarded;</li>
+<li><code>timeseries_names</code>: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;</li>
+<li><code>dateparser_options</code>: dictionary of key-values which will be given to <code>dateparser.parse()</code>.</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; timex_dict = {
+...  &quot;input_parameters&quot;: {
+...    &quot;source_data_url&quot;: &quot;tests/test_datasets/covid_example_data_ingestion.csv&quot;,
+...    &quot;columns_to_load_from_url&quot;: &quot;data,nuovi_positivi,terapia_intensiva&quot;,
+...    &quot;index_column_name&quot;: &quot;data&quot;,
+...    &quot;add_diff_column&quot;: &quot;terapia_intensiva&quot;,
+...    &quot;timeseries_names&quot;: {
+...        &quot;data&quot;: &quot;Date&quot;,
+...        &quot;nuovi_positivi&quot;: &quot;Daily cases&quot;,
+...        &quot;terapia_intensiva&quot;: &quot;Total intensive care&quot;,
+...        &quot;terapia_intensiva_diff&quot;: &quot;Daily intensive care&quot;,
+...    }
+...  }
+...}
+&gt;&gt;&gt; ingest_timeseries(timex_dict)
+                Daily cases  Total intensive care  Daily intensive care
+Date
+2020-02-25           93                    35                   9.0
+2020-02-26           78                    36                   1.0
+...                 ...                   ...                   ...
+2021-02-10        12956                  2128                 -15.0
+2021-02-11        15146                  2126                  -2.0
+</code></pre>
+<p>[353 rows x 3 columns]</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ingest_timeseries(param_config: dict):
+    &#34;&#34;&#34;Retrieve the time-series data at the URL specified in `param_config[&#39;input parameters&#39;]` and return it in a
+    Pandas&#39; DataFrame.
+    This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
+
+    Parameters
+    ----------
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df_ingestion : DataFrame
+        Pandas DataFrame corresponding to the CSV files specified in param_config, with the various pre-processing steps
+        applied. In particular, a frequency has been forced to the datetime index, NaN values have been interpolated.
+
+    Notes
+    -----
+    In particular, the `input_parameters` sub-dictionary part of `param_config` will be used. In `input_parameters`, the
+    following options has to be specified:
+
+    - `source_data_url`: local or remote URL pointing to a CSV file;
+
+    Additionally, some other parameters can be specified:
+
+    - `index_column_name`: the name of the column to use as index for the DataFrame. If not specified the first one will
+      be used. This column&#39;s values will be parsed with dateparser to obtain a DateTimeIndex;
+    - `frequency`: if specified, the corresponding frequency will be imposed. Refer to
+      https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases for a list of possible
+      values. If not specified the frequency will be infered.
+    - `columns_to_load_from_url`: comma-separated string of columns&#39; names which will be read from the CSV file. If not
+      specified, all columns will be read;
+    - `add_diff_column`: comma-separated string of columns&#39; names for which a corresponding column containing the diff
+      values should be created. They will be created with the name `col_name&#39;_diff. Note that the first row of the
+      dataset will be discarded;
+    - `timeseries_names`: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;
+    - `dateparser_options`: dictionary of key-values which will be given to `dateparser.parse()`.
+
+    Examples
+    --------
+    &gt;&gt;&gt; timex_dict = {
+    ...  &#34;input_parameters&#34;: {
+    ...    &#34;source_data_url&#34;: &#34;tests/test_datasets/covid_example_data_ingestion.csv&#34;,
+    ...    &#34;columns_to_load_from_url&#34;: &#34;data,nuovi_positivi,terapia_intensiva&#34;,
+    ...    &#34;index_column_name&#34;: &#34;data&#34;,
+    ...    &#34;add_diff_column&#34;: &#34;terapia_intensiva&#34;,
+    ...    &#34;timeseries_names&#34;: {
+    ...        &#34;data&#34;: &#34;Date&#34;,
+    ...        &#34;nuovi_positivi&#34;: &#34;Daily cases&#34;,
+    ...        &#34;terapia_intensiva&#34;: &#34;Total intensive care&#34;,
+    ...        &#34;terapia_intensiva_diff&#34;: &#34;Daily intensive care&#34;,
+    ...    }
+    ...  }
+    ...}
+    &gt;&gt;&gt; ingest_timeseries(timex_dict)
+                    Daily cases  Total intensive care  Daily intensive care
+    Date
+    2020-02-25           93                    35                   9.0
+    2020-02-26           78                    36                   1.0
+    ...                 ...                   ...                   ...
+    2021-02-10        12956                  2128                 -15.0
+    2021-02-11        15146                  2126                  -2.0
+
+    [353 rows x 3 columns]
+    &#34;&#34;&#34;
+    log.info(&#39;Starting the data ingestion phase.&#39;)
+    input_parameters = param_config[&#34;input_parameters&#34;]
+
+    source_data_url = input_parameters[&#39;source_data_url&#39;]
+
+    try:
+        columns_to_load_from_url = input_parameters[&#34;columns_to_load_from_url&#34;]
+        columns_to_read = list(columns_to_load_from_url.split(&#39;,&#39;))
+        # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
+        df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
+
+    except (KeyError, ValueError):
+        df_ingestion = pd.read_csv(source_data_url)
+
+    try:
+        index_column_name = input_parameters[&#34;index_column_name&#34;]
+    except KeyError:
+        index_column_name = df_ingestion.columns[0]
+
+    log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
+
+    if &#34;dateparser_options&#34; in input_parameters:
+        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x, **dateparser_options)
+        )
+    else:
+        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+            lambda x: dateparser.parse(x)
+        )
+
+    df_ingestion.set_index(index_column_name, inplace=True, drop=True)
+
+    log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
+    df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    try:
+        targets = list(input_parameters[&#34;add_diff_column&#34;].split(&#39;,&#39;))
+        log.debug(f&#34;Adding the diff columns...&#34;)
+        df_ingestion = add_diff_columns(df_ingestion, targets)
+    except KeyError:
+        pass
+
+    try:
+        mappings = input_parameters[&#34;timeseries_names&#34;]
+        df_ingestion.reset_index(inplace=True)
+        df_ingestion.rename(columns=mappings, inplace=True)
+        try:
+            df_ingestion.set_index(mappings.get(index_column_name), inplace=True)
+        except KeyError:
+            df_ingestion.set_index(index_column_name, inplace=True)
+    except KeyError:
+        pass
+
+    try:
+        freq = input_parameters[&#34;frequency&#34;]
+    except KeyError:
+        freq = None
+
+    df_ingestion = add_freq(df_ingestion, freq)
+    df_ingestion = df_ingestion.interpolate()
+
+    log.info(f&#34;Finished the data-ingestion phase. Some stats:\n&#34;
+             f&#34;-&gt; Number of rows: {len(df_ingestion)}\n&#34;
+             f&#34;-&gt; Number of columns: {len(df_ingestion.columns)}\n&#34;
+             f&#34;-&gt; Column names: {[*df_ingestion.columns]}\n&#34;
+             f&#34;-&gt; Number of missing data: {[*df_ingestion.isnull().sum()]}&#34;)
+
+    return df_ingestion</code></pre>
+</details>
+</dd>
+<dt id="timex.data_ingestion.select_timeseries_portion"><code class="name flex">
+<span>def <span class="ident">select_timeseries_portion</span></span>(<span>data_frame, param_config)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This allows the user to select only a part of a time-series DataFrame, according to some criteria (e.g. date).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_frame</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas DataFrame from which select a portion.</dd>
+<dt><strong><code>param_config</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary corresponding to a TIMEX JSON configuration file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Pandas' DataFrame after the selection phase.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>In particular, the selection_parameters sub-dictionary part of param_config will be used. In selection_parameters,
+the following options can to be specified:</p>
+<ul>
+<li>column_name_selection: if specified, only the rows in which the value of the column named <code>column_name_selection</code>
+is equal to <code>value_selection</code> are kept. If this is specified, also <code>value_selection</code> has to be specified.</li>
+<li>init_datetime: if specified, only the rows where the Datetimeindex value is greater than <code>init_datetime</code> are kept.</li>
+<li>end_datetime: if specified, only the rows where the Datetimeindex value is less than <code>end_datetime</code> are kept.</li>
+</ul>
+<p>Moreover, if <code>dateparser_options</code> is specified in `param_dict[input_parameters]', then the options will be passed to
+dateparser to parse the dates.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ds = pd.date_range('2000-01-01', periods=7)
+&gt;&gt;&gt; a = numpy.arange(30, 37)
+&gt;&gt;&gt; b = numpy.array([0, 0, 0, 1, 1, 1, 0])
+&gt;&gt;&gt; df = DataFrame(data={&quot;a&quot;: a, &quot;b&quot;: b}, index=ds)
+&gt;&gt;&gt; print(df)
+             a  b
+2000-01-01  30  0
+2000-01-02  31  0
+2000-01-03  32  0
+2000-01-04  33  1
+2000-01-05  34  1
+2000-01-06  35  1
+2000-01-07  36  0
+</code></pre>
+<p>Select using an initial time and an end time:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; timex_config = {
+...   &quot;selection_parameters&quot; : {
+...     &quot;init_datetime&quot;: '2000-01-02',
+...     &quot;end_datetime&quot;: '2000-01-05'
+...   }
+...}
+&gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+             a  b
+2000-01-02  31  0
+2000-01-03  32  0
+2000-01-04  33  1
+2000-01-05  34  1
+</code></pre>
+<p>Select using the value for a column:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; timex_config = {
+...   &quot;selection_parameters&quot; : {
+...    &quot;column_name_selection&quot;: &quot;b&quot;,
+...    &quot;value_selection&quot;: 1
+...   }
+...}
+&gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+             a  b
+2000-01-04  33  1
+2000-01-05  34  1
+2000-01-06  35  1
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def select_timeseries_portion(data_frame, param_config):
+    &#34;&#34;&#34;This allows the user to select only a part of a time-series DataFrame, according to some criteria (e.g. date).
+
+    Parameters
+    ----------
+    data_frame : DataFrame
+        Pandas DataFrame from which select a portion.
+    param_config : dict
+        A dictionary corresponding to a TIMEX JSON configuration file.
+
+    Returns
+    -------
+    df: DataFrame
+        Pandas&#39; DataFrame after the selection phase.
+
+    Notes
+    -----
+    In particular, the selection_parameters sub-dictionary part of param_config will be used. In selection_parameters,
+    the following options can to be specified:
+
+    - column_name_selection: if specified, only the rows in which the value of the column named `column_name_selection`
+    is equal to `value_selection` are kept. If this is specified, also `value_selection` has to be specified.
+    - init_datetime: if specified, only the rows where the Datetimeindex value is greater than `init_datetime` are kept.
+    - end_datetime: if specified, only the rows where the Datetimeindex value is less than `end_datetime` are kept.
+
+    Moreover, if `dateparser_options` is specified in `param_dict[input_parameters]&#39;, then the options will be passed to
+    dateparser to parse the dates.
+
+    Examples
+    --------
+    &gt;&gt;&gt; ds = pd.date_range(&#39;2000-01-01&#39;, periods=7)
+    &gt;&gt;&gt; a = numpy.arange(30, 37)
+    &gt;&gt;&gt; b = numpy.array([0, 0, 0, 1, 1, 1, 0])
+    &gt;&gt;&gt; df = DataFrame(data={&#34;a&#34;: a, &#34;b&#34;: b}, index=ds)
+    &gt;&gt;&gt; print(df)
+                 a  b
+    2000-01-01  30  0
+    2000-01-02  31  0
+    2000-01-03  32  0
+    2000-01-04  33  1
+    2000-01-05  34  1
+    2000-01-06  35  1
+    2000-01-07  36  0
+
+    Select using an initial time and an end time:
+
+    &gt;&gt;&gt; timex_config = {
+    ...   &#34;selection_parameters&#34; : {
+    ...     &#34;init_datetime&#34;: &#39;2000-01-02&#39;,
+    ...     &#34;end_datetime&#34;: &#39;2000-01-05&#39;
+    ...   }
+    ...}
+    &gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+                 a  b
+    2000-01-02  31  0
+    2000-01-03  32  0
+    2000-01-04  33  1
+    2000-01-05  34  1
+
+    Select using the value for a column:
+
+    &gt;&gt;&gt; timex_config = {
+    ...   &#34;selection_parameters&#34; : {
+    ...    &#34;column_name_selection&#34;: &#34;b&#34;,
+    ...    &#34;value_selection&#34;: 1
+    ...   }
+    ...}
+    &gt;&gt;&gt; selected_df = select_timeseries_portion(df, timex_config)
+                 a  b
+    2000-01-04  33  1
+    2000-01-05  34  1
+    2000-01-06  35  1
+    &#34;&#34;&#34;
+    try:
+        selection_parameters = param_config[&#34;selection_parameters&#34;]
+    except KeyError:
+        log.debug(f&#34;Selection phase not requested by user. Skip.&#34;)
+        return data_frame
+
+    try:
+        input_parameters = param_config[&#39;input_parameters&#39;]
+    except KeyError:
+        input_parameters = {}
+
+    log.info(f&#34;Total amount of rows before the selection phase: {len(data_frame)}&#34;)
+
+    if &#34;column_name_selection&#34; in selection_parameters and &#34;value_selection&#34; in selection_parameters:
+        column_name = param_config[&#39;selection_parameters&#39;][&#39;column_name_selection&#39;]
+        value = param_config[&#39;selection_parameters&#39;][&#39;value_selection&#39;]
+
+        log.debug(f&#34;Selection over column {column_name} with value = {value}&#34;)
+        data_frame = data_frame.loc[data_frame[column_name] == value]
+
+    if &#34;init_datetime&#34; in selection_parameters:
+        if &#34;dateparser_options&#34; in input_parameters:
+            dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+            init_datetime = dateparser.parse(selection_parameters[&#39;init_datetime&#39;], **dateparser_options)
+        else:
+            init_datetime = dateparser.parse(selection_parameters[&#39;init_datetime&#39;])
+
+        log.debug(f&#34;Selection over date, keep data after {init_datetime}&#34;)
+        mask = (data_frame.index.to_series() &gt;= init_datetime)
+        data_frame = data_frame.loc[mask]
+
+    if &#34;end_datetime&#34; in selection_parameters:
+        if &#34;dateparser_options&#34; in input_parameters:
+            dateparser_options = input_parameters[&#34;dateparser_options&#34;]
+            end_datetime = dateparser.parse(selection_parameters[&#39;end_datetime&#39;], **dateparser_options)
+        else:
+            end_datetime = dateparser.parse(selection_parameters[&#39;end_datetime&#39;])
+
+        log.debug(f&#34;Selection over date, keep data before {end_datetime}&#34;)
+        mask = (data_frame.index.to_series() &lt;= end_datetime)
+        data_frame = data_frame.loc[mask]
+
+    log.info(f&#34;Total amount of rows after the selection phase: {len(data_frame)}&#34;)
+    return data_frame</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="timex" href="index.html">timex</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="timex.data_ingestion.add_diff_columns" href="#timex.data_ingestion.add_diff_columns">add_diff_columns</a></code></li>
+<li><code><a title="timex.data_ingestion.add_freq" href="#timex.data_ingestion.add_freq">add_freq</a></code></li>
+<li><code><a title="timex.data_ingestion.ingest_additional_regressors" href="#timex.data_ingestion.ingest_additional_regressors">ingest_additional_regressors</a></code></li>
+<li><code><a title="timex.data_ingestion.ingest_timeseries" href="#timex.data_ingestion.ingest_timeseries">ingest_timeseries</a></code></li>
+<li><code><a title="timex.data_ingestion.select_timeseries_portion" href="#timex.data_ingestion.select_timeseries_portion">select_timeseries_portion</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
