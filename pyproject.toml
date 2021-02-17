@@ -8,7 +8,7 @@ license = "Apache-2.0"
 readme = "README.md"
 
 repository = "https://github.com/AlexMV12/TIMEX"
-homepage = "https://alexmv12.github.io/TIMEX/timex/index.html"
+homepage = "https://alexmv12.github.io/TIMEX/"
 
 keywords = ["time-series", "time", "forecasting", "as-a-service"]
 
