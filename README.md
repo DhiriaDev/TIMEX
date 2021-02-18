@@ -27,7 +27,7 @@ the main characteristics of TIMEX. A Notebook explaining the covid-timex.it webs
 along with the source code of the site, [here](https://github.com/AlexMV12/covid-timex.it).
 
 ## Documentation
-The full documentation is available at [here](https://alexmv12.github.io/TIMEX/timex/index.html).
+The full documentation is available at [here](https://alexmv12.github.io/TIMEX/timexseries/index.html).
 
 ## Contacts
 If you have questions, suggestions or problems, feel free to open an Issue.
