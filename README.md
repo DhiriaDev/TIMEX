@@ -1,5 +1,5 @@
 # TIMEX
-TIMEX is a framework for time-series-forecasting-as-a-service.
+TIMEX (referred in code as `timexseries`) is a framework for time-series-forecasting-as-a-service.
 
 Its main goal is to provide a simple and generic tool to build websites and, more in general,
 platforms, able to provide the forecasting of time-series in the "as-a-service" manner.
