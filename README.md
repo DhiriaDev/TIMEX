@@ -19,7 +19,7 @@ version of Torch.
 
 However, installation is as simple as running:
 
-`pip install timex-series`
+`pip install timexseries`
 
 ## Get started
 Please, refer to the Examples folder. You will find some Jupyter Notebook which illustrate
