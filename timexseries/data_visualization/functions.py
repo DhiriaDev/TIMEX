@@ -725,7 +725,7 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
     return g
 
 
-def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) -> dcc.Graph:
+def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int = 0) -> dcc.Graph:
     """
     Create and return a plot which contains the prediction for a dataframe.
     The plot is built using two dataframe: `ingested_data` and `predicted_data`.
@@ -748,7 +748,7 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     predicted_data : DataFrame
         Prediction created by a model.
 
-    test_values : int
+    test_values : int, optional, default 0
         Number of validation values used in the testing.
 
     Returns
@@ -764,7 +764,6 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     not_training_data = df.loc[:predicted_data.index[0]]
     training_data = df.loc[predicted_data.index[0]:]
     training_data = training_data.iloc[:-test_values]
-    test_data = df.iloc[-test_values:]
 
     fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
                              line=dict(color='black'),
@@ -775,9 +774,12 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
                              mode='markers',
                              name=_('training data'),
                              ))
-    fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
-                             line=dict(color='green', width=3, dash='dot'),
-                             name=_('validation data')))
+
+    if test_values > 0:
+        test_data = df.iloc[-test_values:]
+        fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
+                                 line=dict(color='green', width=3, dash='dot'),
+                                 name=_('validation data')))
 
     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat'],
                              line=dict(color='blue'),
@@ -801,10 +803,10 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int) 
     return g
 
 
-def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, best_prediction: DataFrame) -> html.Div:
+def historical_prediction_plot(real_data: DataFrame, historical_prediction: DataFrame, future_prediction: DataFrame) -> html.Div:
     """
     Create and return a plot which contains the best prediction found by this model for this time series, along with
-    the historical prediction.
+    the historical prediction. The plot of the error is also drawn.
 
     Note that `predicted_data` may or not have the columns "yhat_lower" and "yhat_upper".
 
@@ -813,10 +815,10 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     real_data : DataFrame
         Raw values ingested by the app.
 
-    predicted_data : DataFrame
+    historical_prediction : DataFrame
         Historical prediction.
 
-    best_prediction : DataFrame
+    future_prediction : DataFrame
         Best prediction, corresponding to the `best_prediction` attribute of a
         `timexseries.data_prediction.models.predictor.ModelResult`.
 
@@ -829,21 +831,18 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     Check `create_timeseries_dash_children` to check the use.
     """
     new_children = []
-    fig = go.Figure()
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
-    # not_training_data = df.loc[:predicted_data.index[0]]
-    # training_data = df.loc[predicted_data.index[0]:]
-    # training_data = training_data.iloc[:-test_values]
-    # test_data = df.iloc[-test_values:]
+
     timeseries_name = real_data.columns[0]
-    first_predicted_index = predicted_data.index[0]
+    first_predicted_index = historical_prediction.index[0]
     last_real_index = real_data.index[-1]
 
     validation_real_data = real_data.loc[first_predicted_index:, timeseries_name]
 
     testing_performance = ValidationPerformance(first_predicted_index)
     testing_performance.set_testing_stats(actual=validation_real_data,
-                                          predicted=predicted_data.loc[:last_real_index, timeseries_name])
+                                          predicted=historical_prediction.loc[:last_real_index, timeseries_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
         show_errors(testing_performance),
@@ -852,46 +851,31 @@ def historical_prediction_plot(real_data: DataFrame, predicted_data: DataFrame, 
     fig.add_trace(go.Scatter(x=real_data.index, y=real_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
-                             name=_('real data')))
+                             name=_('real data')), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
+    fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.iloc[:, 0],
                              line=dict(color='blue'),
                              mode='lines+markers',
-                             name=_('historical prediction')))
+                             name=_('historical prediction')), row=1, col=1)
 
-    best_prediction.loc[predicted_data.index[-1], 'yhat'] = predicted_data.iloc[-1, 0]
-    best_prediction = best_prediction.loc[predicted_data.index[-1]:, :]
+    future_prediction.loc[historical_prediction.index[-1], 'yhat'] = historical_prediction.iloc[-1, 0]
+    future_prediction = future_prediction.loc[historical_prediction.index[-1]:, :]
 
-    fig.add_trace(go.Scatter(x=best_prediction.index, y=best_prediction['yhat'],
+    fig.add_trace(go.Scatter(x=future_prediction.index, y=future_prediction['yhat'],
                              line=dict(color='lightgreen'),
                              mode='lines+markers',
-                             name=_('future yhat')))
+                             name=_('future yhat')), row=1, col=1)
 
-    # try:
-    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_lower'],
-    #                              line=dict(color='lightgreen', dash='dash'),
-    #                              name='yhat_lower'))
-    #     fig.add_trace(go.Scatter(x=predicted_data.index, y=predicted_data['yhat_upper'],
-    #                              line=dict(color='lightgreen', dash='dash'),
-    #                              name='yhat_upper'))
-    # except:
-    #     pass
+    error_series = validation_real_data - historical_prediction.iloc[:, 0]
+    fig.add_trace(go.Scatter(x=error_series.index, y=error_series,
+                             line=dict(color='black'),
+                             mode='lines+markers',
+                             name=_("Error series")), row=2, col=1)
 
-    # fig.add_trace(go.Scatter(x=not_training_data.index, y=not_training_data.iloc[:, 0],
-    #                          line=dict(color='black'),
-    #                          mode='markers',
-    #                          name='unused data'))
-    # fig.add_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
-    #                          line=dict(color='green'),
-    #                          mode='markers',
-    #                          name='training data'))
-    #
-    # fig.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0],
-    #                          line=dict(color='red'),
-    #                          mode='markers',
-    #                          name='test data'))
-    fig.update_layout(title=_("Historical prediction"), xaxis_title=real_data.index.name,
-                      yaxis_title=real_data.columns[0])
+    fig.update_yaxes(title_text=_("Historical prediction"), row=1, col=1)
+    fig.update_yaxes(title_text=_("Error series"), row=2, col=1)
+    fig.update_xaxes(title_text=real_data.index.name, row=2, col=1)
+    fig.update_layout(title=_("Historical prediction"), height=700)
     g = dcc.Graph(
         figure=fig
     )
