@@ -99,7 +99,7 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
         html.H2(children=name + _(' analysis'), id=name),
         html.H3(_("Data visualization")),
         line_plot(timeseries_data),
-        histogram_plot(timeseries_data, visualization_parameters),
+        histogram_plot(timeseries_data),
         box_plot(timeseries_data, visualization_parameters),
         box_plot_aggregate(timeseries_data, visualization_parameters),
         components_plot(timeseries_data),
@@ -253,7 +253,7 @@ def line_plot_multiIndex(df: DataFrame) -> dcc.Graph:
     return g
 
 
-def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
+def histogram_plot(df: DataFrame) -> dcc.Graph:
     """
     Create and return the histogram plot for a dataframe.
 
@@ -261,10 +261,6 @@ def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     ----------
     df : DataFrame
         Dataframe to plot.
-
-    visualization_parameters : dict
-        Options set by the user, in particular if `nbinsx` is specified, then this number will be used for the number
-        of histogram bins.
 
     Returns
     -------
@@ -276,12 +272,16 @@ def histogram_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     >>> hist_plot = hist_plot(timeseries_container.timeseries_data).figure
     >>> hist_plot.show()
     """
-    try:
-        p = {'nbinsx': visualization_parameters["histogram_bins"]}
-    except KeyError:
-        p = {}
 
-    fig = go.Figure(data=[go.Histogram(x=df.iloc[:, 0], **p)])
+    max_value = abs(df.iloc[:, 0].max() - df.iloc[:, 0].min())
+    step = max_value / 400
+
+    fig = go.Figure(data=[go.Histogram(x=df.iloc[:, 0])])
+    fig.layout.sliders = [dict(
+        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, max_value/2, step)],
+        font=dict(color="rgba(0,0,0,0)"),
+        tickcolor="rgba(0,0,0,0)"
+    )]
 
     fig.update_layout(title=_('Histogram'), xaxis_title_text=df.columns[0], yaxis_title_text=_('Count'))
     g = dcc.Graph(
@@ -833,7 +833,6 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
     new_children = []
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
-
     timeseries_name = real_data.columns[0]
     first_predicted_index = historical_prediction.index[0]
     last_real_index = real_data.index[-1]
@@ -872,15 +871,35 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
                              mode='lines+markers',
                              name=_("Error series")), row=2, col=1)
 
+
     fig.update_yaxes(title_text=_("Historical prediction"), row=1, col=1)
     fig.update_yaxes(title_text=_("Error series"), row=2, col=1)
+
     fig.update_xaxes(title_text=real_data.index.name, row=2, col=1)
-    fig.update_layout(title=_("Historical prediction"), height=700)
+    fig.update_layout(title=_("Historical prediction"), height=900)
+
     g = dcc.Graph(
         figure=fig
     )
-
     new_children.append(g)
+
+    fig_hist = go.Figure()
+    fig_hist.add_trace(go.Histogram(x=error_series, marker=dict(color='black'), name=_("Error series histogram")))
+    error_max_value = abs(error_series.max() - error_series.min())
+    step = error_max_value / 400
+    fig_hist.layout.sliders = [dict(
+        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, error_max_value/2, step)],
+        font=dict(color="rgba(0,0,0,0)"),
+        tickcolor="rgba(0,0,0,0)"
+    )]
+    fig_hist.update_yaxes(title_text=_("Error series histogram"))
+    fig_hist.update_xaxes(title_text=timeseries_name)
+
+    g = dcc.Graph(
+        figure=fig_hist
+    )
+    new_children.append(g)
+
 
     return html.Div(new_children)
 
@@ -1045,7 +1064,8 @@ def show_errors(testing_performances: ValidationPerformance) -> html.Ul:
             "MAE": "MAE: " + str(round(value, 2)),
             "RMSE": "RMSE: " + str(round(value, 2)),
             "MSE": "MSE: " + str(round(value, 2)),
-            "AM": _('Arithmetic mean of errors:') + str(round(value, 2))
+            "AM": _('Arithmetic mean of errors:') + str(round(value, 2)),
+            "SD": _('Standard deviation of errors: ') + str(round(value, 2))
         }
         return switcher.get(key, "Invalid choice!")
 

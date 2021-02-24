@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-02-20 00:48+0100\n"
+"POT-Creation-Date: 2021-02-24 18:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -145,7 +145,7 @@ msgstr ""
 msgid "unused data"
 msgstr ""
 
-#: functions.py:775 functions.py:949
+#: functions.py:775 functions.py:962
 msgid "training data"
 msgstr ""
 
@@ -169,95 +169,103 @@ msgstr ""
 msgid "Best prediction for the validation set"
 msgstr ""
 
-#: functions.py:847
+#: functions.py:846
 msgid "This model, during the history, reached these performances on unseen data:"
 msgstr ""
 
-#: functions.py:849
+#: functions.py:848
 msgid "Range of validation data: "
 msgstr ""
 
-#: functions.py:854
+#: functions.py:853
 msgid "real data"
 msgstr ""
 
-#: functions.py:859
+#: functions.py:858
 msgid "historical prediction"
 msgstr ""
 
-#: functions.py:867
+#: functions.py:866
 msgid "future yhat"
 msgstr ""
 
-#: functions.py:873 functions.py:876
+#: functions.py:872 functions.py:877
 msgid "Error series"
 msgstr ""
 
-#: functions.py:875 functions.py:878
+#: functions.py:874 functions.py:878
+msgid "Error series histogram"
+msgstr ""
+
+#: functions.py:876 functions.py:891
 msgid "Historical prediction"
 msgstr ""
 
-#: functions.py:962
+#: functions.py:975
 msgid "Performances with different training windows"
 msgstr ""
 
-#: functions.py:1009
+#: functions.py:1022
 msgid "Model type: "
 msgstr ""
 
-#: functions.py:1010
+#: functions.py:1023
 msgid "Values used for testing: last "
 msgstr ""
 
-#: functions.py:1010
+#: functions.py:1023
 msgid " values"
 msgstr ""
 
-#: functions.py:1011
+#: functions.py:1024
 msgid "The length of the training windows is the "
 msgstr ""
 
-#: functions.py:1012
+#: functions.py:1025
 msgid " of the length of the time series."
 msgstr ""
 
-#: functions.py:1013
+#: functions.py:1026
 msgid "Training windows are composed of "
 msgstr ""
 
-#: functions.py:1013
+#: functions.py:1026
 msgid " values."
 msgstr ""
 
-#: functions.py:1014
+#: functions.py:1027
 msgid "The model has used "
 msgstr ""
 
-#: functions.py:1014
+#: functions.py:1027
 msgid " as extra-regressor(s) to improve the training."
 msgstr ""
 
-#: functions.py:1015
+#: functions.py:1028
 msgid "The model has used a "
 msgstr ""
 
-#: functions.py:1015
+#: functions.py:1028
 msgid " transformation on the input data."
 msgstr ""
 
-#: functions.py:1016
+#: functions.py:1029
 msgid "The model has not used any pre/post transformation on input data."
 msgstr ""
 
-#: functions.py:1020
+#: functions.py:1033
 msgid "Model characteristics:"
 msgstr ""
 
-#: functions.py:1022
+#: functions.py:1035
 msgid "This model, using the best training window, reaches these performances:"
 msgstr ""
 
-#: functions.py:1048
+#: functions.py:1061
 msgid "Arithmetic mean of errors:"
+msgstr ""
+
+#: functions.py:1062
+msgid "Standard deviation of errors: "
 msgstr ""
 

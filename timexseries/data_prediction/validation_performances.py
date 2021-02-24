@@ -24,6 +24,8 @@ class ValidationPerformance:
         Mean Absolute Error. Default 0
     AM: float
         Arithmetic Mean of error. Default 0
+    SD: float
+        Standard deviation of error. Default 0
     """
     def __init__(self, first_used_index=None):
         self.first_used_index = first_used_index
@@ -31,6 +33,7 @@ class ValidationPerformance:
         self.RMSE = 0
         self.MAE = 0
         self.AM = 0
+        self.SD = 0
 
     def set_testing_stats(self, actual: Series, predicted: Series):
         """
@@ -45,7 +48,7 @@ class ValidationPerformance:
 
         Examples
         --------
-        >>> dates = pd.date_range('2000-01-01', periods=5)  # Last index is 2000-01-30
+        >>> dates = pd.date_range('2000-01-01', periods=5)
         >>> ds = pd.DatetimeIndex(dates, freq="D")
         >>> actual = np.array([1, 1, 1, 1, 1])
         >>> predicted = np.array([3, 3, 3, 3, 3])
@@ -62,11 +65,11 @@ class ValidationPerformance:
         >>> print(perf.MSE)
         4.0
         """
-
         self.MSE = mean_squared_error(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
         self.RMSE = sqrt(self.MSE)
         self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
+        self.SD = (actual - predicted).std(ddof=0)
 
     def get_dict(self) -> dict:
         """
@@ -82,7 +85,7 @@ class ValidationPerformance:
         >>> perf = ValidationPerformance()
         >>> perf.set_testing_stats(actual_dataframe['a'], predicted_dataframe['yhat'])
         >>> perf.get_dict()
-        {'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0}
+        {'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0, 'SD': 0.0}
         """
         d = {}
         for attribute, value in self.__dict__.items():
