@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-02-24 18:02+0100\n"
+"POT-Creation-Date: 2021-03-01 19:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -67,47 +67,47 @@ msgstr ""
 "Per ciascun modello vengono mostrate le migliori predizioni ottenibili in"
 " ciascuna data passata."
 
-#: functions.py:220 functions.py:248
+#: functions.py:221 functions.py:249
 msgid "Line plot"
 msgstr "Grafico"
 
-#: functions.py:286
+#: functions.py:287
 msgid "Histogram"
 msgstr "Istogramma"
 
-#: functions.py:286 functions.py:661 functions.py:720
+#: functions.py:287 functions.py:689 functions.py:783
 msgid "Count"
 msgstr "Conteggio"
 
-#: functions.py:318
+#: functions.py:319
 msgid "Trend"
 msgstr "Trend"
 
-#: functions.py:318
+#: functions.py:319
 msgid "Seasonality"
 msgstr "Stagionalità"
 
-#: functions.py:318
+#: functions.py:319
 msgid "Residual"
 msgstr "Residuo"
 
-#: functions.py:349
+#: functions.py:353
 msgid "Components decomposition"
 msgstr "Decomposizione in componenti"
 
-#: functions.py:349
+#: functions.py:353
 msgid "Decomposition model"
 msgstr "Modello di decomposizione"
 
-#: functions.py:350
+#: functions.py:354
 msgid "Additive"
 msgstr "Additivo"
 
-#: functions.py:351
+#: functions.py:355
 msgid "Multiplicative"
 msgstr "Moltiplicativo"
 
-#: functions.py:357
+#: functions.py:361
 msgid ""
 "Multiplicative model is not available for series which contain zero or "
 "negative values."
@@ -115,177 +115,199 @@ msgstr ""
 "Il modello moltiplicativo non è disponibile in serie che contengono "
 "valori nulli o negativi."
 
-#: functions.py:402
+#: functions.py:406
 msgid "autocorrelation"
 msgstr "Autocorrelazione"
 
-#: functions.py:407
+#: functions.py:411
 msgid "Autocorrelation plot"
 msgstr "Grafico dell'autocorrelazione"
 
-#: functions.py:407 functions.py:468
+#: functions.py:411 functions.py:472
 msgid "Lags"
 msgstr "Ritardi"
 
-#: functions.py:407
+#: functions.py:411
 msgid "Autocorrelation"
 msgstr "Autocorrelazione"
 
-#: functions.py:467
+#: functions.py:471
 msgid "Cross-correlation using different algorithms"
 msgstr "Cross-correlazione usando vari algoritmi"
 
-#: functions.py:469
+#: functions.py:473
 msgid "Correlation"
 msgstr "Correlazione"
 
-#: functions.py:580
+#: functions.py:584
 msgid "Lag: "
 msgstr "Ritardi: "
 
-#: functions.py:661
+#: functions.py:689
 msgid "Box plot"
 msgstr "Diagramma a scatola"
 
-#: functions.py:720
+#: functions.py:691
+msgid "The index refer to the end of the period."
+msgstr "L'indice fa riferimento alla fine del periodo considerato."
+
+#: functions.py:728
+msgid "minute"
+msgstr "Minuto"
+
+#: functions.py:728
+msgid "hour"
+msgstr "Ora"
+
+#: functions.py:728
+msgid "weekday"
+msgstr "Giorno della settimana"
+
+#: functions.py:728
+msgid "day"
+msgstr "Giorno del mese"
+
+#: functions.py:728
+msgid "month"
+msgstr "Mese"
+
+#: functions.py:728
+msgid "year"
+msgstr "Anno"
+
+#: functions.py:783
 msgid "Aggregate box plot"
 msgstr "Diagramma a scatola aggregato"
 
-#: functions.py:771
+#: functions.py:835
 msgid "unused data"
 msgstr "Dati non usati"
 
-#: functions.py:775 functions.py:962
+#: functions.py:839 functions.py:1031
 msgid "training data"
 msgstr "Dati usati nell'allenamento"
 
-#: functions.py:782
+#: functions.py:846
 msgid "validation data"
 msgstr "Dati di validazione"
 
-#: functions.py:787
+#: functions.py:851
 msgid "yhat"
 msgstr "Predizione"
 
-#: functions.py:791
+#: functions.py:855
 msgid "yhatlower"
 msgstr "Predizione (limite inferiore)"
 
-#: functions.py:794
+#: functions.py:858
 msgid "yhatupper"
 msgstr "Predizione (limite superiore)"
 
-#: functions.py:798
+#: functions.py:862
 msgid "Best prediction for the validation set"
 msgstr "Miglior previsione per i dati di validazione"
 
-#: functions.py:846
+#: functions.py:911
 msgid "This model, during the history, reached these performances on unseen data:"
 msgstr ""
 "Questo modello, nella storia della serie, ha raggiunto queste "
 "performances su dati non visti:"
 
-#: functions.py:848
+#: functions.py:913
 msgid "Range of validation data: "
 msgstr "Range dei dati di validazione: "
 
-#: functions.py:853
+#: functions.py:918
 msgid "real data"
 msgstr "Dati reali"
 
-#: functions.py:858
+#: functions.py:923
 msgid "historical prediction"
 msgstr "Previsione storica"
 
-#: functions.py:866
+#: functions.py:931
 msgid "future yhat"
 msgstr "Previsione futura"
 
-#: functions.py:872 functions.py:877
+#: functions.py:937 functions.py:940
 msgid "Error series"
 msgstr "Errore"
 
-#: functions.py:874 functions.py:878
-msgid "Error series histogram"
-msgstr "Istogramma dell'errore"
-
-#: functions.py:876 functions.py:891
+#: functions.py:939 functions.py:943
 msgid "Historical prediction"
 msgstr "Previsione storica"
 
-#: functions.py:975
+#: functions.py:951 functions.py:959
+msgid "Error series histogram"
+msgstr "Istogramma dell'errore"
+
+#: functions.py:1044
 msgid "Performances with different training windows"
 msgstr "Performances con differenti finestre di allenamento"
 
-#: functions.py:1022
+#: functions.py:1092
 msgid "Model type: "
 msgstr "Classe del modello: "
 
-#: functions.py:1023
+#: functions.py:1093
 msgid "Values used for testing: last "
 msgstr "Valori usati per il testing: ultimi "
 
-#: functions.py:1023
+#: functions.py:1093
 msgid " values"
 msgstr " valori"
 
-#: functions.py:1024
+#: functions.py:1094
 msgid "The length of the training windows is the "
 msgstr "La lunghezza della finestra di addestramento è il "
 
-#: functions.py:1025
+#: functions.py:1095
 msgid " of the length of the time series."
 msgstr " della lunghezza della serie temporale."
 
-#: functions.py:1026
+#: functions.py:1096
 msgid "Training windows are composed of "
 msgstr "Le finestre di allenamento sono composte del "
 
-#: functions.py:1026
+#: functions.py:1096
 msgid " values."
 msgstr " valori."
 
-#: functions.py:1027
+#: functions.py:1097
 msgid "The model has used "
 msgstr "Il modello ha usato "
 
-#: functions.py:1027
+#: functions.py:1097
 msgid " as extra-regressor(s) to improve the training."
 msgstr " come regressore/i extra per migliorare l'addestramento."
 
-#: functions.py:1028
+#: functions.py:1098
 msgid "The model has used a "
 msgstr "Il modello ha usato una "
 
-#: functions.py:1028
+#: functions.py:1098
 msgid " transformation on the input data."
 msgstr " trasformazione sui dati."
 
-#: functions.py:1029
+#: functions.py:1100
 msgid "The model has not used any pre/post transformation on input data."
 msgstr "Il modello non ha usato pre/post trasformazioni sui dati."
 
-#: functions.py:1033
+#: functions.py:1104
 msgid "Model characteristics:"
 msgstr "Caratteristiche del modello:"
 
-#: functions.py:1035
+#: functions.py:1106
 msgid "This model, using the best training window, reaches these performances:"
 msgstr ""
 "Questo modello, usando la miglior finestra di allenamento, raggiunge "
 "queste performances:"
 
-#: functions.py:1061
+#: functions.py:1141
 msgid "Arithmetic mean of errors:"
 msgstr "Media aritmetica dell'errore: "
 
-#: functions.py:1062
+#: functions.py:1142
 msgid "Standard deviation of errors: "
 msgstr "Deviazione standard dell'errore: "
-
-#~ msgid "% of the length of the time series."
-#~ msgstr ""
-
-#~ msgid "prediction"
-#~ msgstr "previsione"
 

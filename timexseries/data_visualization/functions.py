@@ -165,7 +165,8 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
         for model in timeseries_container.historical_prediction:
             children.extend([
                 html.H4(f"{model}"),
-                historical_prediction_plot(timeseries_data, timeseries_container.historical_prediction[model], timeseries_container.models[model].best_prediction)
+                historical_prediction_plot(timeseries_data, timeseries_container.historical_prediction[model],
+                                           timeseries_container.models[model].best_prediction)
             ])
 
     return children
@@ -278,7 +279,7 @@ def histogram_plot(df: DataFrame) -> dcc.Graph:
 
     fig = go.Figure(data=[go.Histogram(x=df.iloc[:, 0])])
     fig.layout.sliders = [dict(
-        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, max_value/2, step)],
+        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, max_value / 2, step)],
         font=dict(color="rgba(0,0,0,0)"),
         tickcolor="rgba(0,0,0,0)"
     )]
@@ -333,15 +334,18 @@ def components_plot(ingested_data: DataFrame) -> html.Div:
 
             fig.add_trace(go.Scatter(x=trend.index, y=trend,
                                      mode='lines+markers',
-                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()),
+                                     line=dict(color=ColorHash(mode).hex)),
                           row=1, col=1, secondary_y=secondary_y)
             fig.add_trace(go.Scatter(x=seasonal.index, y=seasonal,
                                      mode='lines+markers', showlegend=False,
-                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()),
+                                     line=dict(color=ColorHash(mode).hex)),
                           row=2, col=1, secondary_y=secondary_y)
             fig.add_trace(go.Scatter(x=residual.index, y=residual,
                                      mode='lines+markers', showlegend=False,
-                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()), line=dict(color=ColorHash(mode).hex)),
+                                     name=_(mode.capitalize()), legendgroup=_(mode.capitalize()),
+                                     line=dict(color=ColorHash(mode).hex)),
                           row=3, col=1, secondary_y=secondary_y)
         except ValueError:
             log.warning(f"Multiplicative decomposition not available for {ingested_data.columns[0]}")
@@ -641,24 +645,52 @@ def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     >>> box_plot = box_plot(timeseries_container.timeseries_data, param_config["visualization_parameters"]).figure
     >>> box_plot.show()
     """
-    try:
-        freq = visualization_parameters['box_plot_frequency']
-    except KeyError:
-        freq = '1W'
-
     temp = df.iloc[:, 0]
-    groups = temp.groupby(Grouper(freq=freq))
 
-    boxes = []
+    aggregations = ["1W", "2W", "1M", "3M", "4M", "6M", "1Y"]
 
-    for group in groups:
-        boxes.append(go.Box(
-            name=str(group[0]),
-            y=group[1]
-        ))
+    try:
+        initial_freq = visualization_parameters['box_plot_frequency']
+    except KeyError:
+        initial_freq = '1W'
 
-    fig = go.Figure(data=boxes)
+    traces = []
+
+    for freq in aggregations:
+        is_visible = True if initial_freq == freq else 'legendonly'
+
+        # Small trick needed to show `name` in legend.
+        traces.append(go.Scatter(x=[None], y=[None], legendgroup=freq, name=freq,
+                                 visible=is_visible))
+
+    for freq in aggregations:
+        groups = temp.groupby(Grouper(freq=freq))
+        is_visible = True if initial_freq == freq else 'legendonly'
+
+        for group in groups:
+            traces.append(go.Box(
+                name=str(group[0].normalize()),
+                y=group[1], legendgroup=freq, showlegend=False, visible=is_visible, xperiodalignment='end'
+            ))
+
+    fig = go.Figure(traces)
+    fig.update_layout(
+        updatemenus=[dict(
+            type='buttons',
+            direction='right',
+            yanchor='bottom',
+            xanchor='left',
+            y=1,
+            active=aggregations.index(_(initial_freq)),
+            buttons=list(
+                [dict(label=f, method='update', args=[{'visible': [tr.legendgroup == f for tr in traces]}])
+                 for f in aggregations]))])
+
     fig.update_layout(title=_('Box plot'), xaxis_title=df.index.name, yaxis_title=_('Count'), showlegend=False)
+    fig.update_xaxes(type='category')
+    fig.add_annotation(text=_("The index refer to the end of the period."),
+                       xref="paper", yref="paper",
+                       x=1.0, y=1.0, yanchor='bottom', showarrow=False)
 
     g = dcc.Graph(
         figure=fig
@@ -669,7 +701,8 @@ def box_plot(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
 def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Graph:
     """
     Create and return the aggregate box plot for a dataframe, i.e. a box plot which shows, for each day of the week/for
-    each month of the year the distribution of the values.
+    each month of the year the distribution of the values. Now also with aggregation over minute, hour, week, month,
+    year.
 
     Parameters
     ----------
@@ -677,7 +710,8 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
         Dataframe to use in the box plot.
 
     visualization_parameters : dict
-        Options set by the user. In particular, `aggregate_box_plot_frequency` is used. Default `weekday`.
+        Options set by the user. In particular, `aggregate_box_plot_frequency` is used. Default `weekday`. It controls
+        which frequency is activated at launch.
 
     Returns
     -------
@@ -690,34 +724,64 @@ def box_plot_aggregate(df: DataFrame, visualization_parameters: dict) -> dcc.Gra
     ...                                param_config["visualization_parameters"]).figure
     >>> abox_plot.show()
     """
+    aggregations = ["minute", "hour", "weekday", "day", "month", "year"]
+    translated_aggregations = [_("minute"), _("hour"), _("weekday"), _("day"), _("month"), _("year")]
 
     temp = df.iloc[:, 0]
+
     try:
-        freq = visualization_parameters['aggregate_box_plot_frequency']
+        initial_freq = visualization_parameters['aggregate_box_plot_frequency']
     except KeyError:
-        freq = 'weekday'
+        initial_freq = 'weekday'
 
-    if freq == 'weekday':
-        groups = temp.groupby(temp.index.weekday)
-        boxes = []
+    traces = []
 
-        for group in groups:
-            boxes.append(go.Box(
-                name=calendar.day_name[group[0]],
-                y=group[1]
-            ))
-    else:
-        groups = temp.groupby(temp.index.month)
-        boxes = []
+    for freq, translated_freq in zip(aggregations, translated_aggregations):
+        is_visible = True if initial_freq == freq else False
 
-        for group in groups:
-            boxes.append(go.Box(
-                name=calendar.month_name[group[0]],
-                y=group[1]
-            ))
+        # Small trick needed to show `name` in legend.
+        traces.append(go.Scatter(x=[None], y=[None], legendgroup=translated_freq, name=translated_freq,
+                                 visible=is_visible))
 
-    fig = go.Figure(data=boxes)
+    for freq, translated_freq in zip(aggregations, translated_aggregations):
+        groups = temp.groupby(getattr(temp.index, freq))
+        is_visible = True if initial_freq == freq else False
+
+        if freq == "weekday":
+            for group in groups:
+                traces.append(go.Box(
+                    name=calendar.day_name[group[0]],
+                    y=group[1], legendgroup=translated_freq, showlegend=False, visible=is_visible
+                ))
+        elif freq == "month":
+            for group in groups:
+                traces.append(go.Box(
+                    name=calendar.month_name[group[0]],
+                    y=group[1], legendgroup=translated_freq, showlegend=False, visible=is_visible
+                ))
+        else:
+            for group in groups:
+                traces.append(go.Box(
+                    name=group[0],
+                    y=group[1], legendgroup=translated_freq, showlegend=False, visible=is_visible
+                ))
+
+    fig = go.Figure(data=traces)
+
+    fig.update_layout(
+        updatemenus=[dict(
+            type='buttons',
+            direction='right',
+            yanchor='bottom',
+            xanchor='left',
+            y=1,
+            active=translated_aggregations.index(_(initial_freq)),
+            buttons=list(
+                [dict(label=f, method='update', args=[{'visible': [tr.legendgroup == f for tr in traces]}])
+                 for f in translated_aggregations]))])
+
     fig.update_layout(title=_('Aggregate box plot'), yaxis_title=_('Count'), showlegend=False)
+    fig.update_xaxes(type='category')
 
     g = dcc.Graph(
         figure=fig
@@ -803,7 +867,8 @@ def prediction_plot(df: DataFrame, predicted_data: DataFrame, test_values: int =
     return g
 
 
-def historical_prediction_plot(real_data: DataFrame, historical_prediction: DataFrame, future_prediction: DataFrame) -> html.Div:
+def historical_prediction_plot(real_data: DataFrame, historical_prediction: DataFrame,
+                               future_prediction: DataFrame) -> html.Div:
     """
     Create and return a plot which contains the best prediction found by this model for this time series, along with
     the historical prediction. The plot of the error is also drawn.
@@ -871,7 +936,6 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
                              mode='lines+markers',
                              name=_("Error series")), row=2, col=1)
 
-
     fig.update_yaxes(title_text=_("Historical prediction"), row=1, col=1)
     fig.update_yaxes(title_text=_("Error series"), row=2, col=1)
 
@@ -886,9 +950,9 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
     fig_hist = go.Figure()
     fig_hist.add_trace(go.Histogram(x=error_series, marker=dict(color='black'), name=_("Error series histogram")))
     error_max_value = abs(error_series.max() - error_series.min())
-    step = error_max_value / 400
+    step = error_max_value / 200
     fig_hist.layout.sliders = [dict(
-        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, error_max_value/2, step)],
+        steps=[dict(method='restyle', args=['xbins.size', i]) for i in np.arange(step, error_max_value / 2, step)],
         font=dict(color="rgba(0,0,0,0)"),
         tickcolor="rgba(0,0,0,0)"
     )]
@@ -899,7 +963,6 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
         figure=fig_hist
     )
     new_children.append(g)
-
 
     return html.Div(new_children)
 
@@ -1022,6 +1085,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Val
     -------
     html.Div()
     """
+
     def get_text_char(key: str, value: any) -> str:
         value = str(value)
         switcher = {
@@ -1031,8 +1095,9 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Val
                                          + "%" + _(' of the length of the time series.'),
             "delta_training_values": _('Training windows are composed of ') + value + _(' values.'),
             "extra_regressors": _("The model has used ") + value + _(" as extra-regressor(s) to improve the training."),
-            "transformation": _('The model has used a ') + value + _(' transformation on the input data.') if value != "none "
-                              else _('The model has not used any pre/post transformation on input data.')
+            "transformation": _('The model has used a ') + value + _(
+                ' transformation on the input data.') if value != "none "
+            else _('The model has not used any pre/post transformation on input data.')
         }
         return switcher.get(key, "Invalid choice!")
 
@@ -1058,14 +1123,23 @@ def show_errors(testing_performances: ValidationPerformance) -> html.Ul:
     html.Ul
         HTML list with all the error-metrics.
     """
+    import math
+
+    def round_n(n: float):
+        dec_part, int_part = math.modf(n)
+
+        if abs(int_part) > 1:
+            return str(round(n, 3))
+        else:
+            return format(n, '.3g')
 
     def get_text_perf(key: str, value: any) -> str:
         switcher = {
-            "MAE": "MAE: " + str(round(value, 2)),
-            "RMSE": "RMSE: " + str(round(value, 2)),
-            "MSE": "MSE: " + str(round(value, 2)),
-            "AM": _('Arithmetic mean of errors:') + str(round(value, 2)),
-            "SD": _('Standard deviation of errors: ') + str(round(value, 2))
+            "MAE": "MAE: " + round_n(value),
+            "RMSE": "RMSE: " + round_n(value),
+            "MSE": "MSE: " + round_n(value),
+            "AM": _('Arithmetic mean of errors:') + round_n(value),
+            "SD": _('Standard deviation of errors: ') + round_n(value)
         }
         return switcher.get(key, "Invalid choice!")
 
