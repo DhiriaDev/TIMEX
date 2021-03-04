@@ -948,7 +948,8 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
     new_children.append(g)
 
     fig_hist = go.Figure()
-    fig_hist.add_trace(go.Histogram(x=error_series, marker=dict(color='black'), name=_("Error series histogram")))
+    fig_hist.add_trace(go.Histogram(x=error_series, histnorm="probability",
+                                    marker=dict(color='black'), name=_("Error series histogram")))
     error_max_value = abs(error_series.max() - error_series.min())
     step = error_max_value / 200
     fig_hist.layout.sliders = [dict(
@@ -956,7 +957,7 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
         font=dict(color="rgba(0,0,0,0)"),
         tickcolor="rgba(0,0,0,0)"
     )]
-    fig_hist.update_yaxes(title_text=_("Error series histogram"))
+    fig_hist.update_yaxes(title_text=_("Error series histogram"), tickformat='.1%')
     fig_hist.update_xaxes(title_text=timeseries_name)
 
     g = dcc.Graph(
