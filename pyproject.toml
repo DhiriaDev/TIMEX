@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "timexseries"
-version = "1.0.0"
+version = "1.1.0"
 description = "TIMEX is a framework for time-series-forecasting-as-a-service."
 authors = ["Alessandro Falcetta <alessandro.falcetta@polimi.it>", "Manuel Roveri <manuel.roveri@polimi.it>"]
 license = "Apache-2.0"

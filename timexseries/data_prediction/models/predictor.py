@@ -6,7 +6,8 @@ import pkgutil
 from functools import reduce
 
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, Series
+import numpy as np
 
 from timexseries.data_prediction.transformation import transformation_factory
 from timexseries.data_prediction.validation_performances import ValidationPerformance
@@ -91,6 +92,15 @@ class PredictionModel:
         Length of the training windows, obtained by computing `delta_training_percentage * length of the time-series`.
     main_accuracy_estimator : str
         Error metric to use when deciding which prediction is better. Default: MAE.
+    min_values : dict
+        Key-values where key is the name of a column and value is the minimum expected value in that column.
+        If "_all" is in the dict the corresponding value will be used for all values in each column.
+    max_values : dict
+        Key-values where key is the name of a column and value is the maximum expected value in that column.
+        If "_all" is in the dict the corresponding value will be used for all values in each column.
+    round_to_integer : list
+        List of columns name which should be rounded to integer. If "_all" is in the list, all values in every column
+        will be rounded to integer.
     model_characteristics : dict
         Dictionary of values containing the main characteristics and parameters of the model. Default {}
     """
@@ -118,6 +128,21 @@ class PredictionModel:
             self.transformation = transformation_factory(transformation)
         else:
             self.transformation = transformation_factory(model_parameters["transformation"])
+
+        if "min_values" in model_parameters:
+            self.min_values = model_parameters["min_values"]
+        else:
+            self.min_values = None
+
+        if "max_values" in model_parameters:
+            self.max_values = model_parameters["max_values"]
+        else:
+            self.max_values = None
+
+        if "round_to_integer" in model_parameters:
+            self.round_to_integer = list(model_parameters["round_to_integer"].split(","))
+        else:
+            self.round_to_integer = None
 
         self.prediction_lags = model_parameters["prediction_lags"]
         self.delta_training_percentage = model_parameters["delta_training_percentage"]
@@ -279,11 +304,14 @@ class PredictionModel:
                 forecast = self.predict(future_df, extra_regressors)
 
                 forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
+
                 try:
                     forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_lower'])
                     forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
-                except:
+                except KeyError:
                     pass
+
+                forecast = self.adjust_forecast(train_ts.columns[0], forecast)
 
                 testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
@@ -307,8 +335,10 @@ class PredictionModel:
             return return_d[0]
 
         if max_threads == 1:
+            return_d = {}
             distributions = [[0, train_sets_number]]
-            n_threads = 1
+            c(distributions[0], return_d, 0)
+            return return_d[0]
         else:
             distributions = []
 
@@ -375,8 +405,10 @@ class PredictionModel:
         try:
             forecast.loc[:, 'yhat_lower'] = self.transformation.inverse(forecast['yhat_lower'])
             forecast.loc[:, 'yhat_upper'] = self.transformation.inverse(forecast['yhat_upper'])
-        except:
+        except KeyError:
             pass
+
+        forecast = self.adjust_forecast(training_data.columns[0], forecast)
 
         return forecast
 
@@ -488,3 +520,62 @@ class PredictionModel:
 
         return ModelResult(results=model_training_results, characteristics=model_characteristics,
                            best_prediction=best_prediction)
+
+    def adjust_forecast(self, column_name: str, df: DataFrame):
+        """
+        Check `s` for values below the minimum set by the user (if any) or above the maximum.
+        Apply the rounding to integer, if the user specified it.
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column.
+        df : DataFrame
+            Forecast to check.
+
+        Returns
+        -------
+        DataFrame
+            Adjusted dataframe.
+        """
+        if self.min_values is not None:
+            min_value = None
+            if "_all" in self.min_values:
+                min_value = self.min_values["_all"]
+            elif column_name in self.min_values:
+                min_value = self.min_values[column_name]
+
+            if min_value is not None:
+                df.loc[:, 'yhat'] = df['yhat'].apply(lambda x: min_value if x < min_value else x)
+                try:
+                    df.loc[:, 'yhat_lower'] = df['yhat_lower'].apply(lambda x: min_value if x < min_value else x)
+                    df.loc[:, 'yhat_upper'] = df['yhat_upper'].apply(lambda x: min_value if x < min_value else x)
+                except KeyError:
+                    pass
+
+        if self.max_values is not None:
+            max_value = None
+            if "_all" in self.max_values:
+                max_value = self.max_values["_all"]
+            elif column_name in self.max_values:
+                max_value = self.max_values[column_name]
+
+            if max_value is not None:
+                df.loc[:, 'yhat'] = df['yhat'].apply(lambda x: max_value if x > max_value else x)
+                try:
+                    df.loc[:, 'yhat_lower'] = df['yhat_lower'].apply(lambda x: max_value if x > max_value else x)
+                    df.loc[:, 'yhat_upper'] = df['yhat_upper'].apply(lambda x: max_value if x > max_value else x)
+                except KeyError:
+                    pass
+
+        if self.round_to_integer is not None:
+            if "_all" in self.round_to_integer or column_name in self.round_to_integer:
+                try:
+                    df = df.astype({"yhat": 'int', "yhat_lower": 'int', "yhat_upper": 'int'})
+                except KeyError:
+                    df = df.astype({"yhat": 'int'})
+
+        return df
+
+
+

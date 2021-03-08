@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 
 import dateparser
@@ -429,6 +430,165 @@ class Test_Models_General:
                 expected_train_set_lengths.remove(len(used_training_set))
 
             assert len(expected_train_set_lengths) == 0
+
+    @pytest.mark.parametrize(
+        "check",
+        ["min", "max"]
+    )
+    def test_launch_model_7(self, check):
+        # Test min and max values.
+        param_config = {
+            "model_parameters": {
+                "test_percentage": 10,
+                "delta_training_percentage": 20,
+                "prediction_lags": 10,
+                "transformation": "none",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        if check == "min":
+            param_config["model_parameters"]["min_values"] = {"_all": 10}
+        else:
+            param_config["model_parameters"]["max_values"] = {"_all": -10}
+
+        for n_threads in range(1, 7):
+            param_config["max_threads"] = n_threads
+            df = get_fake_df(10)
+
+            predictor = MockUpModel(param_config)
+            model_result = predictor.launch_model(df.copy())
+
+            for r in model_result.results:
+                pred = r.prediction['yhat'].values
+                for v in pred:
+                    if not np.isnan(v):
+                        if check == "min":
+                            assert v >= 10
+                        else:
+                            assert v <= -10
+
+            for v in model_result.best_prediction['yhat'].values:
+                if not np.isnan(v):
+                    if check == "min":
+                        assert v >= 10
+                    else:
+                        assert v <= -10
+
+    @pytest.mark.parametrize(
+        "check",
+        ["min", "max"]
+    )
+    def test_launch_model_8(self, check):
+        # Test min and max values only on a column.
+        param_config = {
+            "model_parameters": {
+                "test_percentage": 10,
+                "delta_training_percentage": 20,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "mockup",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        if check == "min":
+            param_config["model_parameters"]["min_values"] = {"a": 10}
+        else:
+            param_config["model_parameters"]["max_values"] = {"a": -10}
+
+        for n_threads in range(1, 7):
+            param_config["max_threads"] = n_threads
+            df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
+                                 "a": np.arange(45, 75),
+                                 "b": np.arange(30, 60)})
+            df.set_index("ds", inplace=True)
+
+            timeseries_containers = get_best_predictions(df, param_config)
+
+            model_result = timeseries_containers[0].models['mockup']  # Column `A`
+
+            for r in model_result.results:
+                pred = r.prediction['yhat'].values
+                for v in pred:
+                    if not np.isnan(v):
+                        if check == "min":
+                            assert v >= 10
+                        else:
+                            assert v <= -10
+
+            for v in model_result.best_prediction['yhat'].values:
+                if not np.isnan(v):
+                    if check == "min":
+                        assert v >= 10
+                    else:
+                        assert v <= -10
+
+            model_result = timeseries_containers[1].models['mockup']  # Column `B`
+
+            for r in model_result.results:
+                pred = r.prediction['yhat'].values
+                for v in pred:
+                    if not np.isnan(v):
+                        assert v == 0
+
+            for v in model_result.best_prediction['yhat'].values:
+                if not np.isnan(v):
+                    assert v == 0
+
+    @pytest.mark.parametrize(
+        "check",
+        ["_all", "b"]
+    )
+    def test_launch_model_9(self, check):
+        # Test round to integer.
+        param_config = {
+            "model_parameters": {
+                "test_percentage": 10,
+                "delta_training_percentage": 30,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "fbprophet",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        param_config["model_parameters"]["round_to_integer"] = check
+
+        for n_threads in range(1, 3):
+            param_config["max_threads"] = n_threads
+            df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
+                                 "a": np.arange(45, 75),
+                                 "b": np.arange(30, 60)})
+            df.set_index("ds", inplace=True)
+
+            timeseries_containers = get_best_predictions(df, param_config)
+
+            model_result = timeseries_containers[0].models['fbprophet']  # Column `A`
+
+            for r in model_result.results:
+                pred = r.prediction['yhat'].values
+                for v in pred:
+                    if not np.isnan(v):
+                        if check == "_all":
+                            assert isinstance(v, np.int64)
+
+            for v in model_result.best_prediction['yhat'].values:
+                if not np.isnan(v):
+                    if check == "_all":
+                        assert isinstance(v, np.int64)
+
+            model_result = timeseries_containers[1].models['fbprophet']  # Column `B`
+
+            for r in model_result.results:
+                pred = r.prediction['yhat'].values
+                for v in pred:
+                    if not np.isnan(v):
+                        assert isinstance(v, np.int64)
+
+            for v in model_result.best_prediction['yhat'].values:
+                if not np.isnan(v):
+                    assert isinstance(v, np.int64)
 
 
 class Test_Models_Specific:
