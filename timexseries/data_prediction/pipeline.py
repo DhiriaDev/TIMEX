@@ -218,6 +218,8 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
         Additionally, the `additional_regressors` part of the TIMEX configuration parameter dictionary can be used by
         the user to specify additional CSV paths to time-series data to use as extra-regressor.
         It should be a dictionary in the form "target time-series": "path of the additional extra-regressors".
+        The key "_all" is a special key which indicates a path to additional extra-regressors which will be used for
+        any time-series.
 
     Returns
     -------
@@ -334,6 +336,12 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
                     local_xcorr = None
 
                 log.debug(f"Look for user-given additional regressors...")
+                try:
+                    additional_regressor_path = additional_regressors["_all"]
+                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
+                except:
+                    pass
+
                 try:
                     additional_regressor_path = additional_regressors[col]
                     useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))

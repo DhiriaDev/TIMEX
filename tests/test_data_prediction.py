@@ -1150,6 +1150,36 @@ class TestCreateScenarios:
         except FileNotFoundError:
             pass
 
+    def test_create_containers_2(self):
+        # Test "_all" key for additional regressors.
+        param_config = {
+            "input_parameters": {
+                "datetime_column_name": "date",
+                "index_column_name": "date",
+            },
+            "model_parameters": {
+                "test_values": 5,
+                "delta_training_percentage": 30,
+                "prediction_lags": 10,
+                "possible_transformations": "none",
+                "models": "mockup",
+                "main_accuracy_estimator": "mae",
+            },
+            "additional_regressors": {
+                "_all": "test_datasets/test_create_containers_extrareg_d.csv",
+            }
+        }
+
+        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+                              "b": np.arange(30, 60), "c": np.arange(60, 90)})
+        ing_data.set_index("a", inplace=True)
+        ing_data = add_freq(ing_data, "D")
+
+        timeseries_containers = create_timeseries_containers(ing_data, param_config)
+        assert len(timeseries_containers) == 2
+        for container in timeseries_containers:
+            assert container.models['mockup'].characteristics['extra_regressors'] == "d"
+
     @pytest.mark.parametrize(
         "xcorr",
         [True, False]
