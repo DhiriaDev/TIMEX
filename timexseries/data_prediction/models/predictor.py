@@ -1,12 +1,12 @@
 import json
 import logging
 import math
-import multiprocessing
 import pkgutil
 from functools import reduce
+from joblib import Parallel, delayed
 
 import pandas as pd
-from pandas import DataFrame, Series
+from pandas import DataFrame
 import numpy as np
 
 from timexseries.data_prediction.transformation import transformation_factory
@@ -286,13 +286,13 @@ class PredictionModel:
         train_sets_number = math.ceil(len(train_ts) / self.delta_training_values)
         log.info(f"Model will use {train_sets_number} different training sets...")
 
-        def c(targets: [int], _return_dict: dict, thread_number: int):
+        def c(targets: [int]):
             _results = []
 
             for _i in range(targets[0], targets[1]):
                 tr = train_ts.iloc[-(_i+1) * self.delta_training_values:]
 
-                log.debug(f"Trying with last {len(tr)} values as training set, in thread {thread_number}")
+                log.debug(f"Trying with last {len(tr)} values as training set...")
 
                 self.train(tr.copy(), extra_regressors)
 
@@ -321,24 +321,16 @@ class PredictionModel:
                 tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction["yhat"])
                 _results.append(SingleResult(forecast, tp))
 
-            _return_dict[thread_number] = _results
-
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        processes = []
+            return _results
 
         if self.name == 'LSTM' or self.name == 'NeuralProphet':
             log.info(f"LSTM/NeuralProphet model. Cant use multiprocessing.")
-            return_d = {}
             distributions = [[0, train_sets_number]]
-            c(distributions[0], return_d, 0)
-            return return_d[0]
+            return c(distributions[0])
 
         if max_threads == 1:
-            return_d = {}
             distributions = [[0, train_sets_number]]
-            c(distributions[0], return_d, 0)
-            return return_d[0]
+            return c(distributions[0])
         else:
             distributions = []
 
@@ -354,17 +346,10 @@ class PredictionModel:
                     distributions.append([i*subtraining_dim, i*subtraining_dim+subtraining_dim])
                 for k in range(0, (train_sets_number % n_threads)):
                     distributions[k][1] += 1
-                    distributions[k+1::] = [ [x+1, y+1] for x, y in distributions[k+1::]]
+                    distributions[k+1::] = [[x+1, y+1] for x, y in distributions[k+1::]]
 
-        for i in range(0, n_threads):
-            processes.append(multiprocessing.Process(target=c, args=(distributions[i], return_dict, i)))
-            processes[-1].start()
-
-        for p in processes:
-            p.join()
-
-        results = reduce(lambda x, y: x+y, [return_dict[key] for key in return_dict])
-
+        results = Parallel(n_jobs=n_threads)(delayed(c)(distributions[i]) for i in range(0, n_threads))
+        results = reduce(lambda x, y: x+y, [res for res in results])
         return results
 
     def _compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult],
