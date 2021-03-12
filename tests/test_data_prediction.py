@@ -140,7 +140,11 @@ class TestTransformations:
 
 
 class Test_Xcorr:
-    def test_calc_xcorr_1(self):
+    @pytest.mark.parametrize(
+        "max_lag",
+        [90, 100, 110]  # Test the three cases max_lags > / = / < len(ingested_data)
+    )
+    def test_calc_xcorr_1(self, max_lag):
         # Example from https://www.mathworks.com/help/matlab/ref/xcorr.html, slightly modified
         # The y series is antecedent the x series; therefore, a correlation should be found between x and y.
 
@@ -154,7 +158,7 @@ class Test_Xcorr:
         df = DataFrame(data={"x": x, "y": y, "z": z})
         df = df.iloc[0:-10]
 
-        xcorr = calc_xcorr("x", df, max_lags=10, modes=xcorr_modes)
+        xcorr = calc_xcorr("x", df, max_lags=max_lag, modes=xcorr_modes)
         for mode in xcorr:
             assert xcorr[mode].idxmax()[0] == 5
             assert xcorr[mode].idxmax()[1] == 10

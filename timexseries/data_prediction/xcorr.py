@@ -95,6 +95,7 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
     for mode in modes:
         result = DataFrame(columns=columns, dtype=np.float64)
         if mode == 'matlab_normalized':
+            lags_to_displace = max_lags if max_lags < len(ingested_data) else len(ingested_data) - 1
             for col in columns:
                 x = ingested_data[target]
                 y = ingested_data[col]
@@ -109,11 +110,12 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
                 c = np.divide(c, den)
 
                 # This assigns the correct indexes to the results.
-                c = c[len(ingested_data) - 1 - max_lags:len(ingested_data) + max_lags]
+                if len(ingested_data) > max_lags:
+                    c = c[len(ingested_data) - 1 - max_lags:len(ingested_data) + max_lags]
 
                 result[col] = c
 
-            result.index -= max_lags
+            result.index -= lags_to_displace
 
         elif mode == 'granger':
             for col in columns:
@@ -134,7 +136,8 @@ def calc_xcorr(target: str, ingested_data: DataFrame, max_lags: int, modes: [str
             result.sort_index(inplace=True)
 
         else:
-            for i in range(-max_lags, max_lags + 1):
+            lags_to_displace = max_lags if max_lags < len(ingested_data) else len(ingested_data)
+            for i in range(-lags_to_displace, lags_to_displace + 1):
                 shifted = df_shifted(ingested_data, target, i)
                 shifted.fillna(0, inplace=True)
 
