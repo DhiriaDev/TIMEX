@@ -553,42 +553,67 @@ class Test_Models_General:
             },
         }
 
-        param_config["model_parameters"]["round_to_integer"] = check
+        df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
+                             "a": np.arange(45, 75),
+                             "b": np.arange(30, 60)})
+        df.set_index("ds", inplace=True)
+
+        not_rounded_timeseries_containers = get_best_predictions(df, param_config)
 
         for n_threads in range(1, 3):
             param_config["max_threads"] = n_threads
-            df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
-                                 "a": np.arange(45, 75),
-                                 "b": np.arange(30, 60)})
-            df.set_index("ds", inplace=True)
+            param_config["model_parameters"]["round_to_integer"] = check
 
             timeseries_containers = get_best_predictions(df, param_config)
 
             model_result = timeseries_containers[0].models['fbprophet']  # Column `A`
+            not_rounded_model_result = not_rounded_timeseries_containers[0].models['fbprophet']  # Column `A`
 
-            for r in model_result.results:
+            single_results = model_result.results
+            not_rounded_single_results = not_rounded_model_result.results
+
+            single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
+            not_rounded_single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
+
+            for r, not_rounded_r in zip(single_results, not_rounded_single_results):
                 pred = r.prediction['yhat'].values
-                for v in pred:
+                not_rounded_pred = not_rounded_r.prediction['yhat'].values
+
+                for v, not_rounded_v in zip(pred, not_rounded_pred):
                     if not np.isnan(v):
                         if check == "_all":
                             assert isinstance(v, np.int64)
+                            assert v == round(not_rounded_v)
 
-            for v in model_result.best_prediction['yhat'].values:
+            for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values, not_rounded_model_result.best_prediction['yhat'].values):
                 if not np.isnan(v):
                     if check == "_all":
                         assert isinstance(v, np.int64)
+                        assert v == round(not_rounded_v)
 
             model_result = timeseries_containers[1].models['fbprophet']  # Column `B`
+            not_rounded_model_result = not_rounded_timeseries_containers[1].models['fbprophet']  # Column `B`
 
-            for r in model_result.results:
+            single_results = model_result.results
+            not_rounded_single_results = not_rounded_model_result.results
+
+            single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
+            not_rounded_single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
+
+            for r, not_rounded_r in zip(single_results, not_rounded_single_results):
                 pred = r.prediction['yhat'].values
-                for v in pred:
+                not_rounded_pred = not_rounded_r.prediction['yhat'].values
+
+                for v, not_rounded_v in zip(pred, not_rounded_pred):
                     if not np.isnan(v):
                         assert isinstance(v, np.int64)
+                        assert v == round(not_rounded_v)
 
-            for v in model_result.best_prediction['yhat'].values:
+            for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values,
+                                        not_rounded_model_result.best_prediction['yhat'].values):
                 if not np.isnan(v):
                     assert isinstance(v, np.int64)
+                    assert v == round(not_rounded_v)
 
 
 class Test_Models_Specific:
