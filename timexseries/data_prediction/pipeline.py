@@ -313,6 +313,7 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
             best_forecasts_found = 0
 
             for col in ingested_data.columns:
+                depends_on_other_ts = False
                 useful_extra_regressors = []
 
                 log.debug(f"Look for extra regressors in other dataset's columns...")
@@ -331,6 +332,7 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
                             useful_extra_regressors.append(
                                 prepare_extra_regressor(next(filter(
                                     lambda x: x.timeseries_data.columns[0] == extra_regressor, timeseries_containers)), model=model))
+                            depends_on_other_ts = True
                     local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
                 except:
                     local_xcorr = None
@@ -376,6 +378,8 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
                         new_model_results[model] = _result
                         new_container = TimeSeriesContainer(timeseries_data, new_model_results, local_xcorr)
                         timeseries_containers = [new_container if x.timeseries_data.columns[0] == col else x for x in timeseries_containers]
+                        if not depends_on_other_ts:
+                            best_forecasts_found += 1
                     else:
                         log.info(f"No improvements.")
                         best_forecasts_found += 1

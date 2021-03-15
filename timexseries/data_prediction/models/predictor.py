@@ -323,8 +323,8 @@ class PredictionModel:
 
             return _results
 
-        if self.name == 'LSTM' or self.name == 'NeuralProphet':
-            log.info(f"LSTM/NeuralProphet model. Cant use multiprocessing.")
+        if self.name == 'NeuralProphet':
+            log.info(f"NeuralProphet model. Cant use multiprocessing.")
             distributions = [[0, train_sets_number]]
             return c(distributions[0])
 
@@ -557,10 +557,8 @@ class PredictionModel:
             if "_all" in self.round_to_integer or column_name in self.round_to_integer:
                 try:
                     df = df.round({"yhat": 0, "yhat_lower": 0, "yhat_upper": 0})
-                    df = df.astype({"yhat": 'int', "yhat_lower": 'int', "yhat_upper": 'int'})
                 except KeyError:
                     df = df.round({"yhat": 0})
-                    df = df.astype({"yhat": 'int'})
 
         return df
 

@@ -586,13 +586,11 @@ class Test_Models_General:
                 for v, not_rounded_v in zip(pred, not_rounded_pred):
                     if not np.isnan(v):
                         if check == "_all":
-                            assert isinstance(v, np.int64)
                             assert v == round(not_rounded_v)
 
             for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values, not_rounded_model_result.best_prediction['yhat'].values):
                 if not np.isnan(v):
                     if check == "_all":
-                        assert isinstance(v, np.int64)
                         assert v == round(not_rounded_v)
 
             model_result = timeseries_containers[1].models['fbprophet']  # Column `B`
@@ -610,13 +608,11 @@ class Test_Models_General:
 
                 for v, not_rounded_v in zip(pred, not_rounded_pred):
                     if not np.isnan(v):
-                        assert isinstance(v, np.int64)
                         assert v == round(not_rounded_v)
 
             for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values,
                                         not_rounded_model_result.best_prediction['yhat'].values):
                 if not np.isnan(v):
-                    assert isinstance(v, np.int64)
                     assert v == round(not_rounded_v)
 
 
