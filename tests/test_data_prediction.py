@@ -13,18 +13,16 @@ import numpy as np
 from scipy.stats import yeojohnson
 
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
+from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
+# from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.predictor import ModelResult
 from timexseries.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
 
 from tests.utilities import get_fake_df
 from timexseries.data_ingestion import add_freq
-# from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 
-# from timexseries.data_prediction import ARIMA
-# from timexseries.data_prediction import LSTM_model
-# from timexseries.data_prediction import MockUpModel
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, create_timeseries_containers
 from timexseries.data_prediction.models.prophet_predictor import FBProphetModel, suppress_stdout_stderr
@@ -619,8 +617,10 @@ class Test_Models_General:
 class Test_Models_Specific:
     @pytest.mark.parametrize(
         "model_class,check_multivariate",
-        # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, False), (MockUpModel, True)]
-        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (MockUpModel, True)]
+        # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, True),
+        #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
+        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
+         (MockUpModel, True), (ExponentialSmoothingModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
@@ -630,7 +630,8 @@ class Test_Models_Specific:
                                                      periods=110),
                                  columns=["yhat"], dtype=df.iloc[:, 0].dtype)
 
-        extra_regressors = pd.DataFrame(data={"a": np.full(110, 2), "b": np.full(110, 3)},
+        np.random.seed = 42
+        extra_regressors = pd.DataFrame(data={"a": np.random.random(110), "b": np.random.random(110)},
                                         index=pd.date_range(freq="1d",
                                                             start=df.index.values[0],
                                                             periods=110),
@@ -643,7 +644,7 @@ class Test_Models_Specific:
         result = model.predict(future_df.copy())
 
         for i in range(100, 110):
-            assert result.iloc[i]['yhat'] != "NaN"
+            assert not np.isnan(result.iloc[i]['yhat'])
 
         if check_multivariate:
             model = model_class({})

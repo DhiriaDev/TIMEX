@@ -323,10 +323,10 @@ class PredictionModel:
 
             return _results
 
-        if self.name == 'NeuralProphet':
-            log.info(f"NeuralProphet model. Cant use multiprocessing.")
-            distributions = [[0, train_sets_number]]
-            return c(distributions[0])
+        # if self.name == 'NeuralProphet':
+        #     log.info(f"NeuralProphet model. Cant use multiprocessing.")
+        #     distributions = [[0, train_sets_number]]
+        #     return c(distributions[0])
 
         if max_threads == 1:
             distributions = [[0, train_sets_number]]

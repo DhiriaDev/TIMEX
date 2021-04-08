@@ -34,7 +34,7 @@ def split_sequences(df, n_in, n_out, n_features):
 
 
 class LSTM(nn.Module):
-    def __init__(self, input_size=1, hidden_layer_size=20):
+    def __init__(self, input_size=1, hidden_layer_size=10):
         super().__init__()
         self.hidden_layer_size = hidden_layer_size
 

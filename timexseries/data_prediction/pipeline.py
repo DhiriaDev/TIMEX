@@ -10,6 +10,7 @@ from pandas import DataFrame
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction import PredictionModel
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
+from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -759,13 +760,16 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     >>> print(type(model))
     <class 'timexseries.data_prediction.models.prophet_predictor.FBProphetModel'>
     """
+    model_class = model_class.lower()
     if model_class == "fbprophet":
         return FBProphetModel(params=param_config, transformation=transformation)
-    if model_class == "LSTM":
+    if model_class == "lstm":
         return LSTMModel(param_config, transformation)
     # if model_class == "neuralprophet":
     #     return NeuralProphetModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
+    if model_class == "exponentialsmoothing":
+        return ExponentialSmoothingModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)

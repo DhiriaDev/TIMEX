@@ -1,6 +1,20 @@
 # Change Log
 
-## [1.1.0] - 2020-03-08
+## [1.2.0] - 2021-04-08
+
+### Added
+- Exponential Smoothing model, with automatic selection of seasonality and inner model
+- Options to set max and min values for predictions (if upper/lowerbounds are known beforehand)
+- Option to round the predictions to the nearest integer
+- Added `_all` key to set additional regressors for all the time-series in a dataset
+
+### Changed
+- Multithreading now uses Joblib: it should work on all platforms, and also for NeuralProphet/LSTM models
+- Fix bug: cross-correlation were wrong if max_lags was higher than the length of the dataset
+- Models can be specified in the `param_config` dictionary using lowercase names
+- Bump dependencies
+
+## [1.1.0] - 2021-03-08
 
 ### Added
 
@@ -18,6 +32,6 @@ as integer numbers
 - When using `max_threads: 1` multiprocessing is completely ignored, this temporarily fix some issues on MacOs. 
 Multiprocessing should be rewritten to work on all platforms.
 
-## [1.0.0] - 2020-02-17
+## [1.0.0] - 2021-02-17
 
 Initial release.

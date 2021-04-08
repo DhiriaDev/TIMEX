@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "timexseries"
-version = "1.1.0"
+version = "1.2.0"
 description = "TIMEX is a framework for time-series-forecasting-as-a-service."
 authors = ["Alessandro Falcetta <alessandro.falcetta@polimi.it>", "Manuel Roveri <manuel.roveri@polimi.it>"]
 license = "Apache-2.0"
@@ -20,6 +20,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.7"
 fbprophet = "^0.7.1"
+pystan = "2.19.1.1"
 dash = "^1.19.0"
 torch = "^1.7.0"
 dash-bootstrap-components = "^0.11.3"
