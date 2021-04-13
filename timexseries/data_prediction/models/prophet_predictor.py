@@ -1,16 +1,10 @@
-import itertools
-import json
-import pkgutil
 import logging
 import os
 
-from fbprophet import Prophet
+from prophet import Prophet
 import pandas as pd
-from fbprophet.diagnostics import cross_validation, performance_metrics
 from pandas import DataFrame
-import numpy as np
 
-# from timexseries.data_prediction.data_prediction import PredictionModel, TestingPerformance
 from timexseries.data_prediction import PredictionModel
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)

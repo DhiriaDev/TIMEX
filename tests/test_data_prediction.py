@@ -5,7 +5,7 @@ import os
 import dateparser
 import pandas
 import pytest
-from fbprophet import Prophet
+from prophet import Prophet
 
 from pandas import Series, DataFrame
 import pandas as pd

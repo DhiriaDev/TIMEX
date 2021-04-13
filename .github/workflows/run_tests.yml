@@ -1,4 +1,4 @@
-name: Tests with PyTest
+name: Tests
 
 on:
   push:

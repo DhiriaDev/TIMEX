@@ -19,8 +19,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-fbprophet = "^0.7.1"
-pystan = "2.19.1.1"
 dash = "^1.19.0"
 torch = "^1.7.0"
 dash-bootstrap-components = "^0.11.3"
@@ -31,6 +29,7 @@ scipy = "^1.6.0"
 sklearn = "^0.0"
 statsmodels = "^0.12.2"
 networkx = "^2.5"
+prophet = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
