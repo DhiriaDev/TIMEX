@@ -743,7 +743,7 @@ class TestGetPredictions:
         assert len(timeseries_containers[0].models) == 2
         assert len(timeseries_containers[1].models) == 2
 
-    def test_compute_predictions(self):
+    def test_compute_predictions(self, tmp_path):
         # Check results are in the correct form and test the function to save historic predictions to file.
         # Delta will be 1, by default.
         ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
@@ -769,15 +769,9 @@ class TestGetPredictions:
             },
             "historical_prediction_parameters": {
                 "initial_index": "2000-01-28",
-                "save_path": "test_hist_pred_saves/test1.pkl"
+                "save_path": os.path.join(tmp_path, "test1.pkl")
             }
         }
-
-        # Cleanup eventual dumps.
-        try:
-            os.remove("test_hist_pred_saves/test1.pkl")
-        except FileNotFoundError:
-            pass
 
         timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
@@ -827,10 +821,7 @@ class TestGetPredictions:
         assert c_old_hist['mockup'].iloc[0, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[0, 0]
         assert c_old_hist['mockup'].iloc[1, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[1, 0]
 
-        # Cleanup.
-        os.remove("test_hist_pred_saves/test1.pkl")
-
-    def test_compute_predictions_2(self):
+    def test_compute_predictions_2(self, tmp_path):
 
         ing_data = pd.read_csv("test_datasets/test_covid.csv")
         ing_data["data"] = ing_data["data"].apply(lambda x: dateparser.parse(x))
@@ -849,7 +840,7 @@ class TestGetPredictions:
             },
             "historical_prediction_parameters": {
                 "initial_index": "2020-12-08",
-                "save_path": "test_hist_pred_saves/test2.pkl"
+                "save_path": os.path.join(tmp_path, "test2.pkl")
             }
         }
 
@@ -916,12 +907,9 @@ class TestGetPredictions:
 
         assert historical_prediction.equals(timeseries_container.models['fbprophet'].best_prediction[['yhat']])
 
-        # Cleanup.
-        os.remove("test_hist_pred_saves/test2.pkl")
-
         # Make this test with a log_modified
 
-    def test_compute_predictions_3(self):
+    def test_compute_predictions_3(self, tmp_path):
         # Test with an historical predictions delta > 1
         # This means that historical predictions are not computed starting from initial index 1-step ahead at time,
         # but they are computed every $delta time points.
@@ -942,16 +930,10 @@ class TestGetPredictions:
             },
             "historical_prediction_parameters": {
                 "initial_index": "2000-01-20",
-                "save_path": "test_hist_pred_saves/test3.pkl",
+                "save_path": os.path.join(tmp_path, "test3.pkl"),
                 "delta": 3
             }
         }
-
-        # Cleanup eventual dumps.
-        try:
-            os.remove("test_hist_pred_saves/test3.pkl")
-        except FileNotFoundError:
-            pass
 
         timeseries_containers = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
 
@@ -1030,9 +1012,6 @@ class TestGetPredictions:
         # assert c_old_hist['mockup'].iloc[0, 0] == scenarios[1].historical_prediction['mockup'].iloc[0, 0]
         # assert c_old_hist['mockup'].iloc[1, 0] == scenarios[1].historical_prediction['mockup'].iloc[1, 0]
 
-        # Cleanup.
-        os.remove("test_hist_pred_saves/test3.pkl")
-
     def test_get_best_predictions(self):
         # Test that log_modified transformation is applied and that the results are the expected ones.
         # Ideally this should work the same using other models or transformations; it's just to test that pre/post
@@ -1104,12 +1083,7 @@ class TestCreateScenarios:
          (False, False, False, {},                         0.0)]
     )
     def test_create_containers(self, historical_predictions, xcorr, additional_regressors, expected_extra_regressors,
-                               expected_value):
-
-        try:
-            os.remove("test_hist_pred_saves/test_create_containers.pkl")
-        except FileNotFoundError:
-            pass
+                               expected_value, tmp_path):
 
         param_config = {
             "input_parameters": {
@@ -1129,7 +1103,7 @@ class TestCreateScenarios:
         if historical_predictions:
             param_config["historical_prediction_parameters"] = {
                 "initial_index": "2000-01-15",
-                "save_path": "test_hist_pred_saves/test_create_containers.pkl"
+                "save_path": os.path.join(tmp_path, "test_create_containers.pkl")
             }
 
         if xcorr:
@@ -1170,11 +1144,6 @@ class TestCreateScenarios:
                 assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].all() == expected_value
             else:
                 assert container.historical_prediction is None
-
-        try:
-            os.remove("test_hist_pred_saves/test_create_containers.pkl")
-        except FileNotFoundError:
-            pass
 
     def test_create_containers_2(self):
         # Test "_all" key for additional regressors.
