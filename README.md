@@ -1,4 +1,6 @@
 # TIMEX
+[![Tests with PyTest](https://github.com/AlexMV12/TIMEX/actions/workflows/run_tests.yml/badge.svg)](https://github.com/AlexMV12/TIMEX/actions/workflows/run_tests.yml)
+
 TIMEX (referred in code as `timexseries`) is a framework for time-series-forecasting-as-a-service.
 
 Its main goal is to provide a simple and generic tool to build websites and, more in general,
