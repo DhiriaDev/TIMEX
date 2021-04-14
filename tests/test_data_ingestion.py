@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import dateparser
@@ -272,11 +273,11 @@ class TestDataIngestion:
         assert df.index.freq == 'D'
         assert df.iloc[:, 0].isnull().sum() == 0
 
-    def test_ingest_timeseries_univariate_11(self):
+    def test_ingest_timeseries_univariate_11(self, tmp_path):
         # Check that no dataset exits ingest_timeseries without a frequency and with nan values.
         param_config = {
             "input_parameters": {
-                "source_data_url": "test_datasets/test_temporary.csv",
+                "source_data_url": os.path.join(tmp_path, "test.csv"),
                 "columns_to_load_from_url": "date,a,b",
                 "datetime_column_name": "date",
                 "index_column_name": "date",
@@ -292,7 +293,7 @@ class TestDataIngestion:
             for j in range(0, i):
                 df = df.drop(df.sample(1).index)
 
-            df.to_csv("test_datasets/test_temporary.csv")
+            df.to_csv(os.path.join(tmp_path, "test.csv"))
             df = ingest_timeseries(param_config)
 
             assert df.iloc[:, 0].isnull().sum() == 0
