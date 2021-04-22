@@ -58,61 +58,32 @@ class TestTransformations:
           [-4, -3, -2, -1, 0, 1, 2, 3, 4],
           [-4, -3, -2, -1, 0, 1, 2, 3, 4],
           "None"
-          )]
+          ),
+         ("yeo_johnson",
+          [-4, -3, -2, -1, 0, 1, 2, 3, 4],
+          yeojohnson(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))[0],
+          [-4, -3, -2, -1, 0, 1, 2, 3, 4],
+          "Yeo-Johnson (lambda: 1)"
+         )]
     )
     def test_transformation(self, transformation, input_data, output_data, inverse_result, expected_name):
-        s = Series(np.array(input_data))
+        ind = pd.date_range(start="2000-01-01", periods=9, freq="D")
+        input_data = Series(np.array(input_data), index=ind)
+        output_data = Series(np.array(output_data), index=ind)
+        inverse_result = Series(np.array(inverse_result), index=ind)
+
         tr = transformation_factory(transformation)
-        res = tr.apply(s)
+        res = tr.apply(input_data)
 
-        for i in range(0, len(input_data)):
-            assert output_data[i] == res[i]
-
-        res = tr.inverse(res)
-
-        exp = Series(np.array(inverse_result))
-        assert np.allclose(res, exp)
-        assert expected_name == transformation.capitalize()
-
-    def test_transformation_yeo_johnson(self):
-        s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-        tr = transformation_factory("yeo_johnson")
-        res = tr.apply(s)
-        lmbda = tr.lmbda
-
-        exp = yeojohnson(s, lmbda)
-
-        assert np.allclose(res, exp)
+        for i in ind:
+            assert output_data.loc[i] == res.loc[i]
 
         res = tr.inverse(res)
 
-        assert np.allclose(s, res)
-        assert str(tr) == f"Yeo-Johnson (lambda: {round(lmbda, 3)})"
+        for i in ind:
+            assert np.isclose(inverse_result.loc[i], res.loc[i])
 
-    # def test_transformation_yeo_johnson_2(self):
-    #     a = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-    #     b = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-    #     c = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))
-    #
-    #     df = DataFrame(data={"a": a, "b": b, "c": c})
-    #     tr = transformation_factory("yeo_johnson")
-    #
-    #     res_a = tr.apply(df["a"])
-    #     res_b = tr.apply(df["b"])
-    #     res_c = tr.apply(df["c"])
-    #
-    #     print(res_a)
-    #
-    #     res_a = tr.inverse(res_a)
-    #     res_b = tr.inverse(res_b)
-    #     res_c = tr.inverse(res_c)
-    #
-    #     self.assertTrue(np.allclose(a, res_a))
-    #     self.assertTrue(np.allclose(b, res_b))
-    #     self.assertTrue(np.allclose(c, res_c))
-    #
-    #     lmbda = tr.lmbda["a"]
-    #     assert str(tr) == f"Yeo-Johnson (lambda: {round(lmbda)})")
+        assert expected_name == str(expected_name)
 
     def test_transformation_diff(self):
         s = Series(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))

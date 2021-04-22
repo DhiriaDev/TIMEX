@@ -158,11 +158,13 @@ class YeoJohnson(Transformation):
         self.lmbda = 0
 
     def apply(self, data: Series) -> Series:
+        ind = data.index
         res, lmbda = yeojohnson(data)
         self.lmbda = lmbda
-        return res
+        return Series(res, index=ind)
 
     def inverse(self, data: Series) -> Series:
+        ind = data.index
         lmbda = self.lmbda
         x_inv = np.zeros_like(data)
         pos = data >= 0
@@ -180,7 +182,7 @@ class YeoJohnson(Transformation):
         else:  # lmbda == 2
             x_inv[~pos] = 1 - np.exp(-data[~pos])
 
-        return Series(x_inv)
+        return Series(x_inv, index=ind)
 
     def __str__(self):
         return f"Yeo-Johnson (lambda: {round(self.lmbda, 3)})"

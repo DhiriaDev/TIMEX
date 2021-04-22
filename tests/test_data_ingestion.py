@@ -493,13 +493,13 @@ class TestAddDiff:
     def test_add_diff_column_2(self):
         # Add a multiple diff column.
 
-        df = DataFrame({"a": [0, 1, 2], "b": [10, 30, 60], "c": [5, 10, 20]}, dtype=numpy.float)
+        df = DataFrame({"a": [0, 1, 2], "b": [10, 30, 60], "c": [5, 10, 20]}, dtype=float)
         df.set_index("a", inplace=True, drop=True)
 
         new_df = add_diff_columns(df, ["b", "c"])
 
         test_df = DataFrame({"a": [1, 2], "b": [30, 60], "c": [10, 20], "b_diff": [20, 30], "c_diff": [5, 10]},
-                            dtype=numpy.float)
+                            dtype=float)
         test_df.set_index("a", inplace=True, drop=True)
 
         assert new_df.equals(test_df)
@@ -508,14 +508,14 @@ class TestAddDiff:
         # Add a multiple diff column. Group by.
 
         df = DataFrame({"a": [0, 0, 0, 1, 1, 1, 2, 2, 2], "b": [10, 20, 30, 10, 20, 30, 10, 20, 30],
-                        "c": [1, 1, 2, 3, 5, 8, 13, 21, 34], "d": [1, 2, 3, 5, 8, 13, 21, 34, 55]}, dtype=numpy.float)
+                        "c": [1, 1, 2, 3, 5, 8, 13, 21, 34], "d": [1, 2, 3, 5, 8, 13, 21, 34, 55]}, dtype=float)
         df.set_index(["a", "b"], inplace=True, drop=True)
 
         new_df = add_diff_columns(df, ["c", "d"], group_by="b")
 
         test_df = DataFrame({"a": [1, 1, 1, 2, 2, 2], "b": [10, 20, 30, 10, 20, 30],
                              "c": [3, 5, 8, 13, 21, 34], "d": [5, 8, 13, 21, 34, 55],
-                             "c_diff": [2, 4, 6, 10, 16, 26], "d_diff": [4, 6, 10, 16, 26, 42]}, dtype=numpy.float)
+                             "c_diff": [2, 4, 6, 10, 16, 26], "d_diff": [4, 6, 10, 16, 26, 42]}, dtype=float)
         test_df.set_index(["a", "b"], inplace=True, drop=True)
 
         assert new_df.equals(test_df)

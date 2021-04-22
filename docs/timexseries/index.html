@@ -34,11 +34,308 @@
 <p>While <code>TIMEX</code> is intended to be use in a fully automatic way (which means that each
 step is automatically computed, without user intervention), users can also take
 advantage of single parts of the framework.</p>
-<p>Documentation is still a work in progress.</p>
+<h2 id="reason">Reason</h2>
+<p>Time-series are one of the most important data shapes. An important part of data that we produce and consume everyday
+can be encoded in the time-series form.</p>
+<p>For our purposes, time-series are an ordered list of values, each one associated with a timestamp. The values can be
+the number of units sold that day of a specific product, the heartbeat of a person, the amount of new Covid-19 cases in
+a specific country or city. </p>
+<p>The possibility to forecast the values of a time-series using past available data can be incredibly useful in allocating
+resources, adopt countermeasures for a problem, plan the buying of a specific stock, etc.</p>
+<p>A lot of <em>prediction models</em> exists, which can work on time-series data. Probably the most known one is
+<a href="https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average">ARIMA</a>, but in recent years also Machine and
+Deep Learning (ML / DL) models have been proposed.</p>
+<p>However, the pipeline of a forecasting process is not easy and requires specific skills. Time-series have to be parsed
+from a data source, then pre-processed in order to fix eventual non-stationarities of missing values; at this point, the
+predictions models have to be created, trained, and used for the forecasting. The results, which are usually in a
+machine readable format (e.g. a Pandas DataFrame in Python) have to be processed in order to be suitable for persons who
+may not have data science experience.</p>
+<p>TIMEX's goal is to provide an easy to use, as-automated-as-possible platform to create forecasting pipelines and, if
+wanted, also a website already filled with the forecasts and all the associated measures.</p>
+<h2 id="use-cases">Use cases</h2>
+<p>There are at least two use cases worth mentioning:</p>
+<ol>
+<li>A certain time-series (or a group of time-series) is relevant for a group of users. The time-series are updated every
+day and can be downloaded in a suitable format (e.g. CSV or XLSX) every day. <br>
+Those users would like to have a way to have daily forecasts of such time-series. This exactly what happens with
+weather forecasts.
+<em>Bob</em> is assigned the task to give the users what they want; for them a website where forecasts can be consulted is
+ok. Alternatively, they would like to receive an e-mail every morning with the latest forecasts.
+<em>Bob</em> can install TIMEX on a server, configure the bare minimum requested by TIMEX, and start it. A website will be
+made available, and <em>Bob</em> can give the link to the users.</li>
+<li>A company is interested in creating a forecast-as-a-service platform where users can upload a CSV file containing
+some time-series, set some settings or use defaults, and press a button to receive forecasts for the uploaded
+time-series. TIMEX can be adapted to work this way.</li>
+</ol>
 <h2 id="get-started">Get started</h2>
 <p>Refer to the Examples section of the GitHub repository, or check the
 <a href="https://github.com/AlexMV12/covid-timex.it">source code</a> of
 <a href="https://covid-timex.it">covid-timex.it</a>.</p>
+<h2 id="architecture">Architecture</h2>
+<p>The general architecture of TIMEX is here presented:</p>
+<p><img alt="Architecture" src="images/Architecture.svg"></p>
+<p>The most important aspect of TIMEX architecture is the <strong>configuration options</strong> dictionary. It is a key-value list of
+settings which influences all the key aspects of the pipeline. It can be stored in a JSON file, loaded before the
+pipeline starts.</p>
+<h2 id="configuration-parameters-dictionary">Configuration parameters dictionary</h2>
+<p>An example of working dictionary, used for the <a href="https://covid-timex.it">covid-timex.it</a> website is:</p>
+<pre><code class="language-json">{
+  &quot;activity_title&quot;: &quot;Covid-19 Italy Analysis&quot;,
+  &quot;verbose&quot;: &quot;INFO&quot;,
+  &quot;input_parameters&quot;: {
+    &quot;source_data_url&quot;: &quot;https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv&quot;,
+    &quot;columns_to_load_from_url&quot;: &quot;data,nuovi_positivi,totale_positivi,variazione_totale_positivi,terapia_intensiva,totale_ospedalizzati,deceduti,tamponi&quot;,
+    &quot;datetime_column_name&quot;: &quot;data&quot;,
+    &quot;index_column_name&quot;: &quot;data&quot;,
+    &quot;add_diff_column&quot;: &quot;terapia_intensiva,totale_ospedalizzati,deceduti,tamponi&quot;,
+    &quot;timeseries_names&quot;:
+    {
+      &quot;data&quot;: &quot;Date&quot;,
+      &quot;nuovi_positivi&quot;: &quot;Daily cases&quot;,
+      &quot;totale_positivi&quot;: &quot;Total positives&quot;,
+      &quot;variazione_totale_positivi&quot;: &quot;Total positives variation&quot;,
+      &quot;terapia_intensiva&quot;: &quot;Total intensive care&quot;,
+      &quot;totale_ospedalizzati&quot;: &quot;Total hospitalized&quot;,
+      &quot;deceduti&quot;: &quot;Total deaths&quot;,
+      &quot;tamponi&quot;: &quot;Tests&quot;,
+      &quot;terapia_intensiva_diff&quot;: &quot;Daily intensive care&quot;,
+      &quot;totale_ospedalizzati_diff&quot;: &quot;Daily hospitalized&quot;,
+      &quot;deceduti_diff&quot;: &quot;Daily deaths&quot;,
+      &quot;tamponi_diff&quot;: &quot;Daily tests&quot;
+    }
+  },
+  &quot;selection_parameters&quot;: {
+    &quot;init_datetime&quot;: &quot;2020-01-01T17:00:00&quot;,
+    &quot;end_datetime&quot;: &quot;2023-01-22T17:00:00&quot;
+  },
+  &quot;model_parameters&quot;: {
+    &quot;test_values&quot;: 5,
+    &quot;delta_training_percentage&quot;: 10,
+    &quot;prediction_lags&quot;: 10,
+    &quot;possible_transformations&quot; : &quot;none,log_modified&quot;,
+    &quot;models&quot;: &quot;fbprophet,exponentialsmoothing&quot;,
+    &quot;main_accuracy_estimator&quot;: &quot;mae&quot;
+  },
+  &quot;xcorr_parameters&quot;: {
+    &quot;xcorr_max_lags&quot;: 120,
+    &quot;xcorr_extra_regressor_threshold&quot;: 0.8,
+    &quot;xcorr_mode&quot;: &quot;pearson&quot;,
+    &quot;xcorr_mode_target&quot;: &quot;pearson&quot;
+  },
+  &quot;historical_prediction_parameters&quot;: {
+    &quot;initial_index&quot;: &quot;2020-08-18&quot;,
+    &quot;save_path&quot;: &quot;historical_predictions_italy_covid.pkl&quot;
+  },
+  &quot;visualization_parameters&quot;: {
+    &quot;language&quot;: &quot;en&quot;,
+    &quot;xcorr_graph_threshold&quot;: 0.8
+  }
+}
+</code></pre>
+<p>All the options are here described.</p>
+<h3 id="general">General</h3>
+<ul>
+<li><code>activity_title</code>: used in the website creation as title for the page. Optional.</li>
+<li><code>verbose</code>: it is not strictly used by TIMEX, but it can be included here in order to set the verbosity level in the
+main Python script. In fact, TIMEX has important logging capabilities. Optional, can be one of "DEBUG", "INFO",
+"WARNING", "ERROR", "CRITICAL".</li>
+<li><code>max_threads</code>: set the max number of threads (processes) used by TIMEX during the forecasting models computation.
+Optional, if not set TIMEX will try to understand the number of available cores on the system.</li>
+</ul>
+<h3 id="input-parameters">Input parameters</h3>
+<p>Remember that TIMEX expects the input data to be in the following form. Some changes can be forced through settings.</p>
+<table>
+<thead>
+<tr>
+<th>time_index</th>
+<th>time-series A</th>
+<th>time-series B</th>
+<th>&hellip;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2000-01-01</td>
+<td>x</td>
+<td>x</td>
+<td>&hellip;</td>
+</tr>
+<tr>
+<td>2000-01-02</td>
+<td>x</td>
+<td>x</td>
+<td>&hellip;</td>
+</tr>
+<tr>
+<td>&hellip;</td>
+<td>&hellip;</td>
+<td>&hellip;</td>
+<td>&hellip;</td>
+</tr>
+</tbody>
+</table>
+<p>The following options has to be specified:</p>
+<ul>
+<li><code>source_data_url</code>: local or remote URL pointing to a CSV file. </li>
+</ul>
+<p>Additionally, some other parameters can be specified:</p>
+<ul>
+<li><code>index_column_name</code>: the name of the column to use as index for the DataFrame. If not specified the first one will
+be used. This column's values will be parsed with <a href="https://pypi.org/project/dateparser/">dateparser</a> to obtain a
+DateTimeIndex;</li>
+<li><code>frequency</code>: if specified, the corresponding frequency will be forced. Refer to
+<a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases</a> for a list of possible
+values. If not specified the frequency will be infered.</li>
+<li><code>columns_to_load_from_url</code>: comma-separated string of columns's names which will be read from the CSV file. If not
+specified, all columns will be read;</li>
+<li><code>add_diff_column</code>: comma-separated string of columns's names for which a corresponding column containing the diff
+values should be created. They will be created with the name <code>col_name_diff</code>. Note that the first row of the
+dataset will be discarded;</li>
+<li><code>timeseries_names</code>: dictionary of key-values (old_name: new_name) used to rename some columns in the CSV;</li>
+<li><code>dateparser_options</code>: dictionary of key-values which will be given to <code>dateparser.parse()</code>. This is useful to set the
+date format if it is not common. Refer to <code>dateparser</code> documentation for the available options.</li>
+</ul>
+<h3 id="selection-parameters">Selection parameters</h3>
+<p>These parameters can be used to filter some points in the dataset. This is optional.</p>
+<ul>
+<li><code>column_name_selection</code>: if specified, only the rows in which the value of the column named <code>column_name_selection</code>
+is equal to <code>value_selection</code> are kept. If this is specified, also <code>value_selection</code> has to be specified.</li>
+<li><code>init_datetime</code>: if specified, only the rows where the Datetimeindex value is greater than <code>init_datetime</code> are kept.</li>
+<li><code>end_datetime</code>: if specified, only the rows where the Datetimeindex value is less than <code>end_datetime</code> are kept.</li>
+</ul>
+<p>Moreover, if <code>dateparser_options</code> is specified in `input_parameters', then the options will be passed to
+dateparser to parse the dates.</p>
+<h3 id="model-parameters">Model parameters</h3>
+<p>These parameters control the classes of models used in the forecasting, the feature transformation tested, etc.</p>
+<p>The following options has to be specified:</p>
+<ul>
+<li><code>possible_transformations</code>: comma-separated list of transformations keywords. Check the
+<a href="#available-transformations">available transformations</a>. Example: <code>"none,log_modified"</code>.</li>
+<li><code>main_accuracy_estimator</code>: error metric which will be minimized as target by the procedure. It can be one of <code>"mae"</code>,
+<code>"mse"</code>.</li>
+<li><code>models</code>: comma-separated list of the models to use. Check the <a href="#available-forecasting-models">available models</a>.
+Example: <code>"fbprophet,exponential_smoothing</code>".</li>
+</ul>
+<p>Moreover, some other options can be set. Otherwise default values will be used:
+- <code>test_values</code>: number of points used as validation in order to choose the transformation and training window. These
+points will be used, however, to compute the actual forecast. Has precedence over <code>test_percentage</code>.
+- <code>test_percentage</code>: Percentage of the time-series length to used for the validation set.
+- <code>prediction_lags</code>: Number of future lags for for the forecast.
+- <code>delta_training_percentage</code>: Length, in percentage of the time-series length, of the training windows.
+- <code>min_values</code>: Key-values dictioanry where key is the name of a column and value is the minimum expected value in that
+column. If "_all" is in the dict the corresponding value will be used for all values in each column.
+- <code>max_values</code>: Key-values where key is the name of a column and value is the maximum expected value in that column.
+If "_all" is in the dict the corresponding value will be used for all values in each column.
+- <code>round_to_integer</code>: List of columns name which should be rounded to integer. If "_all" is in the list, all values in
+every column will be rounded to integer.</p>
+<h3 id="cross-correlation-parameters">Cross-correlation parameters</h3>
+<p>These parameters controls the cross-correlation computation, which is used to determine if there are time-series useful
+as extra-regressors for multivariate multiple-input-single-output forecasting models.
+This part is optional.</p>
+<ul>
+<li>
+<p><code>xcorr_modes</code>: indicate the different algorithms which should be used to compute the cross-correlation.
+The computed cross-correlation will be shown in the data visualization part.
+The available choices are:</p>
+</li>
+<li>
+<p><code>matlab_normalized</code>: same as using the MatLab function xcorr(x, y, 'normalized')</p>
+</li>
+<li><code>pearson</code> : use Pearson formula (NaN values are fillled to 0)</li>
+<li><code>kendall</code>: use Kendall formula (NaN values are filled to 0)</li>
+<li>
+<p><code>spearman</code>: use Spearman formula (NaN values are filled to 0)</p>
+</li>
+<li>
+<p><code>xcorr_max_lags</code> is the number of lags, both in positive and negative direction, to which the cross-correlation
+calculations should be limited to.</p>
+</li>
+<li><code>xcorr_mode_target</code>: which cross-correlation algorithm should be used as target in evaluating useful
+additional regressors. E.g. <code>"pearson"</code>.</li>
+<li><code>xcorr_extra_regressor_threshold</code>: the minimum absolute value of cross-correlation which indicates a useful
+extra-regressor. E.g. 0.8.</li>
+</ul>
+<h3 id="additional-regressors-parameters">Additional regressors parameters</h3>
+<p>These are additional regressors, which can be used in multivariate multiple-input-single-output forecasting models for
+which the future values are already known at the forecasting time. For example, if we have weather forecast for the next
+two weeks and we think that the temperature influences the target time-series, we can feed it in TIMEX. This is
+optional.</p>
+<p>The additional regressors should be put in a CSV file, in the form:</p>
+<table>
+<thead>
+<tr>
+<th>time_index</th>
+<th>additional regressor A</th>
+<th>additional regressor B</th>
+<th>&hellip;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2000-01-01</td>
+<td>x</td>
+<td>x</td>
+<td>&hellip;</td>
+</tr>
+<tr>
+<td>2000-01-02</td>
+<td>x</td>
+<td>x</td>
+<td>&hellip;</td>
+</tr>
+<tr>
+<td>&hellip;</td>
+<td>&hellip;</td>
+<td>&hellip;</td>
+<td>&hellip;</td>
+</tr>
+</tbody>
+</table>
+<p>And the following options has to be specified:</p>
+<ul>
+<li><code>additional_regressors</code>: Key-value dict where key is a column name, and value is the path of the CSV containing the
+additional regressors useful for that series.
+If some additional regressors may be useful for all the time-series in the dataset, we can specify them using the
+"<code>_all</code>" key.
+Example:</li>
+</ul>
+<pre><code class="language-json">&quot;additional_regressors&quot;: {
+  &quot;_all&quot;: &quot;../datasets/AdditionalRegressors/Temperature.csv&quot;,
+  &quot;time-series A&quot;: &quot;../datasets/AdditionalRegressors/RegressorUsefulForTimeSeriesA.csv&quot;
+}
+</code></pre>
+<h3 id="visualization-parameters">Visualization parameters</h3>
+<p>Parameters used to tune the visualization part of TIMEX.</p>
+<ul>
+<li><code>language</code>: Can be one between <code>"en"</code> and <code>"it"</code>. TIMEX for now supports English and Italian.</li>
+<li><code>xcorr_graph_threshold</code>: This controls the minumum value of cross-correlation for which an arc in the
+cross-correlation graph is drawn. It should be between 0.0 and 1.0.</li>
+</ul>
+<h2 id="available-forecasting-models">Available forecasting models</h2>
+<p>The following models are implemented in TIMEX and can be used in the forecasting procedure:</p>
+<ul>
+<li>Facebook Prophet: This is the <a href="https://github.com/facebook/prophet">Facebook Prophet</a> forecasting model. Keyword:
+<code>fbprophet</code>.</li>
+<li>LSTM: A simple LSTM implementation built with <a href="https://pytorch.org/">PyTorch</a>. Keyword: <code>lstm</code>.</li>
+<li>Exponential Smoothing: An exponential smoothing model, with automatic choice of trend and seasonality period, built on
+top of <a href="https://scikit-learn.org/stable/">sklearn</a>. Keyword: <code>exponentialsmoothing</code>.</li>
+<li>ARIMA: Simple ARIMA model, with automatic tuning. Keyword: <code>arima</code>.
+</li>
+</ul>
+<h2 id="available-transformations">Available transformations</h2>
+<p>The following transformations are available on TIMEX, which will use them in order to pre-process the time-series and
+check if this increases the forecasting performance on the validation set.</p>
+<ul>
+<li>Identity: don't modify the values. Keyword: <code>none</code>.</li>
+<li>Logarithmic: Simple logarithmic function, with support for negative values. It uses the formula:
+<span><span class="MathJax_Preview">f(x) = sign(x) * log(|x|)</span><script type="math/tex; mode=display">f(x) = sign(x) * log(|x|)</script></span>
+if <code>x</code> &gt; 1, 0 otherwise. However, the modified logarithmic one should be preferred. Keyword: <code>log</code>.</li>
+<li>Modified logarithmic: Simple logarithmic function, adapted to work on all the real numbers. It uses the formula:
+<span><span class="MathJax_Preview">f(x) = sign(x) * log(|x| + 1)</span><script type="math/tex; mode=display">f(x) = sign(x) * log(|x| + 1)</script></span>
+Keyword: <code>log_modified</code>.</li>
+<li>Yeo-Johnson: transformation presented in this <a href="https://doi.org/10.1093/biomet/87.4.954">paper</a>.
+Keyword: <code>yeo-johnson</code></li>
+</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -80,7 +377,22 @@ advantage of single parts of the framework.</p>
 <h1>Index</h1>
 <div class="toc">
 <ul>
+<li><a href="#reason">Reason</a></li>
+<li><a href="#use-cases">Use cases</a></li>
 <li><a href="#get-started">Get started</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#configuration-parameters-dictionary">Configuration parameters dictionary</a><ul>
+<li><a href="#general">General</a></li>
+<li><a href="#input-parameters">Input parameters</a></li>
+<li><a href="#selection-parameters">Selection parameters</a></li>
+<li><a href="#model-parameters">Model parameters</a></li>
+<li><a href="#cross-correlation-parameters">Cross-correlation parameters</a></li>
+<li><a href="#additional-regressors-parameters">Additional regressors parameters</a></li>
+<li><a href="#visualization-parameters">Visualization parameters</a></li>
+</ul>
+</li>
+<li><a href="#available-forecasting-models">Available forecasting models</a></li>
+<li><a href="#available-transformations">Available transformations</a></li>
 </ul>
 </div>
 <ul id="index">

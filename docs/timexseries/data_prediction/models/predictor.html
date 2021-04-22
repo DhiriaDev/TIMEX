@@ -30,12 +30,13 @@
 <pre><code class="python">import json
 import logging
 import math
-import multiprocessing
 import pkgutil
 from functools import reduce
+from joblib import Parallel, delayed
 
 import pandas as pd
 from pandas import DataFrame
+import numpy as np
 
 from timexseries.data_prediction.transformation import transformation_factory
 from timexseries.data_prediction.validation_performances import ValidationPerformance
@@ -120,6 +121,15 @@ class PredictionModel:
         Length of the training windows, obtained by computing `delta_training_percentage * length of the time-series`.
     main_accuracy_estimator : str
         Error metric to use when deciding which prediction is better. Default: MAE.
+    min_values : dict
+        Key-values where key is the name of a column and value is the minimum expected value in that column.
+        If &#34;_all&#34; is in the dict the corresponding value will be used for all values in each column.
+    max_values : dict
+        Key-values where key is the name of a column and value is the maximum expected value in that column.
+        If &#34;_all&#34; is in the dict the corresponding value will be used for all values in each column.
+    round_to_integer : list
+        List of columns name which should be rounded to integer. If &#34;_all&#34; is in the list, all values in every column
+        will be rounded to integer.
     model_characteristics : dict
         Dictionary of values containing the main characteristics and parameters of the model. Default {}
     &#34;&#34;&#34;
@@ -147,6 +157,21 @@ class PredictionModel:
             self.transformation = transformation_factory(transformation)
         else:
             self.transformation = transformation_factory(model_parameters[&#34;transformation&#34;])
+
+        if &#34;min_values&#34; in model_parameters:
+            self.min_values = model_parameters[&#34;min_values&#34;]
+        else:
+            self.min_values = None
+
+        if &#34;max_values&#34; in model_parameters:
+            self.max_values = model_parameters[&#34;max_values&#34;]
+        else:
+            self.max_values = None
+
+        if &#34;round_to_integer&#34; in model_parameters:
+            self.round_to_integer = list(model_parameters[&#34;round_to_integer&#34;].split(&#34;,&#34;))
+        else:
+            self.round_to_integer = None
 
         self.prediction_lags = model_parameters[&#34;prediction_lags&#34;]
         self.delta_training_percentage = model_parameters[&#34;delta_training_percentage&#34;]
@@ -290,13 +315,13 @@ class PredictionModel:
         train_sets_number = math.ceil(len(train_ts) / self.delta_training_values)
         log.info(f&#34;Model will use {train_sets_number} different training sets...&#34;)
 
-        def c(targets: [int], _return_dict: dict, thread_number: int):
+        def c(targets: [int]):
             _results = []
 
             for _i in range(targets[0], targets[1]):
                 tr = train_ts.iloc[-(_i+1) * self.delta_training_values:]
 
-                log.debug(f&#34;Trying with last {len(tr)} values as training set, in thread {thread_number}&#34;)
+                log.debug(f&#34;Trying with last {len(tr)} values as training set...&#34;)
 
                 self.train(tr.copy(), extra_regressors)
 
@@ -308,11 +333,14 @@ class PredictionModel:
                 forecast = self.predict(future_df, extra_regressors)
 
                 forecast.loc[:, &#39;yhat&#39;] = self.transformation.inverse(forecast[&#39;yhat&#39;])
+
                 try:
                     forecast.loc[:, &#39;yhat_lower&#39;] = self.transformation.inverse(forecast[&#39;yhat_lower&#39;])
                     forecast.loc[:, &#39;yhat_upper&#39;] = self.transformation.inverse(forecast[&#39;yhat_upper&#39;])
-                except:
+                except KeyError:
                     pass
+
+                forecast = self.adjust_forecast(train_ts.columns[0], forecast)
 
                 testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
@@ -322,22 +350,16 @@ class PredictionModel:
                 tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction[&#34;yhat&#34;])
                 _results.append(SingleResult(forecast, tp))
 
-            _return_dict[thread_number] = _results
+            return _results
 
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        processes = []
-
-        if self.name == &#39;LSTM&#39; or self.name == &#39;NeuralProphet&#39;:
-            log.info(f&#34;LSTM/NeuralProphet model. Cant use multiprocessing.&#34;)
-            return_d = {}
-            distributions = [[0, train_sets_number]]
-            c(distributions[0], return_d, 0)
-            return return_d[0]
+        # if self.name == &#39;NeuralProphet&#39;:
+        #     log.info(f&#34;NeuralProphet model. Cant use multiprocessing.&#34;)
+        #     distributions = [[0, train_sets_number]]
+        #     return c(distributions[0])
 
         if max_threads == 1:
             distributions = [[0, train_sets_number]]
-            n_threads = 1
+            return c(distributions[0])
         else:
             distributions = []
 
@@ -353,17 +375,10 @@ class PredictionModel:
                     distributions.append([i*subtraining_dim, i*subtraining_dim+subtraining_dim])
                 for k in range(0, (train_sets_number % n_threads)):
                     distributions[k][1] += 1
-                    distributions[k+1::] = [ [x+1, y+1] for x, y in distributions[k+1::]]
+                    distributions[k+1::] = [[x+1, y+1] for x, y in distributions[k+1::]]
 
-        for i in range(0, n_threads):
-            processes.append(multiprocessing.Process(target=c, args=(distributions[i], return_dict, i)))
-            processes[-1].start()
-
-        for p in processes:
-            p.join()
-
-        results = reduce(lambda x, y: x+y, [return_dict[key] for key in return_dict])
-
+        results = Parallel(n_jobs=n_threads)(delayed(c)(distributions[i]) for i in range(0, n_threads))
+        results = reduce(lambda x, y: x+y, [res for res in results])
         return results
 
     def _compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult],
@@ -404,8 +419,10 @@ class PredictionModel:
         try:
             forecast.loc[:, &#39;yhat_lower&#39;] = self.transformation.inverse(forecast[&#39;yhat_lower&#39;])
             forecast.loc[:, &#39;yhat_upper&#39;] = self.transformation.inverse(forecast[&#39;yhat_upper&#39;])
-        except:
+        except KeyError:
             pass
+
+        forecast = self.adjust_forecast(training_data.columns[0], forecast)
 
         return forecast
 
@@ -516,7 +533,63 @@ class PredictionModel:
         model_characteristics[&#34;transformation&#34;] = self.transformation
 
         return ModelResult(results=model_training_results, characteristics=model_characteristics,
-                           best_prediction=best_prediction)</code></pre>
+                           best_prediction=best_prediction)
+
+    def adjust_forecast(self, column_name: str, df: DataFrame):
+        &#34;&#34;&#34;
+        Check `s` for values below the minimum set by the user (if any) or above the maximum.
+        Apply the rounding to integer, if the user specified it.
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column.
+        df : DataFrame
+            Forecast to check.
+
+        Returns
+        -------
+        DataFrame
+            Adjusted dataframe.
+        &#34;&#34;&#34;
+        if self.min_values is not None:
+            min_value = None
+            if &#34;_all&#34; in self.min_values:
+                min_value = self.min_values[&#34;_all&#34;]
+            elif column_name in self.min_values:
+                min_value = self.min_values[column_name]
+
+            if min_value is not None:
+                df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                try:
+                    df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                    df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                except KeyError:
+                    pass
+
+        if self.max_values is not None:
+            max_value = None
+            if &#34;_all&#34; in self.max_values:
+                max_value = self.max_values[&#34;_all&#34;]
+            elif column_name in self.max_values:
+                max_value = self.max_values[column_name]
+
+            if max_value is not None:
+                df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                try:
+                    df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                    df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                except KeyError:
+                    pass
+
+        if self.round_to_integer is not None:
+            if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
+                try:
+                    df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
+                except KeyError:
+                    df = df.round({&#34;yhat&#34;: 0})
+
+        return df</code></pre>
 </details>
 </section>
 <section>
@@ -612,6 +685,15 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
 <dd>Length of the training windows, obtained by computing <code>delta_training_percentage * length of the time-series</code>.</dd>
 <dt><strong><code>main_accuracy_estimator</code></strong> :&ensp;<code>str</code></dt>
 <dd>Error metric to use when deciding which prediction is better. Default: MAE.</dd>
+<dt><strong><code>min_values</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Key-values where key is the name of a column and value is the minimum expected value in that column.
+If "_all" is in the dict the corresponding value will be used for all values in each column.</dd>
+<dt><strong><code>max_values</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Key-values where key is the name of a column and value is the maximum expected value in that column.
+If "_all" is in the dict the corresponding value will be used for all values in each column.</dd>
+<dt><strong><code>round_to_integer</code></strong> :&ensp;<code>list</code></dt>
+<dd>List of columns name which should be rounded to integer. If "_all" is in the list, all values in every column
+will be rounded to integer.</dd>
 <dt><strong><code>model_characteristics</code></strong> :&ensp;<code>dict</code></dt>
 <dd>Dictionary of values containing the main characteristics and parameters of the model. Default {}</dd>
 </dl></div>
@@ -654,6 +736,15 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
         Length of the training windows, obtained by computing `delta_training_percentage * length of the time-series`.
     main_accuracy_estimator : str
         Error metric to use when deciding which prediction is better. Default: MAE.
+    min_values : dict
+        Key-values where key is the name of a column and value is the minimum expected value in that column.
+        If &#34;_all&#34; is in the dict the corresponding value will be used for all values in each column.
+    max_values : dict
+        Key-values where key is the name of a column and value is the maximum expected value in that column.
+        If &#34;_all&#34; is in the dict the corresponding value will be used for all values in each column.
+    round_to_integer : list
+        List of columns name which should be rounded to integer. If &#34;_all&#34; is in the list, all values in every column
+        will be rounded to integer.
     model_characteristics : dict
         Dictionary of values containing the main characteristics and parameters of the model. Default {}
     &#34;&#34;&#34;
@@ -681,6 +772,21 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
             self.transformation = transformation_factory(transformation)
         else:
             self.transformation = transformation_factory(model_parameters[&#34;transformation&#34;])
+
+        if &#34;min_values&#34; in model_parameters:
+            self.min_values = model_parameters[&#34;min_values&#34;]
+        else:
+            self.min_values = None
+
+        if &#34;max_values&#34; in model_parameters:
+            self.max_values = model_parameters[&#34;max_values&#34;]
+        else:
+            self.max_values = None
+
+        if &#34;round_to_integer&#34; in model_parameters:
+            self.round_to_integer = list(model_parameters[&#34;round_to_integer&#34;].split(&#34;,&#34;))
+        else:
+            self.round_to_integer = None
 
         self.prediction_lags = model_parameters[&#34;prediction_lags&#34;]
         self.delta_training_percentage = model_parameters[&#34;delta_training_percentage&#34;]
@@ -824,13 +930,13 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
         train_sets_number = math.ceil(len(train_ts) / self.delta_training_values)
         log.info(f&#34;Model will use {train_sets_number} different training sets...&#34;)
 
-        def c(targets: [int], _return_dict: dict, thread_number: int):
+        def c(targets: [int]):
             _results = []
 
             for _i in range(targets[0], targets[1]):
                 tr = train_ts.iloc[-(_i+1) * self.delta_training_values:]
 
-                log.debug(f&#34;Trying with last {len(tr)} values as training set, in thread {thread_number}&#34;)
+                log.debug(f&#34;Trying with last {len(tr)} values as training set...&#34;)
 
                 self.train(tr.copy(), extra_regressors)
 
@@ -842,11 +948,14 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
                 forecast = self.predict(future_df, extra_regressors)
 
                 forecast.loc[:, &#39;yhat&#39;] = self.transformation.inverse(forecast[&#39;yhat&#39;])
+
                 try:
                     forecast.loc[:, &#39;yhat_lower&#39;] = self.transformation.inverse(forecast[&#39;yhat_lower&#39;])
                     forecast.loc[:, &#39;yhat_upper&#39;] = self.transformation.inverse(forecast[&#39;yhat_upper&#39;])
-                except:
+                except KeyError:
                     pass
+
+                forecast = self.adjust_forecast(train_ts.columns[0], forecast)
 
                 testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
 
@@ -856,22 +965,16 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
                 tp.set_testing_stats(test_ts.iloc[:, 0], testing_prediction[&#34;yhat&#34;])
                 _results.append(SingleResult(forecast, tp))
 
-            _return_dict[thread_number] = _results
+            return _results
 
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        processes = []
-
-        if self.name == &#39;LSTM&#39; or self.name == &#39;NeuralProphet&#39;:
-            log.info(f&#34;LSTM/NeuralProphet model. Cant use multiprocessing.&#34;)
-            return_d = {}
-            distributions = [[0, train_sets_number]]
-            c(distributions[0], return_d, 0)
-            return return_d[0]
+        # if self.name == &#39;NeuralProphet&#39;:
+        #     log.info(f&#34;NeuralProphet model. Cant use multiprocessing.&#34;)
+        #     distributions = [[0, train_sets_number]]
+        #     return c(distributions[0])
 
         if max_threads == 1:
             distributions = [[0, train_sets_number]]
-            n_threads = 1
+            return c(distributions[0])
         else:
             distributions = []
 
@@ -887,17 +990,10 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
                     distributions.append([i*subtraining_dim, i*subtraining_dim+subtraining_dim])
                 for k in range(0, (train_sets_number % n_threads)):
                     distributions[k][1] += 1
-                    distributions[k+1::] = [ [x+1, y+1] for x, y in distributions[k+1::]]
+                    distributions[k+1::] = [[x+1, y+1] for x, y in distributions[k+1::]]
 
-        for i in range(0, n_threads):
-            processes.append(multiprocessing.Process(target=c, args=(distributions[i], return_dict, i)))
-            processes[-1].start()
-
-        for p in processes:
-            p.join()
-
-        results = reduce(lambda x, y: x+y, [return_dict[key] for key in return_dict])
-
+        results = Parallel(n_jobs=n_threads)(delayed(c)(distributions[i]) for i in range(0, n_threads))
+        results = reduce(lambda x, y: x+y, [res for res in results])
         return results
 
     def _compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult],
@@ -938,8 +1034,10 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
         try:
             forecast.loc[:, &#39;yhat_lower&#39;] = self.transformation.inverse(forecast[&#39;yhat_lower&#39;])
             forecast.loc[:, &#39;yhat_upper&#39;] = self.transformation.inverse(forecast[&#39;yhat_upper&#39;])
-        except:
+        except KeyError:
             pass
+
+        forecast = self.adjust_forecast(training_data.columns[0], forecast)
 
         return forecast
 
@@ -1050,17 +1148,153 @@ in the configuration parameter dictionary, <code>test_percentage</code> will be 
         model_characteristics[&#34;transformation&#34;] = self.transformation
 
         return ModelResult(results=model_training_results, characteristics=model_characteristics,
-                           best_prediction=best_prediction)</code></pre>
+                           best_prediction=best_prediction)
+
+    def adjust_forecast(self, column_name: str, df: DataFrame):
+        &#34;&#34;&#34;
+        Check `s` for values below the minimum set by the user (if any) or above the maximum.
+        Apply the rounding to integer, if the user specified it.
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column.
+        df : DataFrame
+            Forecast to check.
+
+        Returns
+        -------
+        DataFrame
+            Adjusted dataframe.
+        &#34;&#34;&#34;
+        if self.min_values is not None:
+            min_value = None
+            if &#34;_all&#34; in self.min_values:
+                min_value = self.min_values[&#34;_all&#34;]
+            elif column_name in self.min_values:
+                min_value = self.min_values[column_name]
+
+            if min_value is not None:
+                df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                try:
+                    df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                    df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                except KeyError:
+                    pass
+
+        if self.max_values is not None:
+            max_value = None
+            if &#34;_all&#34; in self.max_values:
+                max_value = self.max_values[&#34;_all&#34;]
+            elif column_name in self.max_values:
+                max_value = self.max_values[column_name]
+
+            if max_value is not None:
+                df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                try:
+                    df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                    df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                except KeyError:
+                    pass
+
+        if self.round_to_integer is not None:
+            if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
+                try:
+                    df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
+                except KeyError:
+                    df = df.round({&#34;yhat&#34;: 0})
+
+        return df</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="timexseries.data_prediction.models.arima_predictor.ARIMAModel" href="arima_predictor.html#timexseries.data_prediction.models.arima_predictor.ARIMAModel">ARIMAModel</a></li>
+<li><a title="timexseries.data_prediction.models.exponentialsmoothing_predictor.ExponentialSmoothingModel" href="exponentialsmoothing_predictor.html#timexseries.data_prediction.models.exponentialsmoothing_predictor.ExponentialSmoothingModel">ExponentialSmoothingModel</a></li>
 <li><a title="timexseries.data_prediction.models.lstm_predictor.LSTMModel" href="lstm_predictor.html#timexseries.data_prediction.models.lstm_predictor.LSTMModel">LSTMModel</a></li>
 <li><a title="timexseries.data_prediction.models.mockup_predictor.MockUpModel" href="mockup_predictor.html#timexseries.data_prediction.models.mockup_predictor.MockUpModel">MockUpModel</a></li>
 <li><a title="timexseries.data_prediction.models.prophet_predictor.FBProphetModel" href="prophet_predictor.html#timexseries.data_prediction.models.prophet_predictor.FBProphetModel">FBProphetModel</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="timexseries.data_prediction.models.predictor.PredictionModel.adjust_forecast"><code class="name flex">
+<span>def <span class="ident">adjust_forecast</span></span>(<span>self, column_name: str, df: pandas.core.frame.DataFrame)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check <code>s</code> for values below the minimum set by the user (if any) or above the maximum.
+Apply the rounding to integer, if the user specified it.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>column_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the column.</dd>
+<dt><strong><code>df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Forecast to check.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>DataFrame</code></dt>
+<dd>Adjusted dataframe.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def adjust_forecast(self, column_name: str, df: DataFrame):
+    &#34;&#34;&#34;
+    Check `s` for values below the minimum set by the user (if any) or above the maximum.
+    Apply the rounding to integer, if the user specified it.
+
+    Parameters
+    ----------
+    column_name : str
+        Name of the column.
+    df : DataFrame
+        Forecast to check.
+
+    Returns
+    -------
+    DataFrame
+        Adjusted dataframe.
+    &#34;&#34;&#34;
+    if self.min_values is not None:
+        min_value = None
+        if &#34;_all&#34; in self.min_values:
+            min_value = self.min_values[&#34;_all&#34;]
+        elif column_name in self.min_values:
+            min_value = self.min_values[column_name]
+
+        if min_value is not None:
+            df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+            try:
+                df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+                df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: min_value if x &lt; min_value else x)
+            except KeyError:
+                pass
+
+    if self.max_values is not None:
+        max_value = None
+        if &#34;_all&#34; in self.max_values:
+            max_value = self.max_values[&#34;_all&#34;]
+        elif column_name in self.max_values:
+            max_value = self.max_values[column_name]
+
+        if max_value is not None:
+            df.loc[:, &#39;yhat&#39;] = df[&#39;yhat&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+            try:
+                df.loc[:, &#39;yhat_lower&#39;] = df[&#39;yhat_lower&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+                df.loc[:, &#39;yhat_upper&#39;] = df[&#39;yhat_upper&#39;].apply(lambda x: max_value if x &gt; max_value else x)
+            except KeyError:
+                pass
+
+    if self.round_to_integer is not None:
+        if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
+            try:
+                df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
+            except KeyError:
+                df = df.round({&#34;yhat&#34;: 0})
+
+    return df</code></pre>
+</details>
+</dd>
 <dt id="timexseries.data_prediction.models.predictor.PredictionModel.launch_model"><code class="name flex">
 <span>def <span class="ident">launch_model</span></span>(<span>self, ingested_data: pandas.core.frame.DataFrame, extra_regressors: pandas.core.frame.DataFrame = None, max_threads: int = 1)</span>
 </code></dt>
@@ -1516,6 +1750,7 @@ set, obtained using this training set to train the model.</dd>
 <li>
 <h4><code><a title="timexseries.data_prediction.models.predictor.PredictionModel" href="#timexseries.data_prediction.models.predictor.PredictionModel">PredictionModel</a></code></h4>
 <ul class="">
+<li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.adjust_forecast" href="#timexseries.data_prediction.models.predictor.PredictionModel.adjust_forecast">adjust_forecast</a></code></li>
 <li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.launch_model" href="#timexseries.data_prediction.models.predictor.PredictionModel.launch_model">launch_model</a></code></li>
 <li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.predict" href="#timexseries.data_prediction.models.predictor.PredictionModel.predict">predict</a></code></li>
 <li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.train" href="#timexseries.data_prediction.models.predictor.PredictionModel.train">train</a></code></li>

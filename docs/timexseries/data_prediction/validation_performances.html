@@ -53,6 +53,8 @@ class ValidationPerformance:
         Mean Absolute Error. Default 0
     AM: float
         Arithmetic Mean of error. Default 0
+    SD: float
+        Standard deviation of error. Default 0
     &#34;&#34;&#34;
     def __init__(self, first_used_index=None):
         self.first_used_index = first_used_index
@@ -60,6 +62,7 @@ class ValidationPerformance:
         self.RMSE = 0
         self.MAE = 0
         self.AM = 0
+        self.SD = 0
 
     def set_testing_stats(self, actual: Series, predicted: Series):
         &#34;&#34;&#34;
@@ -74,7 +77,7 @@ class ValidationPerformance:
 
         Examples
         --------
-        &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)  # Last index is 2000-01-30
+        &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)
         &gt;&gt;&gt; ds = pd.DatetimeIndex(dates, freq=&#34;D&#34;)
         &gt;&gt;&gt; actual = np.array([1, 1, 1, 1, 1])
         &gt;&gt;&gt; predicted = np.array([3, 3, 3, 3, 3])
@@ -91,11 +94,11 @@ class ValidationPerformance:
         &gt;&gt;&gt; print(perf.MSE)
         4.0
         &#34;&#34;&#34;
-
         self.MSE = mean_squared_error(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
         self.RMSE = sqrt(self.MSE)
         self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
+        self.SD = (actual - predicted).std(ddof=0)
 
     def get_dict(self) -&gt; dict:
         &#34;&#34;&#34;
@@ -111,7 +114,7 @@ class ValidationPerformance:
         &gt;&gt;&gt; perf = ValidationPerformance()
         &gt;&gt;&gt; perf.set_testing_stats(actual_dataframe[&#39;a&#39;], predicted_dataframe[&#39;yhat&#39;])
         &gt;&gt;&gt; perf.get_dict()
-        {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0}
+        {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0, &#39;SD&#39;: 0.0}
         &#34;&#34;&#34;
         d = {}
         for attribute, value in self.__dict__.items():
@@ -149,6 +152,8 @@ know that initial index of the data this performance will refer to.</p>
 <dd>Mean Absolute Error. Default 0</dd>
 <dt><strong><code>AM</code></strong> :&ensp;<code>float</code></dt>
 <dd>Arithmetic Mean of error. Default 0</dd>
+<dt><strong><code>SD</code></strong> :&ensp;<code>float</code></dt>
+<dd>Standard deviation of error. Default 0</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -174,6 +179,8 @@ know that initial index of the data this performance will refer to.</p>
         Mean Absolute Error. Default 0
     AM: float
         Arithmetic Mean of error. Default 0
+    SD: float
+        Standard deviation of error. Default 0
     &#34;&#34;&#34;
     def __init__(self, first_used_index=None):
         self.first_used_index = first_used_index
@@ -181,6 +188,7 @@ know that initial index of the data this performance will refer to.</p>
         self.RMSE = 0
         self.MAE = 0
         self.AM = 0
+        self.SD = 0
 
     def set_testing_stats(self, actual: Series, predicted: Series):
         &#34;&#34;&#34;
@@ -195,7 +203,7 @@ know that initial index of the data this performance will refer to.</p>
 
         Examples
         --------
-        &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)  # Last index is 2000-01-30
+        &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)
         &gt;&gt;&gt; ds = pd.DatetimeIndex(dates, freq=&#34;D&#34;)
         &gt;&gt;&gt; actual = np.array([1, 1, 1, 1, 1])
         &gt;&gt;&gt; predicted = np.array([3, 3, 3, 3, 3])
@@ -212,11 +220,11 @@ know that initial index of the data this performance will refer to.</p>
         &gt;&gt;&gt; print(perf.MSE)
         4.0
         &#34;&#34;&#34;
-
         self.MSE = mean_squared_error(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
         self.RMSE = sqrt(self.MSE)
         self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
+        self.SD = (actual - predicted).std(ddof=0)
 
     def get_dict(self) -&gt; dict:
         &#34;&#34;&#34;
@@ -232,7 +240,7 @@ know that initial index of the data this performance will refer to.</p>
         &gt;&gt;&gt; perf = ValidationPerformance()
         &gt;&gt;&gt; perf.set_testing_stats(actual_dataframe[&#39;a&#39;], predicted_dataframe[&#39;yhat&#39;])
         &gt;&gt;&gt; perf.get_dict()
-        {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0}
+        {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0, &#39;SD&#39;: 0.0}
         &#34;&#34;&#34;
         d = {}
         for attribute, value in self.__dict__.items():
@@ -256,7 +264,7 @@ know that initial index of the data this performance will refer to.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; perf = ValidationPerformance()
 &gt;&gt;&gt; perf.set_testing_stats(actual_dataframe['a'], predicted_dataframe['yhat'])
 &gt;&gt;&gt; perf.get_dict()
-{'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0}
+{'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0, 'SD': 0.0}
 </code></pre></div>
 <details class="source">
 <summary>
@@ -276,7 +284,7 @@ know that initial index of the data this performance will refer to.</p>
     &gt;&gt;&gt; perf = ValidationPerformance()
     &gt;&gt;&gt; perf.set_testing_stats(actual_dataframe[&#39;a&#39;], predicted_dataframe[&#39;yhat&#39;])
     &gt;&gt;&gt; perf.get_dict()
-    {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0}
+    {&#39;first_used_index&#39;: None, &#39;MSE&#39;: 4.0, &#39;RMSE&#39;: 2.0, &#39;MAE&#39;: 2.0, &#39;AM&#39;: -2.0, &#39;SD&#39;: 0.0}
     &#34;&#34;&#34;
     d = {}
     for attribute, value in self.__dict__.items():
@@ -298,7 +306,7 @@ know that initial index of the data this performance will refer to.</p>
 <dd>Data predicted by a model, stored in a Pandas Series.</dd>
 </dl>
 <h2 id="examples">Examples</h2>
-<pre><code class="language-python-repl">&gt;&gt;&gt; dates = pd.date_range('2000-01-01', periods=5)  # Last index is 2000-01-30
+<pre><code class="language-python-repl">&gt;&gt;&gt; dates = pd.date_range('2000-01-01', periods=5)
 &gt;&gt;&gt; ds = pd.DatetimeIndex(dates, freq=&quot;D&quot;)
 &gt;&gt;&gt; actual = np.array([1, 1, 1, 1, 1])
 &gt;&gt;&gt; predicted = np.array([3, 3, 3, 3, 3])
@@ -332,7 +340,7 @@ know that initial index of the data this performance will refer to.</p>
 
     Examples
     --------
-    &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)  # Last index is 2000-01-30
+    &gt;&gt;&gt; dates = pd.date_range(&#39;2000-01-01&#39;, periods=5)
     &gt;&gt;&gt; ds = pd.DatetimeIndex(dates, freq=&#34;D&#34;)
     &gt;&gt;&gt; actual = np.array([1, 1, 1, 1, 1])
     &gt;&gt;&gt; predicted = np.array([3, 3, 3, 3, 3])
@@ -349,11 +357,11 @@ know that initial index of the data this performance will refer to.</p>
     &gt;&gt;&gt; print(perf.MSE)
     4.0
     &#34;&#34;&#34;
-
     self.MSE = mean_squared_error(actual, predicted)
     self.MAE = mean_absolute_error(actual, predicted)
     self.RMSE = sqrt(self.MSE)
-    self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)</code></pre>
+    self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
+    self.SD = (actual - predicted).std(ddof=0)</code></pre>
 </details>
 </dd>
 </dl>

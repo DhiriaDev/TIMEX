@@ -27,19 +27,13 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import itertools
-import json
-import pkgutil
-import logging
+<pre><code class="python">import logging
 import os
 
-from fbprophet import Prophet
+from prophet import Prophet
 import pandas as pd
-from fbprophet.diagnostics import cross_validation, performance_metrics
 from pandas import DataFrame
-import numpy as np
 
-# from timexseries.data_prediction.data_prediction import PredictionModel, TestingPerformance
 from timexseries.data_prediction import PredictionModel
 
 logging.getLogger(&#39;fbprophet&#39;).setLevel(logging.WARNING)
@@ -477,6 +471,7 @@ class suppress_stdout_stderr(object):
 <ul class="hlist">
 <li><code><b><a title="timexseries.data_prediction.models.predictor.PredictionModel" href="predictor.html#timexseries.data_prediction.models.predictor.PredictionModel">PredictionModel</a></b></code>:
 <ul class="hlist">
+<li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.adjust_forecast" href="predictor.html#timexseries.data_prediction.models.predictor.PredictionModel.adjust_forecast">adjust_forecast</a></code></li>
 <li><code><a title="timexseries.data_prediction.models.predictor.PredictionModel.launch_model" href="predictor.html#timexseries.data_prediction.models.predictor.PredictionModel.launch_model">launch_model</a></code></li>
 </ul>
 </li>

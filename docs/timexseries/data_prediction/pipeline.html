@@ -39,6 +39,7 @@ from pandas import DataFrame
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction import PredictionModel
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
+from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -247,6 +248,8 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
         Additionally, the `additional_regressors` part of the TIMEX configuration parameter dictionary can be used by
         the user to specify additional CSV paths to time-series data to use as extra-regressor.
         It should be a dictionary in the form &#34;target time-series&#34;: &#34;path of the additional extra-regressors&#34;.
+        The key &#34;_all&#34; is a special key which indicates a path to additional extra-regressors which will be used for
+        any time-series.
 
     Returns
     -------
@@ -340,6 +343,7 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
             best_forecasts_found = 0
 
             for col in ingested_data.columns:
+                depends_on_other_ts = False
                 useful_extra_regressors = []
 
                 log.debug(f&#34;Look for extra regressors in other dataset&#39;s columns...&#34;)
@@ -358,11 +362,18 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
                             useful_extra_regressors.append(
                                 prepare_extra_regressor(next(filter(
                                     lambda x: x.timeseries_data.columns[0] == extra_regressor, timeseries_containers)), model=model))
+                            depends_on_other_ts = True
                     local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
                 except:
                     local_xcorr = None
 
                 log.debug(f&#34;Look for user-given additional regressors...&#34;)
+                try:
+                    additional_regressor_path = additional_regressors[&#34;_all&#34;]
+                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
+                except:
+                    pass
+
                 try:
                     additional_regressor_path = additional_regressors[col]
                     useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
@@ -397,6 +408,8 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
                         new_model_results[model] = _result
                         new_container = TimeSeriesContainer(timeseries_data, new_model_results, local_xcorr)
                         timeseries_containers = [new_container if x.timeseries_data.columns[0] == col else x for x in timeseries_containers]
+                        if not depends_on_other_ts:
+                            best_forecasts_found += 1
                     else:
                         log.info(f&#34;No improvements.&#34;)
                         best_forecasts_found += 1
@@ -776,14 +789,17 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     &gt;&gt;&gt; print(type(model))
     &lt;class &#39;timexseries.data_prediction.models.prophet_predictor.FBProphetModel&#39;&gt;
     &#34;&#34;&#34;
+    model_class = model_class.lower()
     if model_class == &#34;fbprophet&#34;:
         return FBProphetModel(params=param_config, transformation=transformation)
-    if model_class == &#34;LSTM&#34;:
+    if model_class == &#34;lstm&#34;:
         return LSTMModel(param_config, transformation)
     # if model_class == &#34;neuralprophet&#34;:
     #     return NeuralProphetModel(param_config, transformation)
     if model_class == &#34;mockup&#34;:
         return MockUpModel(param_config, transformation)
+    if model_class == &#34;exponentialsmoothing&#34;:
+        return ExponentialSmoothingModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)</code></pre>
 </details>
@@ -1263,7 +1279,9 @@ extra-regressor. E.g. 0.8.</li>
 </ul>
 <p>Additionally, the <code>additional_regressors</code> part of the TIMEX configuration parameter dictionary can be used by
 the user to specify additional CSV paths to time-series data to use as extra-regressor.
-It should be a dictionary in the form "target time-series": "path of the additional extra-regressors".</p>
+It should be a dictionary in the form "target time-series": "path of the additional extra-regressors".
+The key "_all" is a special key which indicates a path to additional extra-regressors which will be used for
+any time-series.</p>
 </dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -1363,6 +1381,8 @@ traslated!</p>
         Additionally, the `additional_regressors` part of the TIMEX configuration parameter dictionary can be used by
         the user to specify additional CSV paths to time-series data to use as extra-regressor.
         It should be a dictionary in the form &#34;target time-series&#34;: &#34;path of the additional extra-regressors&#34;.
+        The key &#34;_all&#34; is a special key which indicates a path to additional extra-regressors which will be used for
+        any time-series.
 
     Returns
     -------
@@ -1456,6 +1476,7 @@ traslated!</p>
             best_forecasts_found = 0
 
             for col in ingested_data.columns:
+                depends_on_other_ts = False
                 useful_extra_regressors = []
 
                 log.debug(f&#34;Look for extra regressors in other dataset&#39;s columns...&#34;)
@@ -1474,11 +1495,18 @@ traslated!</p>
                             useful_extra_regressors.append(
                                 prepare_extra_regressor(next(filter(
                                     lambda x: x.timeseries_data.columns[0] == extra_regressor, timeseries_containers)), model=model))
+                            depends_on_other_ts = True
                     local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
                 except:
                     local_xcorr = None
 
                 log.debug(f&#34;Look for user-given additional regressors...&#34;)
+                try:
+                    additional_regressor_path = additional_regressors[&#34;_all&#34;]
+                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
+                except:
+                    pass
+
                 try:
                     additional_regressor_path = additional_regressors[col]
                     useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
@@ -1513,6 +1541,8 @@ traslated!</p>
                         new_model_results[model] = _result
                         new_container = TimeSeriesContainer(timeseries_data, new_model_results, local_xcorr)
                         timeseries_containers = [new_container if x.timeseries_data.columns[0] == col else x for x in timeseries_containers]
+                        if not depends_on_other_ts:
+                            best_forecasts_found += 1
                     else:
                         log.info(f&#34;No improvements.&#34;)
                         best_forecasts_found += 1
@@ -1887,14 +1917,17 @@ Each one has various fields, in this case the most interesting one is <code>mode
     &gt;&gt;&gt; print(type(model))
     &lt;class &#39;timexseries.data_prediction.models.prophet_predictor.FBProphetModel&#39;&gt;
     &#34;&#34;&#34;
+    model_class = model_class.lower()
     if model_class == &#34;fbprophet&#34;:
         return FBProphetModel(params=param_config, transformation=transformation)
-    if model_class == &#34;LSTM&#34;:
+    if model_class == &#34;lstm&#34;:
         return LSTMModel(param_config, transformation)
     # if model_class == &#34;neuralprophet&#34;:
     #     return NeuralProphetModel(param_config, transformation)
     if model_class == &#34;mockup&#34;:
         return MockUpModel(param_config, transformation)
+    if model_class == &#34;exponentialsmoothing&#34;:
+        return ExponentialSmoothingModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)</code></pre>
 </details>

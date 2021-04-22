@@ -29,13 +29,17 @@
 </summary>
 <pre><code class="python"># import logging
 # import os
+# import warnings
+#
 # from neuralprophet import NeuralProphet
 # import pandas as pd
 # from pandas import DataFrame
 #
 # from timexseries.data_prediction import PredictionModel
-# logging.getLogger(&#39;fbprophet&#39;).setLevel(logging.WARNING)
+# logging.getLogger(&#39;nprophet&#39;).setLevel(logging.WARNING)
 # log = logging.getLogger(__name__)
+#
+# NeuralProphet.set_log_level(&#34;ERROR&#34;)
 #
 #
 # class NeuralProphetModel(PredictionModel):
@@ -46,7 +50,6 @@
 #
 #         # Stuff needed to make Prophet shut up during training.
 #         self.suppress_stdout_stderr = suppress_stdout_stderr
-#         self.neuralprophetmodel = NeuralProphet()
 #         try:
 #             self.neuralprophet_parameters = params[&#34;model_parameters&#34;][&#34;neuralProphet_parameters&#34;]
 #         except KeyError:
@@ -55,26 +58,27 @@
 #     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
 #         &#34;&#34;&#34;Overrides PredictionModel.train()&#34;&#34;&#34;
 #
-#         if self.neuralprophet_parameters is not None:
-#             try:
-#                 timeseries_name = input_data.columns[0]
-#                 date_format = self.neuralprophet_parameters[&#34;holidays_dataframes&#34;][&#34;date_format&#34;]
-#                 holidays = pd.read_csv(self.neuralprophet_parameters[&#34;holidays_dataframes&#34;][timeseries_name])
-#                 holidays.loc[:, &#34;ds&#34;].apply(lambda x: pd.to_datetime(x, format=date_format))
-#                 self.neuralprophetmodel = NeuralProphet(holidays=holidays)
-#                 log.debug(f&#34;Using a dataframe for holidays...&#34;)
-#             except KeyError:
-#                 self.neuralprophetmodel = NeuralProphet()
-#
-#             try:
-#                 holiday_country = self.neuralprophet_parameters[&#34;holiday_country&#34;]
-#                 self.neuralprophetmodel.add_country_holidays(country_name=holiday_country)
-#                 log.debug(f&#34;Set {holiday_country} as country for holiday calendar...&#34;)
-#             except KeyError:
-#                 pass
-#
-#         else:
-#             self.neuralprophetmodel = NeuralProphet()
+#         self.neuralprophetmodel = NeuralProphet()
+#         # if self.neuralprophet_parameters is not None:
+#         #     try:
+#         #         timeseries_name = input_data.columns[0]
+#         #         date_format = self.neuralprophet_parameters[&#34;holidays_dataframes&#34;][&#34;date_format&#34;]
+#         #         holidays = pd.read_csv(self.neuralprophet_parameters[&#34;holidays_dataframes&#34;][timeseries_name])
+#         #         holidays.loc[:, &#34;ds&#34;].apply(lambda x: pd.to_datetime(x, format=date_format))
+#         #         self.neuralprophetmodel = NeuralProphet(holidays=holidays)
+#         #         log.debug(f&#34;Using a dataframe for holidays...&#34;)
+#         #     except KeyError:
+#         #         self.neuralprophetmodel = NeuralProphet()
+#         #
+#         #     try:
+#         #         holiday_country = self.neuralprophet_parameters[&#34;holiday_country&#34;]
+#         #         self.neuralprophetmodel.add_country_holidays(country_name=holiday_country)
+#         #         log.debug(f&#34;Set {holiday_country} as country for holiday calendar...&#34;)
+#         #     except KeyError:
+#         #         pass
+#         #
+#         # else:
+#         # self.neuralprophetmodel = NeuralProphet()
 #
 #         if extra_regressors is not None:
 #             # We could apply self.transformation also on the extra regressors.
@@ -94,26 +98,28 @@
 #         with self.suppress_stdout_stderr():
 #             self.neuralprophetmodel.fit(input_data, self.freq)
 #
-#         self.input_data = input_data
+#         self.y = input_data
 #
 #     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -&gt; DataFrame:
 #         &#34;&#34;&#34;Overrides PredictionModel.predict()&#34;&#34;&#34;
-#         requested_prediction = len(future_dataframe) - len(self.input_data)
-#         future = self.neuralprophetmodel.make_future_dataframe(self.input_data, periods=requested_prediction)
-#         # future = future_dataframe.reset_index()
-#         # future.rename(columns={&#39;index&#39;: &#39;ds&#39;}, inplace=True)
+#         requested_prediction = len(future_dataframe) - len(self.y)
 #
-#         # if extra_regressors is not None:
-#         #     future.set_index(&#39;ds&#39;, inplace=True)
-#         #     future = future.join(extra_regressors.copy())
-#         #     future.reset_index(inplace=True)
+#         if extra_regressors is not None:
+#             extra_regressors = extra_regressors.iloc[-requested_prediction:, :]
+#             extra_regressors = extra_regressors.reset_index()
+#             extra_regressors = extra_regressors.drop(columns=[&#34;index&#34;])
 #
-#         forecast = self.neuralprophetmodel.predict(future)
-#         forecast.rename(columns={&#39;yhat1&#39;: &#39;yhat&#39;}, inplace=True)
+#         future = self.neuralprophetmodel.make_future_dataframe(self.y, periods=requested_prediction,
+#                                                                n_historic_predictions=len(self.y),
+#                                                                regressors_df=extra_regressors)
 #
-#         future_dataframe.iloc[-requested_prediction:, 0] = forecast.loc[:, &#39;yhat&#39;]
+#         with self.suppress_stdout_stderr():
+#             forecast = self.neuralprophetmodel.predict(future)
 #
-#         return future_dataframe
+#         forecast = forecast.rename(columns={&#34;yhat1&#34;: &#34;yhat&#34;})
+#         forecast.set_index(&#39;ds&#39;, inplace=True)
+#
+#         return forecast
 #
 #
 # class suppress_stdout_stderr(object):
