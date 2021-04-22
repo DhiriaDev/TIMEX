@@ -12,7 +12,7 @@ class ARIMAModel(PredictionModel):
 
     # NOT WORKING
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="ARIMA", transformation=transformation)
 
     def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):

@@ -41,7 +41,7 @@ class ARIMAModel(PredictionModel):
 
     # NOT WORKING
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;ARIMA&#34;, transformation=transformation)
 
     def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):
@@ -96,7 +96,7 @@ class ARIMAModel(PredictionModel):
 <dl>
 <dt id="timexseries.data_prediction.models.arima_predictor.ARIMAModel"><code class="flex name class">
 <span>class <span class="ident">ARIMAModel</span></span>
-<span>(</span><span>params: dict, transformation: str = None)</span>
+<span>(</span><span>params: dict, transformation: str = 'none')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>ARIMA prediction model.</p></div>
@@ -109,7 +109,7 @@ class ARIMAModel(PredictionModel):
 
     # NOT WORKING
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;ARIMA&#34;, transformation=transformation)
 
     def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):

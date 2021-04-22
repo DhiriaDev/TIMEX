@@ -82,7 +82,7 @@ class LSTM(nn.Module):
 
 class LSTMModel(PredictionModel):
     &#34;&#34;&#34;LSTM prediction model.&#34;&#34;&#34;
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;LSTM&#34;, transformation=transformation)
         self.scalers = {}
 
@@ -331,7 +331,7 @@ registered hooks while the latter silently ignores them.</p>
 </dd>
 <dt id="timexseries.data_prediction.models.lstm_predictor.LSTMModel"><code class="flex name class">
 <span>class <span class="ident">LSTMModel</span></span>
-<span>(</span><span>params: dict, transformation: str = None)</span>
+<span>(</span><span>params: dict, transformation: str = 'none')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>LSTM prediction model.</p></div>
@@ -341,7 +341,7 @@ registered hooks while the latter silently ignores them.</p>
 </summary>
 <pre><code class="python">class LSTMModel(PredictionModel):
     &#34;&#34;&#34;LSTM prediction model.&#34;&#34;&#34;
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;LSTM&#34;, transformation=transformation)
         self.scalers = {}
 

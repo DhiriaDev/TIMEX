@@ -20,7 +20,7 @@ class ExponentialSmoothingModel(PredictionModel):
     This model uses the Holt Winters method and automatic parameters estimation.
     """
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="ExponentialSmoothing", transformation=transformation)
         self.model = None
         self.len_train_set = 0

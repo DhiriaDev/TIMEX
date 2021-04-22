@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 class FBProphetModel(PredictionModel):
     &#34;&#34;&#34;Facebook&#39;s Prophet prediction model.&#34;&#34;&#34;
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;FBProphet&#34;, transformation=transformation)
 
         # Stuff needed to make Prophet shut up during training.
@@ -204,7 +204,7 @@ class suppress_stdout_stderr(object):
 <dl>
 <dt id="timexseries.data_prediction.models.prophet_predictor.FBProphetModel"><code class="flex name class">
 <span>class <span class="ident">FBProphetModel</span></span>
-<span>(</span><span>params: dict, transformation: str = None)</span>
+<span>(</span><span>params: dict, transformation: str = 'none')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Facebook's Prophet prediction model.</p></div>
@@ -215,7 +215,7 @@ class suppress_stdout_stderr(object):
 <pre><code class="python">class FBProphetModel(PredictionModel):
     &#34;&#34;&#34;Facebook&#39;s Prophet prediction model.&#34;&#34;&#34;
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;FBProphet&#34;, transformation=transformation)
 
         # Stuff needed to make Prophet shut up during training.

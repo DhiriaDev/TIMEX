@@ -53,7 +53,7 @@ class LSTM(nn.Module):
 
 class LSTMModel(PredictionModel):
     """LSTM prediction model."""
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="LSTM", transformation=transformation)
         self.scalers = {}
 

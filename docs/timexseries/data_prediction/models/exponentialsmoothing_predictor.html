@@ -49,7 +49,7 @@ class ExponentialSmoothingModel(PredictionModel):
     This model uses the Holt Winters method and automatic parameters estimation.
     &#34;&#34;&#34;
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;ExponentialSmoothing&#34;, transformation=transformation)
         self.model = None
         self.len_train_set = 0
@@ -134,7 +134,7 @@ class ExponentialSmoothingModel(PredictionModel):
 <dl>
 <dt id="timexseries.data_prediction.models.exponentialsmoothing_predictor.ExponentialSmoothingModel"><code class="flex name class">
 <span>class <span class="ident">ExponentialSmoothingModel</span></span>
-<span>(</span><span>params: dict, transformation: str = None)</span>
+<span>(</span><span>params: dict, transformation: str = 'none')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Exponential smoothing prediction model.
@@ -149,7 +149,7 @@ This model uses the Holt Winters method and automatic parameters estimation.</p>
     This model uses the Holt Winters method and automatic parameters estimation.
     &#34;&#34;&#34;
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = &#34;none&#34;):
         super().__init__(params, name=&#34;ExponentialSmoothing&#34;, transformation=transformation)
         self.model = None
         self.len_train_set = 0

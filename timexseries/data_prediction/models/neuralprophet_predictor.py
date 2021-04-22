@@ -16,7 +16,7 @@
 # class NeuralProphetModel(PredictionModel):
 #     """Facebook's NeuralProphet prediction model."""
 #
-#     def __init__(self, params: dict, transformation: str = None):
+#     def __init__(self, params: dict, transformation: str = "none"):
 #         super().__init__(params, name="NeuralProphet", transformation=transformation)
 #
 #         # Stuff needed to make Prophet shut up during training.

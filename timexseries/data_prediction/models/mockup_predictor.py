@@ -16,7 +16,7 @@ class MockUpModel(PredictionModel):
     work as intended.
     """
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="MockUp", transformation=transformation)
         self.extra_regressors_in_training = None
         self.extra_regressors_in_predict = None

@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 class FBProphetModel(PredictionModel):
     """Facebook's Prophet prediction model."""
 
-    def __init__(self, params: dict, transformation: str = None):
+    def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="FBProphet", transformation=transformation)
 
         # Stuff needed to make Prophet shut up during training.

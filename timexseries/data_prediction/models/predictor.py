@@ -1,7 +1,5 @@
-import json
 import logging
 import math
-import pkgutil
 from functools import reduce
 from joblib import Parallel, delayed
 
@@ -70,83 +68,102 @@ class PredictionModel:
         configuration parameter dictionary.
     name : str
         Class of the model.
-    transformation : str, None, optional
-        The class of transformation which the model should use. If not specified, the one in `params` will be used.
+    transformation : str, "none", optional
+        The class of transformation which the model should use. If not specified, "none", corresponding to the Identity
+        transformation will be used.
 
     Attributes
     ----------
     freq : str
         If available, the frequency of the time-series.
     test_values : int
-        Number of the last points of the time-series to use for the validation set. Default 0. If this is not available
+        Number of the last points of the time-series to use for the validation set. Default -1. If this is not available
         in the configuration parameter dictionary, `test_percentage` will be used.
     test_percentage : float
-        Percentage of the time-series length to used for the validation set. Default 0
+        Percentage of the time-series length to used for the validation set. Default 10.
     transformation : str
         Transformation to apply to the time series before using it. Default None
     prediction_lags : int
-        Number of future lags for which the prediction has to be made. Default 0
+        Number of future lags for which the prediction has to be made. Default 10.
     delta_training_percentage : float
-        Length, in percentage of the time-series length, of the training windows.
+        Length, in percentage of the time-series length, of the training windows. Default 20.
     delta_training_values : int
         Length of the training windows, obtained by computing `delta_training_percentage * length of the time-series`.
     main_accuracy_estimator : str
-        Error metric to use when deciding which prediction is better. Default: MAE.
+        Error metric to use when deciding which prediction is better. Default: "mae".
     min_values : dict
         Key-values where key is the name of a column and value is the minimum expected value in that column.
-        If "_all" is in the dict the corresponding value will be used for all values in each column.
+        If "_all" is in the dict the corresponding value will be used for all values in each column. Default None.
     max_values : dict
         Key-values where key is the name of a column and value is the maximum expected value in that column.
-        If "_all" is in the dict the corresponding value will be used for all values in each column.
+        If "_all" is in the dict the corresponding value will be used for all values in each column. Default None.
     round_to_integer : list
         List of columns name which should be rounded to integer. If "_all" is in the list, all values in every column
-        will be rounded to integer.
+        will be rounded to integer. Default None.
     model_characteristics : dict
         Dictionary of values containing the main characteristics and parameters of the model. Default {}
     """
-
-    def __init__(self, params: dict, name: str, transformation: str = None) -> None:
+    def __init__(self, params: dict, name: str, transformation: str = "none") -> None:
         self.name = name
 
         log.info(f"Creating a {self.name} model...")
 
-        if "model_parameters" not in params:
-            log.debug(f"Loading default settings...")
-            parsed = pkgutil.get_data(__name__, "default_prediction_parameters/" + self.name + ".json")
-            model_parameters = json.loads(parsed)
-        else:
-            log.debug(f"Loading user settings...")
+        # Default settings.
+        self.test_percentage = 10
+        self.test_values = -1  # Will be set by user, if specified a precise value, or by `launch_model()`.
+        self.delta_training_percentage = 20
+        self.prediction_lags = 10
+        self.main_accuracy_estimator = "mae"
+        self.transformation = transformation_factory(transformation)
+        self.min_values = None
+        self.max_values = None
+        self.round_to_integer = None
+
+        if "model_parameters" in params:
+            log.debug(f"Loading user model settings...")
             model_parameters = params["model_parameters"]
 
-        if "test_values" in model_parameters:
-            self.test_values = model_parameters["test_values"]
-        else:
-            self.test_percentage = model_parameters["test_percentage"]
-            self.test_values = -1
+            try:
+                self.test_values = model_parameters["test_values"]
+            except KeyError:
+                pass
 
-        if transformation is not None:
-            self.transformation = transformation_factory(transformation)
-        else:
-            self.transformation = transformation_factory(model_parameters["transformation"])
+            try:
+                self.test_percentage = model_parameters["test_percentage"]
+                self.test_values = -1
+            except KeyError:
+                pass
 
-        if "min_values" in model_parameters:
-            self.min_values = model_parameters["min_values"]
-        else:
-            self.min_values = None
+            try:
+                self.prediction_lags = model_parameters["prediction_lags"]
+            except KeyError:
+                pass
 
-        if "max_values" in model_parameters:
-            self.max_values = model_parameters["max_values"]
-        else:
-            self.max_values = None
+            try:
+                self.delta_training_percentage = model_parameters["delta_training_percentage"]
+            except KeyError:
+                pass
 
-        if "round_to_integer" in model_parameters:
-            self.round_to_integer = list(model_parameters["round_to_integer"].split(","))
-        else:
-            self.round_to_integer = None
+            try:
+                self.main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+            except KeyError:
+                pass
 
-        self.prediction_lags = model_parameters["prediction_lags"]
-        self.delta_training_percentage = model_parameters["delta_training_percentage"]
-        self.main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
+            try:
+                self.min_values = model_parameters["min_values"]
+            except KeyError:
+                pass
+
+            try:
+                self.max_values = model_parameters["max_values"]
+            except KeyError:
+                pass
+
+            try:
+                self.round_to_integer = list(model_parameters["round_to_integer"].split(","))
+            except KeyError:
+                pass
+
         self.delta_training_values = 0
         self.model_characteristics = {}
 
