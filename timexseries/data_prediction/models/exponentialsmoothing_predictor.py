@@ -28,13 +28,13 @@ class ExponentialSmoothingModel(PredictionModel):
     def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
 
-        def isTimeSeriesTrendStationary(timeseries, significance=.05):
+        def is_time_series_trend_stationary(timeseries, significance=.05):
             # Dickey-Fuller test:
-            adfTest = adfuller(timeseries, autolag='AIC')
+            adf_test = adfuller(timeseries, autolag='AIC')
 
-            self.pValue = adfTest[1]
+            self.pValue = adf_test[1]
 
-            if (self.pValue < significance):
+            if self.pValue < significance:
                 return True
             else:
                 return False
@@ -42,43 +42,58 @@ class ExponentialSmoothingModel(PredictionModel):
         s = pd.Series(sm.tsa.acf(input_data, nlags=round(len(input_data) / 2 - 1), fft=True))
         s[0] = 0
         s[1] = 0
-        s = s.sort_values(ascending=False)
 
-        possible_sp = np.array(s.index[0:10])
-        errors = pd.Series([], dtype=np.float64)
-        delta_test = int(round(0.1 * len(input_data)))
-        train_data = input_data[:-delta_test]
-        test_data = input_data[-delta_test:]
+        z99 = 2.5758293035489004
+        lenSeries = len(input_data)
+        threshold99 = z99 / np.sqrt(lenSeries)
 
-        is_stationary = isTimeSeriesTrendStationary(train_data)
-        error_function = mean_absolute_error if self.main_accuracy_estimator.upper() == "MAE" else mean_squared_error
+        s = s[lambda x: x > threshold99].sort_values(ascending=False)
 
-        for sp in possible_sp:
-            try:
-                if is_stationary:
-                    model = ExponentialSmoothing(train_data, seasonal="add", initialization_method='estimated',
-                                                 seasonal_periods=sp)
-                else:
-                    model = ExponentialSmoothing(train_data, trend="add", damped_trend=True, seasonal="add",
-                                                 initialization_method='estimated', seasonal_periods=sp)
+        if len(s) > 0:
+            # Possible seasonality.
+            possible_sp = np.array(s.index[0:10])
+            errors = pd.Series([], dtype=np.float64)
+            delta_test = int(round(0.1 * len(input_data)))
+            train_data = input_data[:-delta_test]
+            test_data = input_data[-delta_test:]
 
-                # fit model
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    model_fit = model.fit()
+            is_stationary = is_time_series_trend_stationary(train_data)
+            loss_function = mean_absolute_error if self.main_accuracy_estimator.upper() == "MAE" else mean_squared_error
 
-                # make prediction
-                yhat_grid = model_fit.predict(start=input_data.index[0], end=input_data.index[-1])
-                errors[sp] = error_function(test_data, yhat_grid[-delta_test:])
-            except:
-                errors[sp] = np.inf
+            for sp in possible_sp:
+                try:
+                    if is_stationary:
+                        model = ExponentialSmoothing(train_data, seasonal="add", initialization_method='estimated',
+                                                     seasonal_periods=sp)
+                    else:
+                        model = ExponentialSmoothing(train_data, trend="add", damped_trend=True, seasonal="add",
+                                                     initialization_method='estimated', seasonal_periods=sp)
 
-        if is_stationary:
-            self.model = ExponentialSmoothing(input_data, seasonal="add", initialization_method='estimated',
-                                              seasonal_periods=errors.idxmin())
+                    # fit model
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        model_fit = model.fit()
+
+                    # make prediction
+                    yhat_grid = model_fit.predict(start=input_data.index[0], end=input_data.index[-1])
+                    errors[sp] = loss_function(test_data, yhat_grid[-delta_test:])
+                except:
+                    errors[sp] = np.inf
+
+            if is_stationary:
+                self.model = ExponentialSmoothing(input_data, seasonal="add", initialization_method='estimated',
+                                                  seasonal_periods=errors.idxmin())
+            else:
+                self.model = ExponentialSmoothing(input_data, trend="add", damped_trend=True, seasonal="add",
+                                                  initialization_method='estimated', seasonal_periods=errors.idxmin())
         else:
-            self.model = ExponentialSmoothing(input_data, trend="add", damped_trend=True, seasonal="add",
-                                              initialization_method='estimated', seasonal_periods=errors.idxmin())
+            # Don't try seasonality.
+            is_stationary = is_time_series_trend_stationary(input_data)
+            if is_stationary:
+                self.model = ExponentialSmoothing(input_data, initialization_method='estimated')
+            else:
+                self.model = ExponentialSmoothing(input_data, trend="add", damped_trend=True,
+                                                  initialization_method='estimated')
 
         self.len_train_set = len(input_data)
         with warnings.catch_warnings():

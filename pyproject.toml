@@ -30,6 +30,7 @@ sklearn = "^0.0"
 statsmodels = "^0.12.2"
 networkx = "^2.5"
 prophet = "^1.0.1"
+pmdarima = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
