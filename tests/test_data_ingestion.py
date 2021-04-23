@@ -321,6 +321,32 @@ class TestDataIngestion:
 
         assert df.index.freq == '1d'
 
+    def test_data_reordering(self):
+        # Check that the dataframe is reordered from lowest to higher datetime index.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": os.path.join("test_datasets", "test_data_reordering.csv")
+            }
+        }
+
+        index = pd.DatetimeIndex([pd.Timestamp("2020-02-25"),
+                                  pd.Timestamp("2020-02-26"),
+                                  pd.Timestamp("2020-02-27"),
+                                  pd.Timestamp("2020-02-28")], freq="D")
+
+        df = ingest_timeseries(param_config)
+        assert len(df.columns) == 2
+        assert df.index.name == "first_column"
+        assert df.columns[0] == "second_column"
+        assert df.columns[1] == "third_column"
+        assert len(df) == 4
+
+        assert df.index.equals(index)
+        assert df.index.freq == '1d'
+
+        assert df["second_column"].equals(pd.Series(index=index, data=np.array([2, 5, 8, 11])))
+        assert df["third_column"].equals(pd.Series(index=index, data=np.array([3, 6, 9, 12])))
+
 
 class TestAddFreq:
     def test_add_freq_1(self):

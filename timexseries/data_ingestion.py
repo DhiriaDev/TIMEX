@@ -108,6 +108,10 @@ def ingest_timeseries(param_config: dict):
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
+    if not df_ingestion.index.is_monotonic_increasing:
+        log.warning(f"Dataframe is not ordered. Ordering it...")
+        df_ingestion = df_ingestion.sort_index()
+
     try:
         targets = list(input_parameters["add_diff_column"].split(','))
         log.debug(f"Adding the diff columns...")

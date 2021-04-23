@@ -954,35 +954,6 @@ class TestGetPredictions:
 
                 assert expected_hist_pred.equals(computed_hist_pred)
 
-        # # Simulate a 1-step ahead in time, so we have collected a new point.
-        # # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
-        # ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=31),
-        #                       "b": np.arange(20, 51), "c": np.arange(35, 66)})
-        # ing_data.set_index("a", inplace=True)
-        # ing_data = add_freq(ing_data, "D")
-        #
-        # # This time historical predictions will be loaded from file.
-        # scenarios = compute_historical_predictions(ingested_data=ing_data, param_config=param_config)
-        #
-        # for s in scenarios:
-        #     for model in s.historical_prediction:
-        #         hist_prediction = s.historical_prediction[model]
-        #         assert len(hist_prediction) == 3
-        #         assert hist_prediction.index[0] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
-        #         assert hist_prediction.index[1] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
-        #         assert hist_prediction.index[2] == pandas.to_datetime('2000-02-01', format="%Y-%m-%d")
-        #
-        # # Check that past predictions have not been touched.
-        # assert b_old_hist['fbprophet'].iloc[0, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[0, 0]
-        # assert b_old_hist['fbprophet'].iloc[1, 0] == scenarios[0].historical_prediction['fbprophet'].iloc[1, 0]
-        # assert b_old_hist['mockup'].iloc[0, 0] == scenarios[0].historical_prediction['mockup'].iloc[0, 0]
-        # assert b_old_hist['mockup'].iloc[1, 0] == scenarios[0].historical_prediction['mockup'].iloc[1, 0]
-        #
-        # assert c_old_hist['fbprophet'].iloc[0, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[0, 0]
-        # assert c_old_hist['fbprophet'].iloc[1, 0] == scenarios[1].historical_prediction['fbprophet'].iloc[1, 0]
-        # assert c_old_hist['mockup'].iloc[0, 0] == scenarios[1].historical_prediction['mockup'].iloc[0, 0]
-        # assert c_old_hist['mockup'].iloc[1, 0] == scenarios[1].historical_prediction['mockup'].iloc[1, 0]
-
     def test_get_best_predictions(self):
         # Test that log_modified transformation is applied and that the results are the expected ones.
         # Ideally this should work the same using other models or transformations; it's just to test that pre/post
@@ -1039,6 +1010,38 @@ class TestGetPredictions:
 
         assert best_prediction[['yhat']].equals(expected_best_prediction[['yhat']])
         assert test_prediction[['yhat']].equals(expected_test_prediction[['yhat']])
+
+    def test_no_additional_regressors_found(self):
+        # Check that no multivariate predictions are used if no additional regressors are available.
+        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+                              "b": np.arange(30, 60), "c": np.random.randint(60, 90, 30)})
+        ing_data.set_index("a", inplace=True)
+        ing_data = add_freq(ing_data, "D")
+
+        param_config = {
+            "xcorr_parameters": {
+                "xcorr_max_lags": 5,
+                "xcorr_extra_regressor_threshold": 1.01,  # Pearson will be < this threshold.
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            },
+            "input_parameters": {},
+            "model_parameters": {
+                "test_values": 2,
+                "delta_training_percentage": 20,
+                "prediction_lags": 10,
+                "possible_transformations": "log_modified,none",
+                "models": "mockup",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+
+        # MockUp prediction models forecasts "0" if used in univariate mode, "number_of_extra_regressors" in
+        # multivariate mode.
+        timeseries_containers = create_timeseries_containers(ingested_data=ing_data, param_config=param_config)
+        for i in pd.date_range(start="2000-01-31", end="2000-02-09", freq="D"):
+            assert timeseries_containers[0].models['mockup'].best_prediction.loc[i, "yhat"] == 0.0
+            assert timeseries_containers[1].models['mockup'].best_prediction.loc[i, "yhat"] == 0.0
 
 
 class TestCreateScenarios:
