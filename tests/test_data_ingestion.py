@@ -314,10 +314,8 @@ class TestDataIngestion:
         assert len(df.columns) == 1
         assert df.index.name == "first_column"
 
-    @pytest.mark.parametrize(
-        "is_index_specified, are_dateparser_options_specified",
-        [(True, True), (True, False), (False, True), (False, False)]
-    )
+    @pytest.mark.parametrize("is_index_specified", [True, False])
+    @pytest.mark.parametrize("are_dateparser_options_specified", [True, False])
     def test_ingest_additional_regressors(self, is_index_specified, are_dateparser_options_specified):
         # Test the loading of additional regressors CSV files.
         # Check that data is interpolated.

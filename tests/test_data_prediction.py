@@ -24,7 +24,8 @@ from tests.utilities import get_fake_df
 from timexseries.data_ingestion import add_freq
 
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
-    get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, create_timeseries_containers
+    get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
+    create_timeseries_containers
 from timexseries.data_prediction.models.prophet_predictor import FBProphetModel, suppress_stdout_stderr
 from timexseries.data_prediction.transformation import transformation_factory, Identity
 from timexseries.timeseries_container import TimeSeriesContainer
@@ -33,6 +34,7 @@ xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 
 logger = logging.getLogger()
 logger.level = logging.DEBUG
+
 
 # stream_handler = logging.StreamHandler(sys.stdout)
 # logger.addHandler(stream_handler)
@@ -49,7 +51,8 @@ class TestTransformations:
           ),
          ("log_modified",
           [-4, -3, -2, -1, 0, 1, 2, 3, 4],
-          [-np.log(4+1), -np.log(3+1), -np.log(2+1), -np.log(1+1), 0, np.log(1+1), np.log(2+1), np.log(3+1), np.log(4+1)],
+          [-np.log(4 + 1), -np.log(3 + 1), -np.log(2 + 1), -np.log(1 + 1), 0, np.log(1 + 1), np.log(2 + 1),
+           np.log(3 + 1), np.log(4 + 1)],
           [-4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0],
           "Log_modified"
           ),
@@ -64,7 +67,7 @@ class TestTransformations:
           yeojohnson(np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4]))[0],
           [-4, -3, -2, -1, 0, 1, 2, 3, 4],
           "Yeo-Johnson (lambda: 1)"
-         )]
+          )]
     )
     def test_transformation(self, transformation, input_data, output_data, inverse_result, expected_name):
         ind = pd.date_range(start="2000-01-01", periods=9, freq="D")
@@ -113,7 +116,7 @@ class Test_Xcorr:
         "max_lag",
         [90, 100, 110]  # Test the three cases max_lags > / = / < len(ingested_data)
     )
-    def test_calc_xcorr_1(self, max_lag):
+    def test_calc_xcorr_polynomial(self, max_lag):
         # Example from https://www.mathworks.com/help/matlab/ref/xcorr.html, slightly modified
         # The y series is antecedent the x series; therefore, a correlation should be found between x and y.
 
@@ -132,7 +135,7 @@ class Test_Xcorr:
             assert xcorr[mode].idxmax()[0] == 5
             assert xcorr[mode].idxmax()[1] == 10
 
-    def test_calc_xcorr_2(self):
+    def test_calc_xcorr_sin(self):
         # Shift a sin. Verify that highest correlation is in the correct region.
 
         # Restrict the delay to less than one period of the sin.
@@ -178,7 +181,7 @@ class Test_Xcorr:
 
 
 class Test_Models_General:
-    def test_launch_model_1(self):
+    def test_launch_model_test_percentage(self):
         # Percentages' sum is not 100%; adapt the windows. Use "test_percentage".
         param_config = {
             "model_parameters": {
@@ -216,7 +219,7 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_2(self):
+    def test_launch_model_float_percentages(self):
         # Percentages' sum is not 100% and values are float; adapt the windows. Use "test_percentage".
         param_config = {
             "model_parameters": {
@@ -254,7 +257,7 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_3(self):
+    def test_launch_model_test_values(self):
         # Percentages' sum is not 100%; adapt the windows. Use "test_values".
         param_config = {
             "model_parameters": {
@@ -291,7 +294,7 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_4(self):
+    def test_launch_percentages_over_100(self):
         # Percentages' sum is over 100%; adapt the window.
         param_config = {
             "model_parameters": {
@@ -329,11 +332,14 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_5(self):
+    @pytest.mark.parametrize("partial", [True, False])
+    def test_launch_model_check_default_parameters(self, partial):
         # Check default parameters.
         param_config = {
             "verbose": "no",
         }
+        if partial:
+            param_config["model_parameters"] = {}
 
         for n_threads in range(1, 7):
             param_config["max_threads"] = n_threads
@@ -362,7 +368,7 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_6(self):
+    def test_launch_model_with_extra_regressors(self):
         # Test extra-regressors.
         param_config = {
             "model_parameters": {
@@ -404,185 +410,80 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    @pytest.mark.parametrize(
-        "check",
-        ["min", "max"]
-    )
-    def test_launch_model_7(self, check):
+    @pytest.mark.parametrize("set_min", ["a", "_all"])
+    @pytest.mark.parametrize("set_max", ["a", "_all"])
+    @pytest.mark.parametrize("round_to_integer", ["a", "_all"])
+    @pytest.mark.parametrize("n_threads", [1, 2, 3])
+    @pytest.mark.parametrize("mockup_confidence", [True, False])
+    def test_launch_model_min_max_values(self, set_min, set_max, round_to_integer, n_threads, mockup_confidence):
         # Test min and max values.
         param_config = {
-            "model_parameters": {
-                "test_percentage": 10,
-                "delta_training_percentage": 20,
-                "prediction_lags": 10,
-                "transformation": "none",
-                "main_accuracy_estimator": "mae",
-            },
-        }
-
-        if check == "min":
-            param_config["model_parameters"]["min_values"] = {"_all": 10}
-        else:
-            param_config["model_parameters"]["max_values"] = {"_all": -10}
-
-        for n_threads in range(1, 7):
-            param_config["max_threads"] = n_threads
-            df = get_fake_df(10)
-
-            predictor = MockUpModel(param_config)
-            model_result = predictor.launch_model(df.copy())
-
-            for r in model_result.results:
-                pred = r.prediction['yhat'].values
-                for v in pred:
-                    if not np.isnan(v):
-                        if check == "min":
-                            assert v >= 10
-                        else:
-                            assert v <= -10
-
-            for v in model_result.best_prediction['yhat'].values:
-                if not np.isnan(v):
-                    if check == "min":
-                        assert v >= 10
-                    else:
-                        assert v <= -10
-
-    @pytest.mark.parametrize(
-        "check",
-        ["min", "max"]
-    )
-    def test_launch_model_8(self, check):
-        # Test min and max values only on a column.
-        param_config = {
+            "max_threads": n_threads,
             "model_parameters": {
                 "test_percentage": 10,
                 "delta_training_percentage": 20,
                 "prediction_lags": 10,
                 "possible_transformations": "none",
                 "models": "mockup",
-                "main_accuracy_estimator": "mae",
-            },
-        }
-
-        if check == "min":
-            param_config["model_parameters"]["min_values"] = {"a": 10}
-        else:
-            param_config["model_parameters"]["max_values"] = {"a": -10}
-
-        for n_threads in range(1, 7):
-            param_config["max_threads"] = n_threads
-            df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
-                                 "a": np.arange(45, 75),
-                                 "b": np.arange(30, 60)})
-            df.set_index("ds", inplace=True)
-
-            timeseries_containers = get_best_predictions(df, param_config)
-
-            model_result = timeseries_containers[0].models['mockup']  # Column `A`
-
-            for r in model_result.results:
-                pred = r.prediction['yhat'].values
-                for v in pred:
-                    if not np.isnan(v):
-                        if check == "min":
-                            assert v >= 10
-                        else:
-                            assert v <= -10
-
-            for v in model_result.best_prediction['yhat'].values:
-                if not np.isnan(v):
-                    if check == "min":
-                        assert v >= 10
-                    else:
-                        assert v <= -10
-
-            model_result = timeseries_containers[1].models['mockup']  # Column `B`
-
-            for r in model_result.results:
-                pred = r.prediction['yhat'].values
-                for v in pred:
-                    if not np.isnan(v):
-                        assert v == 0
-
-            for v in model_result.best_prediction['yhat'].values:
-                if not np.isnan(v):
-                    assert v == 0
-
-    @pytest.mark.parametrize(
-        "check",
-        ["_all", "b"]
-    )
-    def test_launch_model_9(self, check):
-        # Test round to integer.
-        param_config = {
-            "model_parameters": {
-                "test_percentage": 10,
-                "delta_training_percentage": 30,
-                "prediction_lags": 10,
-                "possible_transformations": "none",
-                "models": "fbprophet",
+                "mockup_confidence": mockup_confidence,
                 "main_accuracy_estimator": "mae",
             },
         }
 
         df = DataFrame(data={"ds": pd.date_range('2000-01-01', periods=30),
-                             "a": np.arange(45, 75),
-                             "b": np.arange(30, 60)})
+                             "a": np.arange(0, 30),
+                             "b": np.arange(0, 30)})
         df.set_index("ds", inplace=True)
 
-        not_rounded_timeseries_containers = get_best_predictions(df, param_config)
+        forced_predictions = Series(data=np.arange(30.5, 70.5, 1), index=pd.date_range('2000-01-01', periods=40),
+                                    name="yhat")
+        forced_predictions_lower = Series(data=np.arange(30.0, 70.0, 1), index=pd.date_range('2000-01-01', periods=40),
+                                          name="yhat_lower")
+        forced_predictions_upper = Series(data=np.arange(31.0, 71.0, 1), index=pd.date_range('2000-01-01', periods=40),
+                                          name="yhat_upper")
+        param_config["model_parameters"]["mockup_forced_predictions"] = forced_predictions
 
-        for n_threads in range(1, 3):
-            param_config["max_threads"] = n_threads
-            param_config["model_parameters"]["round_to_integer"] = check
+        param_config["model_parameters"]["min_values"] = {set_min: 63}
+        param_config["model_parameters"]["max_values"] = {set_max: 67}
+        param_config["model_parameters"]["round_to_integer"] = round_to_integer
 
-            timeseries_containers = get_best_predictions(df, param_config)
+        timeseries_containers = get_best_predictions(df, param_config)
 
-            model_result = timeseries_containers[0].models['fbprophet']  # Column `A`
-            not_rounded_model_result = not_rounded_timeseries_containers[0].models['fbprophet']  # Column `A`
+        indexes_to_check_min = [0] if set_min == "a" else [0, 1]
+        indexes_to_check_max = [0] if set_max == "a" else [0, 1]
+        indexes_to_round = [0] if round_to_integer == "a" else [0, 1]
 
-            single_results = model_result.results
-            not_rounded_single_results = not_rounded_model_result.results
+        for i in range(0, 2):
+            model_result = timeseries_containers[i].models['mockup']  # Column `a` / `b`
+            forecasts_to_test = [r.prediction for r in model_result.results]
+            forecasts_to_test.append(model_result.best_prediction)
 
-            single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
-            not_rounded_single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
+            for r in forecasts_to_test:
+                if mockup_confidence:
+                    preds = [r['yhat'], r['yhat_lower'], r['yhat_upper']]
+                    expected = [forced_predictions, forced_predictions_lower, forced_predictions_upper]
+                else:
+                    preds = [r['yhat']]
+                    expected = [forced_predictions]
 
-            for r, not_rounded_r in zip(single_results, not_rounded_single_results):
-                pred = r.prediction['yhat'].values
-                not_rounded_pred = not_rounded_r.prediction['yhat'].values
+                def round_or_not_x(x):
+                    if i in indexes_to_round:
+                        return round(x)
+                    else:
+                        return x
 
-                for v, not_rounded_v in zip(pred, not_rounded_pred):
-                    if not np.isnan(v):
-                        if check == "_all":
-                            assert v == round(not_rounded_v)
+                for p, e in zip(preds, expected):
 
-            for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values, not_rounded_model_result.best_prediction['yhat'].values):
-                if not np.isnan(v):
-                    if check == "_all":
-                        assert v == round(not_rounded_v)
-
-            model_result = timeseries_containers[1].models['fbprophet']  # Column `B`
-            not_rounded_model_result = not_rounded_timeseries_containers[1].models['fbprophet']  # Column `B`
-
-            single_results = model_result.results
-            not_rounded_single_results = not_rounded_model_result.results
-
-            single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
-            not_rounded_single_results.sort(key=lambda x: getattr(x.testing_performances, "first_used_index"))
-
-            for r, not_rounded_r in zip(single_results, not_rounded_single_results):
-                pred = r.prediction['yhat'].values
-                not_rounded_pred = not_rounded_r.prediction['yhat'].values
-
-                for v, not_rounded_v in zip(pred, not_rounded_pred):
-                    if not np.isnan(v):
-                        assert v == round(not_rounded_v)
-
-            for v, not_rounded_v in zip(model_result.best_prediction['yhat'].values,
-                                        not_rounded_model_result.best_prediction['yhat'].values):
-                if not np.isnan(v):
-                    assert v == round(not_rounded_v)
+                    if i in indexes_to_check_min and i not in indexes_to_check_max:
+                        pd.testing.assert_series_equal(p, e.loc[p.index[0]:].
+                                                       apply(lambda x: 63.0 if x <= 63 else round_or_not_x(x)))
+                    elif i not in indexes_to_check_min and i in indexes_to_check_max:
+                        pd.testing.assert_series_equal(p, e.loc[p.index[0]:].
+                                                       apply(lambda x: 67.0 if x >= 67 else round_or_not_x(x)))
+                    elif i in indexes_to_check_min and i in indexes_to_check_max:
+                        pd.testing.assert_series_equal(p, e.loc[p.index[0]:].
+                                                       apply(
+                            lambda x: 67.0 if x >= 67 else (63.0 if x <= 63 else round_or_not_x(x))))
 
 
 class Test_Models_Specific:
@@ -698,17 +599,21 @@ class TestGetPredictions:
         assert len(timeseries_containers[0].models) == 2
         assert len(timeseries_containers[1].models) == 2
 
-        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[-1, 0] == 0.0  # Check predictions are univariate
+        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[
+                   -1, 0] == 0.0  # Check predictions are univariate
         assert timeseries_containers[1].models['mockup'].best_prediction.iloc[-1, 0] == 0.0
 
-        timeseries_containers = get_best_multivariate_predictions(best_transformations=best_transformations, ingested_data=ing_data,
-                                                      timeseries_containers=timeseries_containers, param_config=param_config,
-                                                      total_xcorr=total_xcorr)
+        timeseries_containers = get_best_multivariate_predictions(best_transformations=best_transformations,
+                                                                  ingested_data=ing_data,
+                                                                  timeseries_containers=timeseries_containers,
+                                                                  param_config=param_config,
+                                                                  total_xcorr=total_xcorr)
         assert len(timeseries_containers) == 2
         assert timeseries_containers[0].timeseries_data.columns[0] == "b"
         assert timeseries_containers[1].timeseries_data.columns[0] == "c"
 
-        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[-1, 0] == 1.0  # Check predictions are multivariate
+        assert timeseries_containers[0].models['mockup'].best_prediction.iloc[
+                   -1, 0] == 1.0  # Check predictions are multivariate
         assert timeseries_containers[1].models['mockup'].best_prediction.iloc[-1, 0] == 1.0
 
         assert len(timeseries_containers[0].models) == 2
@@ -782,13 +687,17 @@ class TestGetPredictions:
                 assert hist_prediction.index[2] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
-        assert b_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[0, 0]
-        assert b_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[1, 0]
+        assert b_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[
+            0, 0]
+        assert b_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[
+            1, 0]
         assert b_old_hist['mockup'].iloc[0, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[0, 0]
         assert b_old_hist['mockup'].iloc[1, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[1, 0]
 
-        assert c_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[0, 0]
-        assert c_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[1, 0]
+        assert c_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[
+            0, 0]
+        assert c_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[
+            1, 0]
         assert c_old_hist['mockup'].iloc[0, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[0, 0]
         assert c_old_hist['mockup'].iloc[1, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[1, 0]
 
@@ -950,7 +859,8 @@ class TestGetPredictions:
                 if endpoint == pd.Timestamp('2000-01-29 00:00:00'):  # Last point, remove last 2 points
                     expected_hist_pred = expected_hist_pred.iloc[0:1]
 
-                computed_hist_pred = s.historical_prediction['fbprophet'].loc[endpoint+pandas.Timedelta(days=1):endpoint+pandas.Timedelta(days=3), scen_name]
+                computed_hist_pred = s.historical_prediction['fbprophet'].loc[
+                                     endpoint + pandas.Timedelta(days=1):endpoint + pandas.Timedelta(days=3), scen_name]
 
                 assert expected_hist_pred.equals(computed_hist_pred)
 
@@ -974,7 +884,8 @@ class TestGetPredictions:
 
         future = model.make_future_dataframe(periods=5)
         expected_best_prediction = model.predict(future)
-        expected_best_prediction.loc[:, 'yhat'] = expected_best_prediction['yhat'].apply(lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
+        expected_best_prediction.loc[:, 'yhat'] = expected_best_prediction['yhat'].apply(
+            lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
         expected_best_prediction.set_index("ds", inplace=True)
 
         # Compute the prediction we should find in model_results.
@@ -984,7 +895,8 @@ class TestGetPredictions:
 
         future = model.make_future_dataframe(periods=10)
         expected_test_prediction = model.predict(future)
-        expected_test_prediction.loc[:, 'yhat'] = expected_test_prediction['yhat'].apply(lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
+        expected_test_prediction.loc[:, 'yhat'] = expected_test_prediction['yhat'].apply(
+            lambda x: np.sign(x) * np.exp(abs(x)) - np.sign(x))
         expected_test_prediction.set_index("ds", inplace=True)
 
         # Use TIMEX
@@ -1047,14 +959,14 @@ class TestGetPredictions:
 class TestCreateScenarios:
     @pytest.mark.parametrize(
         "historical_predictions, xcorr, additional_regressors, expected_extra_regressors, expected_value",
-        [(True,  True,  True,  {"b": "c, d", "c": "b, e"}, 2.0),
-         (True,  True,  False, {"b": "c", "c": "b"},       1.0),
-         (True,  False, True,  {"b": "d", "c": "e"},       1.0),
-         (True,  False, False, {},                         0.0),
-         (False, True,  True,  {"b": "c, d", "c": "b, e"}, 2.0),
-         (False, True,  False, {"b": "c", "c": "b"},       1.0),
-         (False, False, True,  {"b": "d", "c": "e"},       1.0),
-         (False, False, False, {},                         0.0)]
+        [(True, True, True, {"b": "c, d", "c": "b, e"}, 2.0),
+         (True, True, False, {"b": "c", "c": "b"}, 1.0),
+         (True, False, True, {"b": "d", "c": "e"}, 1.0),
+         (True, False, False, {}, 0.0),
+         (False, True, True, {"b": "c, d", "c": "b, e"}, 2.0),
+         (False, True, False, {"b": "c", "c": "b"}, 1.0),
+         (False, False, True, {"b": "d", "c": "e"}, 1.0),
+         (False, False, False, {}, 0.0)]
     )
     def test_create_containers(self, historical_predictions, xcorr, additional_regressors, expected_extra_regressors,
                                expected_value, tmp_path):

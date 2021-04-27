@@ -18,6 +18,24 @@ class MockUpModel(PredictionModel):
 
     def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="MockUp", transformation=transformation)
+        try:
+            if params["model_parameters"]["mockup_confidence"]:
+                self.confidence_intervals = True
+            else:
+                self.confidence_intervals = False
+        except KeyError:
+            self.confidence_intervals = False
+
+        try:
+            self.forced_predictions = params["model_parameters"]["mockup_forced_predictions"]
+        except KeyError:
+            self.forced_predictions = None
+
+        # try:
+        #     self.forecast_value = params["model_parameters"]["mockup_forecast_value"]
+        # except KeyError:
+        #     self.forecast_value = 0
+
         self.extra_regressors_in_training = None
         self.extra_regressors_in_predict = None
         self.len_train_set = 0
@@ -34,10 +52,27 @@ class MockUpModel(PredictionModel):
         self.requested_predictions = len(future_dataframe) - self.len_train_set
         self.extra_regressors_in_predict = extra_regressors
 
-        if extra_regressors is None:
-            future_dataframe.iloc[-self.requested_predictions:, 0] = 0.0
+        if self.forced_predictions is not None:
+            initial_index = future_dataframe.index[0]
+            final_index = future_dataframe.index[-1]
+            future_dataframe.loc[:, 'yhat'] = self.forced_predictions.loc[initial_index:final_index]
+            if self.confidence_intervals:
+                future_dataframe.loc[:, 'yhat_lower'] = self.forced_predictions.loc[initial_index:final_index].apply(
+                    lambda x: x - 0.5
+                )
+                future_dataframe.loc[:, 'yhat_upper'] = self.forced_predictions.loc[initial_index:final_index].apply(
+                    lambda x: x + 0.5
+                )
         else:
-            future_dataframe.iloc[-self.requested_predictions:, 0] = len(extra_regressors.columns)
+            if extra_regressors is None:
+                v = 0
+            else:
+                v = len(extra_regressors.columns)
+
+            future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat'] = v
+            if self.confidence_intervals:
+                future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat_lower'] = v - 0.5
+                future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat_upper'] = v + 0.5
 
         return future_dataframe.copy()
 

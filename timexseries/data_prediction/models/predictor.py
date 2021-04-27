@@ -572,10 +572,7 @@ class PredictionModel:
 
         if self.round_to_integer is not None:
             if "_all" in self.round_to_integer or column_name in self.round_to_integer:
-                try:
-                    df = df.round({"yhat": 0, "yhat_lower": 0, "yhat_upper": 0})
-                except KeyError:
-                    df = df.round({"yhat": 0})
+                df = df.round({"yhat": 0, "yhat_lower": 0, "yhat_upper": 0})
 
         return df
 
