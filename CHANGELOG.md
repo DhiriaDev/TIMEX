@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.2.1] - 2021-06-23
+- Removed automatic Seasonal part of ARIMA; it could take a long time. Further investigation on `pmdarima` is requested;
+- Fixed a bug in which CSV with dates in the format `1959-01` were not correctly recognized;
+- Fixed a bug in Yeo-Johnson transformation which would "lose" the datetime index of transformed data;
+- Bump dependencies.
+
 ## [1.2.0] - 2021-04-08
 
 ### Added
