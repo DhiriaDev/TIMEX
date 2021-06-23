@@ -93,15 +93,18 @@ def ingest_timeseries(param_config: dict):
 
     log.debug(f"Parsing {index_column_name} as datetime column...")
 
+    dateparser_options = {
+        "settings": {
+            "PREFER_DAY_OF_MONTH": "first"
+        }
+    }
+
     if "dateparser_options" in input_parameters:
-        dateparser_options = input_parameters["dateparser_options"]
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+        dateparser_options.update(input_parameters["dateparser_options"])
+
+    df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
             lambda x: dateparser.parse(x, **dateparser_options)
-        )
-    else:
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
-            lambda x: dateparser.parse(x)
-        )
+    )
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 

@@ -208,9 +208,6 @@ class TestDataIngestion:
                 "columns_to_load_from_url": "first_column,third_column",
                 "datetime_column_name": "first_column",
                 "index_column_name": "first_column",
-                "dateparser_options": {
-                    "settings": { "PREFER_DAY_OF_MONTH": "first" }
-                }
             }
         }
 
@@ -219,6 +216,31 @@ class TestDataIngestion:
         assert df.index.values[0] == Timestamp("2020-11-01")
         assert df.index.values[1] == Timestamp("2020-12-01")
         assert df.index.values[2] == Timestamp("2021-01-01")
+
+        assert df.columns[0] == "third_column"
+        assert df.iloc[0]["third_column"] == 3
+        assert df.iloc[1]["third_column"] == 6
+        assert df.iloc[2]["third_column"] == 9
+
+        assert df.index.freq == 'MS'
+
+    def test_dates_with_only_months_and_years(self):
+        # Datetime with only the month and the year specified (e.g. "1959-01").
+        # Check that monthly freq is applied.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": os.path.join("test_datasets", "test_5_1.csv"),
+                "columns_to_load_from_url": "first_column,third_column",
+                "datetime_column_name": "first_column",
+                "index_column_name": "first_column",
+            }
+        }
+
+        df = ingest_timeseries(param_config)
+        assert df.index.name == "first_column"
+        assert df.index.values[0] == Timestamp("1959-01-01")
+        assert df.index.values[1] == Timestamp("1959-02-01")
+        assert df.index.values[2] == Timestamp("1959-03-01")
 
         assert df.columns[0] == "third_column"
         assert df.iloc[0]["third_column"] == 3

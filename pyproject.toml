@@ -35,6 +35,7 @@ pmdarima = "^1.8.2"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
 pytest-cov = "^2.11.1"
+coverage-badge = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
