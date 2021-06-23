@@ -188,6 +188,7 @@ The following options has to be specified:
   Example: `"fbprophet,exponential_smoothing`".
   
 Moreover, some other options can be set. Otherwise default values will be used:
+
 - `test_values`: number of points used as validation in order to choose the transformation and training window. These
   points will be used, however, to compute the actual forecast. Has precedence over `test_percentage`.
 - `test_percentage`: Percentage of the time-series length to used for the validation set. 

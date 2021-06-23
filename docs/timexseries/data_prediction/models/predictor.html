@@ -601,10 +601,7 @@ class PredictionModel:
 
         if self.round_to_integer is not None:
             if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
-                try:
-                    df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
-                except KeyError:
-                    df = df.round({&#34;yhat&#34;: 0})
+                df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
 
         return df</code></pre>
 </details>
@@ -1236,10 +1233,7 @@ will be rounded to integer. Default None.</dd>
 
         if self.round_to_integer is not None:
             if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
-                try:
-                    df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
-                except KeyError:
-                    df = df.round({&#34;yhat&#34;: 0})
+                df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
 
         return df</code></pre>
 </details>
@@ -1324,10 +1318,7 @@ Apply the rounding to integer, if the user specified it.</p>
 
     if self.round_to_integer is not None:
         if &#34;_all&#34; in self.round_to_integer or column_name in self.round_to_integer:
-            try:
-                df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
-            except KeyError:
-                df = df.round({&#34;yhat&#34;: 0})
+            df = df.round({&#34;yhat&#34;: 0, &#34;yhat_lower&#34;: 0, &#34;yhat_upper&#34;: 0})
 
     return df</code></pre>
 </details>

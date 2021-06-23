@@ -216,18 +216,20 @@ dateparser to parse the dates.</p>
 <li><code>models</code>: comma-separated list of the models to use. Check the <a href="#available-forecasting-models">available models</a>.
 Example: <code>"fbprophet,exponential_smoothing</code>".</li>
 </ul>
-<p>Moreover, some other options can be set. Otherwise default values will be used:
-- <code>test_values</code>: number of points used as validation in order to choose the transformation and training window. These
-points will be used, however, to compute the actual forecast. Has precedence over <code>test_percentage</code>.
-- <code>test_percentage</code>: Percentage of the time-series length to used for the validation set.
-- <code>prediction_lags</code>: Number of future lags for for the forecast.
-- <code>delta_training_percentage</code>: Length, in percentage of the time-series length, of the training windows.
-- <code>min_values</code>: Key-values dictioanry where key is the name of a column and value is the minimum expected value in that
-column. If "_all" is in the dict the corresponding value will be used for all values in each column.
-- <code>max_values</code>: Key-values where key is the name of a column and value is the maximum expected value in that column.
-If "_all" is in the dict the corresponding value will be used for all values in each column.
-- <code>round_to_integer</code>: List of columns name which should be rounded to integer. If "_all" is in the list, all values in
-every column will be rounded to integer.</p>
+<p>Moreover, some other options can be set. Otherwise default values will be used:</p>
+<ul>
+<li><code>test_values</code>: number of points used as validation in order to choose the transformation and training window. These
+points will be used, however, to compute the actual forecast. Has precedence over <code>test_percentage</code>.</li>
+<li><code>test_percentage</code>: Percentage of the time-series length to used for the validation set. </li>
+<li><code>prediction_lags</code>: Number of future lags for for the forecast.</li>
+<li><code>delta_training_percentage</code>: Length, in percentage of the time-series length, of the training windows.</li>
+<li><code>min_values</code>: Key-values dictioanry where key is the name of a column and value is the minimum expected value in that
+column. If "_all" is in the dict the corresponding value will be used for all values in each column.</li>
+<li><code>max_values</code>: Key-values where key is the name of a column and value is the maximum expected value in that column.
+If "_all" is in the dict the corresponding value will be used for all values in each column.</li>
+<li><code>round_to_integer</code>: List of columns name which should be rounded to integer. If "_all" is in the list, all values in
+every column will be rounded to integer.</li>
+</ul>
 <h3 id="cross-correlation-parameters">Cross-correlation parameters</h3>
 <p>These parameters controls the cross-correlation computation, which is used to determine if there are time-series useful
 as extra-regressors for multivariate multiple-input-single-output forecasting models.

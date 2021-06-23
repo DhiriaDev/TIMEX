@@ -122,20 +122,27 @@ def ingest_timeseries(param_config: dict):
 
     log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
 
+    dateparser_options = {
+        &#34;settings&#34;: {
+            &#34;PREFER_DAY_OF_MONTH&#34;: &#34;first&#34;
+        }
+    }
+
     if &#34;dateparser_options&#34; in input_parameters:
-        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+        dateparser_options.update(input_parameters[&#34;dateparser_options&#34;])
+
+    df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
             lambda x: dateparser.parse(x, **dateparser_options)
-        )
-    else:
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
-            lambda x: dateparser.parse(x)
-        )
+    )
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
     log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    if not df_ingestion.index.is_monotonic_increasing:
+        log.warning(f&#34;Dataframe is not ordered. Ordering it...&#34;)
+        df_ingestion = df_ingestion.sort_index()
 
     try:
         targets = list(input_parameters[&#34;add_diff_column&#34;].split(&#39;,&#39;))
@@ -980,20 +987,27 @@ Date
 
     log.debug(f&#34;Parsing {index_column_name} as datetime column...&#34;)
 
+    dateparser_options = {
+        &#34;settings&#34;: {
+            &#34;PREFER_DAY_OF_MONTH&#34;: &#34;first&#34;
+        }
+    }
+
     if &#34;dateparser_options&#34; in input_parameters:
-        dateparser_options = input_parameters[&#34;dateparser_options&#34;]
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
+        dateparser_options.update(input_parameters[&#34;dateparser_options&#34;])
+
+    df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
             lambda x: dateparser.parse(x, **dateparser_options)
-        )
-    else:
-        df_ingestion[index_column_name] = df_ingestion[index_column_name].apply(
-            lambda x: dateparser.parse(x)
-        )
+    )
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
     log.debug(f&#34;Removing duplicates rows from dataframe; keep the last...&#34;)
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep=&#39;last&#39;)]
+
+    if not df_ingestion.index.is_monotonic_increasing:
+        log.warning(f&#34;Dataframe is not ordered. Ordering it...&#34;)
+        df_ingestion = df_ingestion.sort_index()
 
     try:
         targets = list(input_parameters[&#34;add_diff_column&#34;].split(&#39;,&#39;))
