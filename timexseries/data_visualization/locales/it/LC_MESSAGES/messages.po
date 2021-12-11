@@ -1,0 +1,313 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2021 ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-03-01 19:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: it\n"
+"Language-Team: Italian <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.9.0\n"
+
+#: functions.py:99
+msgid " analysis"
+msgstr " analisi"
+
+#: functions.py:100
+msgid "Data visualization"
+msgstr "Visualizzazione dei dati"
+
+#: functions.py:115
+msgid "Cross-correlation"
+msgstr "Cross-correlazione"
+
+#: functions.py:116
+msgid ""
+"Negative lags (left part) show the correlation between this scenario and "
+"the future of the others."
+msgstr ""
+"I ritardi negativi (parte sinistra) mostrano la correlazione tra questo "
+"scenario e il futuro degli altri."
+
+#: functions.py:118
+msgid ""
+"Meanwhile, positive lags (right part) shows the correlation between this "
+"scenario and the past of the others."
+msgstr ""
+"Invece, i ritardi positivi (parte destra) mostrano la correlazione tra "
+"questo scenario e il passato degli altri."
+
+#: functions.py:121
+msgid ""
+"The peaks found using each cross-correlation modality are shown in the "
+"graphs:"
+msgstr ""
+"I picchi raggiunti usando ciascuna modalità di cross-correlazione sono "
+"mostrati nel/nei grafo/grafi:"
+
+#: functions.py:132
+msgid "Training & Validation results"
+msgstr "Risultati dell'allenamento del modello"
+
+#: functions.py:162
+msgid "Prediction"
+msgstr "Predizione"
+
+#: functions.py:163
+msgid "For every model the best predictions for each past date are plotted."
+msgstr ""
+"Per ciascun modello vengono mostrate le migliori predizioni ottenibili in"
+" ciascuna data passata."
+
+#: functions.py:221 functions.py:249
+msgid "Line plot"
+msgstr "Grafico"
+
+#: functions.py:287
+msgid "Histogram"
+msgstr "Istogramma"
+
+#: functions.py:287 functions.py:689 functions.py:783
+msgid "Count"
+msgstr "Conteggio"
+
+#: functions.py:319
+msgid "Trend"
+msgstr "Trend"
+
+#: functions.py:319
+msgid "Seasonality"
+msgstr "Stagionalità"
+
+#: functions.py:319
+msgid "Residual"
+msgstr "Residuo"
+
+#: functions.py:353
+msgid "Components decomposition"
+msgstr "Decomposizione in componenti"
+
+#: functions.py:353
+msgid "Decomposition model"
+msgstr "Modello di decomposizione"
+
+#: functions.py:354
+msgid "Additive"
+msgstr "Additivo"
+
+#: functions.py:355
+msgid "Multiplicative"
+msgstr "Moltiplicativo"
+
+#: functions.py:361
+msgid ""
+"Multiplicative model is not available for series which contain zero or "
+"negative values."
+msgstr ""
+"Il modello moltiplicativo non è disponibile in serie che contengono "
+"valori nulli o negativi."
+
+#: functions.py:406
+msgid "autocorrelation"
+msgstr "Autocorrelazione"
+
+#: functions.py:411
+msgid "Autocorrelation plot"
+msgstr "Grafico dell'autocorrelazione"
+
+#: functions.py:411 functions.py:472
+msgid "Lags"
+msgstr "Ritardi"
+
+#: functions.py:411
+msgid "Autocorrelation"
+msgstr "Autocorrelazione"
+
+#: functions.py:471
+msgid "Cross-correlation using different algorithms"
+msgstr "Cross-correlazione usando vari algoritmi"
+
+#: functions.py:473
+msgid "Correlation"
+msgstr "Correlazione"
+
+#: functions.py:584
+msgid "Lag: "
+msgstr "Ritardi: "
+
+#: functions.py:689
+msgid "Box plot"
+msgstr "Diagramma a scatola"
+
+#: functions.py:691
+msgid "The index refer to the end of the period."
+msgstr "L'indice fa riferimento alla fine del periodo considerato."
+
+#: functions.py:728
+msgid "minute"
+msgstr "Minuto"
+
+#: functions.py:728
+msgid "hour"
+msgstr "Ora"
+
+#: functions.py:728
+msgid "weekday"
+msgstr "Giorno della settimana"
+
+#: functions.py:728
+msgid "day"
+msgstr "Giorno del mese"
+
+#: functions.py:728
+msgid "month"
+msgstr "Mese"
+
+#: functions.py:728
+msgid "year"
+msgstr "Anno"
+
+#: functions.py:783
+msgid "Aggregate box plot"
+msgstr "Diagramma a scatola aggregato"
+
+#: functions.py:835
+msgid "unused data"
+msgstr "Dati non usati"
+
+#: functions.py:839 functions.py:1031
+msgid "training data"
+msgstr "Dati usati nell'allenamento"
+
+#: functions.py:846
+msgid "validation data"
+msgstr "Dati di validazione"
+
+#: functions.py:851
+msgid "yhat"
+msgstr "Predizione"
+
+#: functions.py:855
+msgid "yhatlower"
+msgstr "Predizione (limite inferiore)"
+
+#: functions.py:858
+msgid "yhatupper"
+msgstr "Predizione (limite superiore)"
+
+#: functions.py:862
+msgid "Best prediction for the validation set"
+msgstr "Miglior previsione per i dati di validazione"
+
+#: functions.py:911
+msgid "This model, during the history, reached these performances on unseen data:"
+msgstr ""
+"Questo modello, nella storia della serie, ha raggiunto queste "
+"performances su dati non visti:"
+
+#: functions.py:913
+msgid "Range of validation data: "
+msgstr "Range dei dati di validazione: "
+
+#: functions.py:918
+msgid "real data"
+msgstr "Dati reali"
+
+#: functions.py:923
+msgid "historical prediction"
+msgstr "Previsione storica"
+
+#: functions.py:931
+msgid "future yhat"
+msgstr "Previsione futura"
+
+#: functions.py:937 functions.py:940
+msgid "Error series"
+msgstr "Errore"
+
+#: functions.py:939 functions.py:943
+msgid "Historical prediction"
+msgstr "Previsione storica"
+
+#: functions.py:951 functions.py:959
+msgid "Error series histogram"
+msgstr "Istogramma dell'errore"
+
+#: functions.py:1044
+msgid "Performances with different training windows"
+msgstr "Performances con differenti finestre di allenamento"
+
+#: functions.py:1092
+msgid "Model type: "
+msgstr "Classe del modello: "
+
+#: functions.py:1093
+msgid "Values used for testing: last "
+msgstr "Valori usati per il testing: ultimi "
+
+#: functions.py:1093
+msgid " values"
+msgstr " valori"
+
+#: functions.py:1094
+msgid "The length of the training windows is the "
+msgstr "La lunghezza della finestra di addestramento è il "
+
+#: functions.py:1095
+msgid " of the length of the time series."
+msgstr " della lunghezza della serie temporale."
+
+#: functions.py:1096
+msgid "Training windows are composed of "
+msgstr "Le finestre di allenamento sono composte del "
+
+#: functions.py:1096
+msgid " values."
+msgstr " valori."
+
+#: functions.py:1097
+msgid "The model has used "
+msgstr "Il modello ha usato "
+
+#: functions.py:1097
+msgid " as extra-regressor(s) to improve the training."
+msgstr " come regressore/i extra per migliorare l'addestramento."
+
+#: functions.py:1098
+msgid "The model has used a "
+msgstr "Il modello ha usato una "
+
+#: functions.py:1098
+msgid " transformation on the input data."
+msgstr " trasformazione sui dati."
+
+#: functions.py:1100
+msgid "The model has not used any pre/post transformation on input data."
+msgstr "Il modello non ha usato pre/post trasformazioni sui dati."
+
+#: functions.py:1104
+msgid "Model characteristics:"
+msgstr "Caratteristiche del modello:"
+
+#: functions.py:1106
+msgid "This model, using the best training window, reaches these performances:"
+msgstr ""
+"Questo modello, usando la miglior finestra di allenamento, raggiunge "
+"queste performances:"
+
+#: functions.py:1141
+msgid "Arithmetic mean of errors:"
+msgstr "Media aritmetica dell'errore: "
+
+#: functions.py:1142
+msgid "Standard deviation of errors: "
+msgstr "Deviazione standard dell'errore: "
+

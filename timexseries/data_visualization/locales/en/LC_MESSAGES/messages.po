@@ -1,0 +1,304 @@
+
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-03-01 19:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: English <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.9.0\n"
+
+#: functions.py:99
+msgid " analysis"
+msgstr " analysis"
+
+#: functions.py:100
+msgid "Data visualization"
+msgstr "Data visualization"
+
+#: functions.py:115
+msgid "Cross-correlation"
+msgstr "Cross-correlation"
+
+#: functions.py:116
+msgid ""
+"Negative lags (left part) show the correlation between this scenario and "
+"the future of the others."
+msgstr ""
+"Negative lags (left part) show the correlation between this scenario and "
+"the future of the others."
+
+#: functions.py:118
+msgid ""
+"Meanwhile, positive lags (right part) shows the correlation between this "
+"scenario and the past of the others."
+msgstr ""
+"Meanwhile, positive lags (right part) shows the correlation between this "
+"scenario and the past of the others."
+
+#: functions.py:121
+msgid ""
+"The peaks found using each cross-correlation modality are shown in the "
+"graphs:"
+msgstr ""
+"The peaks found using each cross-correlation modality are shown in the "
+"graphs:"
+
+#: functions.py:132
+msgid "Training & Validation results"
+msgstr "Training & Validation results"
+
+#: functions.py:162
+msgid "Prediction"
+msgstr "Prediction"
+
+#: functions.py:163
+msgid "For every model the best predictions for each past date are plotted."
+msgstr "For every model the best predictions for each past date are plotted."
+
+#: functions.py:221 functions.py:249
+msgid "Line plot"
+msgstr "Line plot"
+
+#: functions.py:287
+msgid "Histogram"
+msgstr "Histogram"
+
+#: functions.py:287 functions.py:689 functions.py:783
+msgid "Count"
+msgstr "Count"
+
+#: functions.py:319
+msgid "Trend"
+msgstr "Trend"
+
+#: functions.py:319
+msgid "Seasonality"
+msgstr "Seasonality"
+
+#: functions.py:319
+msgid "Residual"
+msgstr "Residual"
+
+#: functions.py:353
+msgid "Components decomposition"
+msgstr "Components decomposition"
+
+#: functions.py:353
+msgid "Decomposition model"
+msgstr "Decomposition model"
+
+#: functions.py:354
+msgid "Additive"
+msgstr "Additive"
+
+#: functions.py:355
+msgid "Multiplicative"
+msgstr "Multiplicative"
+
+#: functions.py:361
+msgid ""
+"Multiplicative model is not available for series which contain zero or "
+"negative values."
+msgstr ""
+"Multiplicative model is not available for series which contain zero or "
+"negative values."
+
+#: functions.py:406
+msgid "autocorrelation"
+msgstr "Autocorrelation"
+
+#: functions.py:411
+msgid "Autocorrelation plot"
+msgstr "Autocorrelation plot"
+
+#: functions.py:411 functions.py:472
+msgid "Lags"
+msgstr "Lags"
+
+#: functions.py:411
+msgid "Autocorrelation"
+msgstr "Autocorrelation"
+
+#: functions.py:471
+msgid "Cross-correlation using different algorithms"
+msgstr "Cross-correlation using different algorithms"
+
+#: functions.py:473
+msgid "Correlation"
+msgstr "Correlation"
+
+#: functions.py:584
+msgid "Lag: "
+msgstr "Lag: "
+
+#: functions.py:689
+msgid "Box plot"
+msgstr "Box plot"
+
+#: functions.py:691
+msgid "The index refer to the end of the period."
+msgstr "The index refers to the end of the period."
+
+#: functions.py:728
+msgid "minute"
+msgstr "Minute"
+
+#: functions.py:728
+msgid "hour"
+msgstr "Hour"
+
+#: functions.py:728
+msgid "weekday"
+msgstr "Weekday"
+
+#: functions.py:728
+msgid "day"
+msgstr "Day of month"
+
+#: functions.py:728
+msgid "month"
+msgstr "Month"
+
+#: functions.py:728
+msgid "year"
+msgstr "Year"
+
+#: functions.py:783
+msgid "Aggregate box plot"
+msgstr "Aggregate box plot"
+
+#: functions.py:835
+msgid "unused data"
+msgstr "Unused data"
+
+#: functions.py:839 functions.py:1031
+msgid "training data"
+msgstr "Training data"
+
+#: functions.py:846
+msgid "validation data"
+msgstr "Validation data"
+
+#: functions.py:851
+msgid "yhat"
+msgstr "Prediction"
+
+#: functions.py:855
+msgid "yhatlower"
+msgstr "Prediction (lowerbound)"
+
+#: functions.py:858
+msgid "yhatupper"
+msgstr "Prediction (upperbound)"
+
+#: functions.py:862
+msgid "Best prediction for the validation set"
+msgstr "Best prediction for the validation set"
+
+#: functions.py:911
+msgid "This model, during the history, reached these performances on unseen data:"
+msgstr "This model, during the history, reached these performances on unseen data:"
+
+#: functions.py:913
+msgid "Range of validation data: "
+msgstr "Range of validation data: "
+
+#: functions.py:918
+msgid "real data"
+msgstr "Real data"
+
+#: functions.py:923
+msgid "historical prediction"
+msgstr "Historical prediction"
+
+#: functions.py:931
+msgid "future yhat"
+msgstr "Future prediction"
+
+#: functions.py:937 functions.py:940
+msgid "Error series"
+msgstr "Error series"
+
+#: functions.py:939 functions.py:943
+msgid "Historical prediction"
+msgstr "Historical prediction"
+
+#: functions.py:951 functions.py:959
+msgid "Error series histogram"
+msgstr "Error series histogram"
+
+#: functions.py:1044
+msgid "Performances with different training windows"
+msgstr "Performances with different training windows"
+
+#: functions.py:1092
+msgid "Model type: "
+msgstr "Model type: "
+
+#: functions.py:1093
+msgid "Values used for testing: last "
+msgstr "Values used for testing: last "
+
+#: functions.py:1093
+msgid " values"
+msgstr " values"
+
+#: functions.py:1094
+msgid "The length of the training windows is the "
+msgstr "The length of the training windows is the "
+
+#: functions.py:1095
+msgid " of the length of the time series."
+msgstr " of the length of the time series."
+
+#: functions.py:1096
+msgid "Training windows are composed of "
+msgstr "Training windows are composed of "
+
+#: functions.py:1096
+msgid " values."
+msgstr " values."
+
+#: functions.py:1097
+msgid "The model has used "
+msgstr "The model has used "
+
+#: functions.py:1097
+msgid " as extra-regressor(s) to improve the training."
+msgstr " as extra-regressor(s) to improve the training."
+
+#: functions.py:1098
+msgid "The model has used a "
+msgstr "The model has used a "
+
+#: functions.py:1098
+msgid " transformation on the input data."
+msgstr " transformation on the input data."
+
+#: functions.py:1100
+msgid "The model has not used any pre/post transformation on input data."
+msgstr "The model has not used any pre/post transformation on input data."
+
+#: functions.py:1104
+msgid "Model characteristics:"
+msgstr "Model characteristics:"
+
+#: functions.py:1106
+msgid "This model, using the best training window, reaches these performances:"
+msgstr "This model, using the best training window, reaches these performances:"
+
+#: functions.py:1141
+msgid "Arithmetic mean of errors:"
+msgstr "Arithmetic mean of errors: "
+
+#: functions.py:1142
+msgid "Standard deviation of errors: "
+msgstr "Standard deviation of errors: "
+
