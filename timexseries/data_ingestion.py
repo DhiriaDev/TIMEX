@@ -7,7 +7,7 @@ from pandas import DataFrame
 log = logging.getLogger(__name__)
 
 
-def ingest_timeseries(param_config: dict, df: pd.DataFrame):
+def ingest_timeseries(param_config: dict):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
     This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
@@ -81,8 +81,7 @@ def ingest_timeseries(param_config: dict, df: pd.DataFrame):
         columns_to_load_from_url = input_parameters["columns_to_load_from_url"]
         columns_to_read = list(columns_to_load_from_url.split(','))
         # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
-        # MODIFIED LINE !
-        df_ingestion = df[columns_to_read]
+        df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
 
     except (KeyError, ValueError):
         df_ingestion = pd.read_csv(source_data_url)
