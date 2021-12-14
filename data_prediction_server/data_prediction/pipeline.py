@@ -7,15 +7,15 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 
-from data_ingestion.data_ingestion import ingest_additional_regressors
+from .add_regressor import ingest_additional_regressors
 from data_prediction import PredictionModel
-from data_prediction.models.arima_predictor import ARIMAModel
-from data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from data_prediction.models.lstm_predictor import LSTMModel
-from data_prediction.models.mockup_predictor import MockUpModel
+from .models.arima_predictor import ARIMAModel
+from .models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from .models.lstm_predictor import LSTMModel
+from .models.mockup_predictor import MockUpModel
 # from data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from data_prediction.models.prophet_predictor import FBProphetModel
-from data_prediction.xcorr import calc_all_xcorr
+from .models.prophet_predictor import FBProphetModel
+from .xcorr import calc_all_xcorr
 from .timeseries_container import TimeSeriesContainer
 
 log = logging.getLogger(__name__)

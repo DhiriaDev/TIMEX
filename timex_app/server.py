@@ -1,39 +1,39 @@
-import os
 import logging
 import sys
 
-import dash
 import flask
+from flask import Flask, request
+import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-
 import json
-from flask.app import Flask
-import pandas as pd
+import pickle
 import base64
+import requests
 import io
+from data_visualization import timeseries_container
 
-from data_ingestion.data_ingestion import ingest_timeseries
-from data_prediction.pipeline import create_timeseries_containers
+
 from data_visualization.functions import create_timeseries_dash_children
 
-#-----------SERVER INIT-----------------------
+
+# -----------SERVER INIT-----------------------
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-flask_server = Flask(__name__)
-# meta_tags are required for the app layout to be mobile responsive
-app = dash.Dash(__name__, 
-                server=flask_server,
+server = Flask(__name__)
+
+app = dash.Dash(__name__,
+                server=server,
                 suppress_callback_exceptions=True,
-                external_stylesheets= external_stylesheets,
+                external_stylesheets=external_stylesheets,
                 meta_tags=[{'name': 'viewport',
                             'content': 'width=device-width, initial-scale=1.0'}]
                 )
 
 
-# ---------------------GLOBAL VARIABLES AND SOME USEFUL FUNCTIONS-----------------------------
+
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 uploadStyle = {
@@ -44,24 +44,12 @@ uploadStyle = {
     'borderStyle': 'dashed',
     'borderRadius': '5px',
     'textAlign': 'center',
-    'margin-top' : 5
+    'margin-top': 5
 }
-# this variable must be defined here to be shared by all the callbacks
+# these variables must be defined here to be shared by all the callbacks
 children_for_each_timeseries = None
+prediction_parameters = None
 
-
-def prepare_folder_for_dataSaving(path: str):
-    if(not os.path.exists(path)):
-        cur = ""
-        print('now i will try find the path')
-        for dir in (path.split('/')[:-1]):
-            cur += dir
-            if(not os.path.exists(cur)):
-                print('not present')
-                os.makedirs(cur)
-
-
-# -------------------------PAGE START----------------------------------------------------
 app.layout = html.Div([
     html.Div([
         html.H1('Welcome to Timex - Time Series Forecasting a.a.S.'),
@@ -69,10 +57,10 @@ app.layout = html.Div([
 
         html.Div(
             children=[
-                html.H3( html.Label(children='Please insert here your configuration json',
-                           htmlFor='uploaded')),
+                html.H3(html.Label(children='Please insert here your configuration json',
+                                    htmlFor='uploaded')),
                 dcc.Upload(html.A('Select a File'), id='uploaded',
-                           style=uploadStyle, multiple=False),
+                            style=uploadStyle, multiple=False),
             ]
         ),
 
@@ -82,9 +70,7 @@ app.layout = html.Div([
 
     html.Div(id='outputDiv')
 
-], style={'width':'80%', 'padding': 50})
-
-# -------------------------FIRST CALLBACK AFTER THE INSERTION OF THE INPUT FOR THE PREDICTION PHASE------------------------
+], style={'width': '80%', 'padding': 50})
 
 
 @ app.callback(
@@ -105,47 +91,47 @@ def configuration_ingestion(config_file, filename):
             try:
                 content_type, content_string = config_file.split(',')
 
-                json_config = json.load(
+                param_config = json.load(
                     io.StringIO(((base64.b64decode(content_string)).decode(encoding))))
 
-                original_url = (json_config['input_parameters'])[
-                    'source_data_url']
-                (json_config['input_parameters'])[
-                    'source_data_url'] = 'https://drive.google.com/uc?id=' + original_url.split('/')[-2] #parsing the google drive link
+                global prediction_parameters
+                prediction_parameters = param_config
+
+                payload = {}
+                payload['param_config'] = json.dumps(param_config)
+
+                # here data has been sent to the data ingestion module
+                requests.post('http://127.0.0.1:5000/ingest', data=payload)
+
+                return dash.no_update, html.P('Data is being analyzed, please wait')
+
             except ValueError as e:
                 print(e)
-                return 'Error in parsing the json file', dash.no_update
+                return 'Error in parsing the json file'
         else:
-            return 'Wrong file format, please retry!', dash.no_update
-
-        if(json_config is None):
-            return 'Updated failed, please retry', dash.no_update
-        else:
-            return dash.no_update, compute_prediction(json_config)
+            return 'Wrong file format, please retry!'
     else:
-        return 'Updated failed, please retry', dash.no_update
-
-# This function computes the prediction and creates the children of the output div
+        return 'Updated failed, please retry'
 
 
-def compute_prediction(param_config: dict):
-    print('compute predictions...')
-    prepare_folder_for_dataSaving(param_config['historical_prediction_parameters']['save_path'])
 
-    ingested_dataset = ingest_timeseries(param_config)
 
-    timeseries_containers = create_timeseries_containers(
-        ingested_dataset, param_config)
+
+def renderPrediction():
+    timeseries_containers = request.form['timeseries_containers']
+    timeseries_containers = pickle.loads(
+        base64.b64decode(timeseries_containers))
 
     global children_for_each_timeseries
+    global prediction_parameters
 
     children_for_each_timeseries = [{
         'name': s.timeseries_data.columns[0],
         'children': create_timeseries_dash_children(s, param_config)
     } for s in timeseries_containers]
 
-    outputDiv_children = [
-        html.H2(param_config["activity_title"]),
+    predictionDiv_children = [
+        html.H2(prediction_parameters['activity_title']),
         html.H2("Please select the data of interest:"),
         dcc.Dropdown(
             id='timeseries_selector',
@@ -155,12 +141,11 @@ def compute_prediction(param_config: dict):
         ), html.Div(id="timeseries_wrapper"), html.Div(dcc.Graph(), style={'display': 'none'})
     ]
 
-    return outputDiv_children
+    app.layout = html.Div(children=predictionDiv_children)
 
-
-# -------------------------SECOND CALLBACK FOR AN INTERACTIVE DISPLAYING OF THE RESULTS-------------------------
 @ app.callback(
-    Output(component_id='timeseries_wrapper', component_property='children'),
+    Output(component_id='timeseries_wrapper',
+            component_property='children'),
     [Input(component_id='timeseries_selector', component_property='value')],
 
     prevent_initial_call=True
@@ -178,4 +163,4 @@ def update_timeseries_wrapper(input_value):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=3000)
