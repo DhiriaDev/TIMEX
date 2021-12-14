@@ -1,3 +1,4 @@
+from datetime import time
 import logging
 import sys
 
@@ -48,7 +49,6 @@ uploadStyle = {
 }
 # these variables must be defined here to be shared by all the callbacks
 children_for_each_timeseries = None
-prediction_parameters = None
 
 app.layout = html.Div([
     html.Div([
@@ -100,10 +100,15 @@ def configuration_ingestion(config_file, filename):
                 payload = {}
                 payload['param_config'] = json.dumps(param_config)
 
-                # here data has been sent to the data ingestion module
-                requests.post('http://127.0.0.1:5000/ingest', data=payload)
 
-                return dash.no_update, html.P('Data is being analyzed, please wait')
+                # here data has been sent to the data ingestion module
+                ingestion_resp = json.loads(requests.post('http://127.0.0.1:5000/ingest', data=payload).text)
+                ingestion_resp['dataset'] = ingestion_resp['dataset']
+       
+
+                prediction_resp = json.loads(requests.post('http://127.0.0.1:4000/predict', data=ingestion_resp).text)
+
+                return dash.no_update, renderPrediction(prediction_resp, param_config)
 
             except ValueError as e:
                 print(e)
@@ -114,20 +119,17 @@ def configuration_ingestion(config_file, filename):
         return 'Updated failed, please retry'
 
 
+def renderPrediction(prediction_resp, prediction_parameters):
 
-
-
-def renderPrediction():
-    timeseries_containers = request.form['timeseries_containers']
+    timeseries_containers = prediction_resp['timeseries_containers']
     timeseries_containers = pickle.loads(
         base64.b64decode(timeseries_containers))
 
     global children_for_each_timeseries
-    global prediction_parameters
 
     children_for_each_timeseries = [{
         'name': s.timeseries_data.columns[0],
-        'children': create_timeseries_dash_children(s, param_config)
+        'children': create_timeseries_dash_children(s, prediction_parameters)
     } for s in timeseries_containers]
 
     predictionDiv_children = [
@@ -141,7 +143,8 @@ def renderPrediction():
         ), html.Div(id="timeseries_wrapper"), html.Div(dcc.Graph(), style={'display': 'none'})
     ]
 
-    app.layout = html.Div(children=predictionDiv_children)
+    return predictionDiv_children
+
 
 @ app.callback(
     Output(component_id='timeseries_wrapper',

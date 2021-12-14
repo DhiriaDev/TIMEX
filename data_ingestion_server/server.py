@@ -1,7 +1,8 @@
 import logging
+from os import stat
 import sys
 
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_restful import Api, Resource
 import json, pickle, base64, requests
 
@@ -24,7 +25,6 @@ class Ingest(Resource):
         '''
         try:
             param_config = json.loads(request.form['param_config'])
-
             dataset_url = param_config['input_parameters']['source_data_url']
 
             param_config['input_parameters']['source_data_url'] = 'https://drive.google.com/uc?id=' + \
@@ -39,18 +39,16 @@ class Ingest(Resource):
                 sequences so when it gets converted to a string, the string is still preserved when encoding it to bytes.
             '''
             dataset = pickle.dumps(dataset)
-            dataset = base64.b64encode(dataset)
+            dataset = (base64.b64encode(dataset)).decode('utf-8')
 
             payload = {}
             payload['param_config'] = json.dumps(param_config)
             payload['dataset'] = dataset
 
-            requests.post('http://127.0.0.1:4000/predict', data=payload)
-
-            return 200
+            return payload, 200
 
         except ValueError as err:
-            logger.error(err)
+            logger.error(err.with_traceback)
             return 400
 
 
