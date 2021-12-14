@@ -19,6 +19,7 @@ networkx = "^2.5"
 prophet = "^1.0.1"
 pmdarima = "^1.8.2"
 autopep8 = "^1.6.0"
+Flask = "^2.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"

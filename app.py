@@ -3,28 +3,35 @@ import logging
 import sys
 
 import dash
+import flask
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
 import json
+from flask.app import Flask
 import pandas as pd
 import base64
 import io
 
-from timexseries.data_ingestion import ingest_timeseries
-from timexseries.data_prediction.pipeline import create_timeseries_containers
-from timexseries.data_visualization.functions import create_timeseries_dash_children
+from data_ingestion.data_ingestion import ingest_timeseries
+from data_prediction.pipeline import create_timeseries_containers
+from data_visualization.functions import create_timeseries_dash_children
 
 #-----------SERVER INIT-----------------------
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+flask_server = Flask(__name__)
 # meta_tags are required for the app layout to be mobile responsive
-app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets= external_stylesheets,
+app = dash.Dash(__name__, 
+                server=flask_server,
+                suppress_callback_exceptions=True,
+                external_stylesheets= external_stylesheets,
                 meta_tags=[{'name': 'viewport',
                             'content': 'width=device-width, initial-scale=1.0'}]
                 )
-server = app.server
+
 
 # ---------------------GLOBAL VARIABLES AND SOME USEFUL FUNCTIONS-----------------------------
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)

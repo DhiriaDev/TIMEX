@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.stattools import adfuller
 
-from timexseries.data_prediction import PredictionModel
+from data_prediction import PredictionModel
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm

@@ -5,7 +5,7 @@ from prophet import Prophet
 import pandas as pd
 from pandas import DataFrame
 
-from timexseries.data_prediction import PredictionModel
+from data_prediction import PredictionModel
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)

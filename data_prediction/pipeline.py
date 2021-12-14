@@ -7,16 +7,16 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 
-from timexseries.data_ingestion import ingest_additional_regressors
-from timexseries.data_prediction import PredictionModel
-from timexseries.data_prediction.models.arima_predictor import ARIMAModel
-from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from timexseries.data_prediction.models.lstm_predictor import LSTMModel
-from timexseries.data_prediction.models.mockup_predictor import MockUpModel
-# from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from timexseries.data_prediction.models.prophet_predictor import FBProphetModel
-from timexseries.data_prediction.xcorr import calc_all_xcorr
-from timexseries.timeseries_container import TimeSeriesContainer
+from data_ingestion.data_ingestion import ingest_additional_regressors
+from data_prediction import PredictionModel
+from data_prediction.models.arima_predictor import ARIMAModel
+from data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from data_prediction.models.lstm_predictor import LSTMModel
+from data_prediction.models.mockup_predictor import MockUpModel
+# from data_prediction.models.neuralprophet_predictor import NeuralProphetModel
+from data_prediction.models.prophet_predictor import FBProphetModel
+from data_prediction.xcorr import calc_all_xcorr
+from .timeseries_container import TimeSeriesContainer
 
 log = logging.getLogger(__name__)
 

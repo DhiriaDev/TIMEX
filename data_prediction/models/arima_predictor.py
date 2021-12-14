@@ -1,7 +1,7 @@
 from pandas import DataFrame
 import numpy as np
 
-from timexseries.data_prediction import PredictionModel
+from data_prediction import PredictionModel
 import pmdarima as pm
 
 
