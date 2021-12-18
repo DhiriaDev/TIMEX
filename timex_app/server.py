@@ -1,4 +1,3 @@
-from datetime import time
 import logging
 import sys
 
@@ -13,8 +12,6 @@ import pickle
 import base64
 import requests
 import io
-from data_visualization import timeseries_container
-
 
 from data_visualization.functions import create_timeseries_dash_children
 
@@ -32,7 +29,6 @@ app = dash.Dash(__name__,
                 meta_tags=[{'name': 'viewport',
                             'content': 'width=device-width, initial-scale=1.0'}]
                 )
-
 
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -58,9 +54,9 @@ app.layout = html.Div([
         html.Div(
             children=[
                 html.H3(html.Label(children='Please insert here your configuration json',
-                                    htmlFor='uploaded')),
+                                   htmlFor='uploaded')),
                 dcc.Upload(html.A('Select a File'), id='uploaded',
-                            style=uploadStyle, multiple=False),
+                           style=uploadStyle, multiple=False),
             ]
         ),
 
@@ -83,38 +79,46 @@ app.layout = html.Div([
 )
 def configuration_ingestion(config_file, filename):
 
-    if(config_file is not None and filename is not None):
+    if(config_file is not None and filename is not None and 'json' in filename):
 
         encoding = 'utf-8'
 
-        if 'json' in filename:
-            try:
-                content_type, content_string = config_file.split(',')
+        try:
+            content_type, content_string = config_file.split(',')
 
-                param_config = json.load(
-                    io.StringIO(((base64.b64decode(content_string)).decode(encoding))))
+            param_config = json.load(
+                io.StringIO(((base64.b64decode(content_string)).decode(encoding))))
 
-                global prediction_parameters
-                prediction_parameters = param_config
+            global prediction_parameters
+            prediction_parameters = param_config
 
-                payload = {}
-                payload['param_config'] = json.dumps(param_config)
+        except ValueError as e:
+            print(e)
+            return 'Error in parsing the json file'
 
+        try:
+            payload = {}
+            payload['param_config'] = json.dumps(param_config)
 
-                # here data has been sent to the data ingestion module
-                ingestion_resp = json.loads(requests.post('http://127.0.0.1:5000/ingest', data=payload).text)
-                ingestion_resp['dataset'] = ingestion_resp['dataset']
-       
+            # here data has been sent to the data ingestion module
+            ingestion_resp = json.loads(requests.post(
+                'http://data_ingestion:5000/ingest', data=payload).text)
+            ingestion_resp['dataset'] = ingestion_resp['dataset']
 
-                prediction_resp = json.loads(requests.post('http://127.0.0.1:4000/predict', data=ingestion_resp).text)
+        except ValueError as e:
+            print(e)
+            return 'Error in contacting the data ingestion module'
 
-                return dash.no_update, renderPrediction(prediction_resp, param_config)
+        try:
+            prediction_resp = json.loads(requests.post(
+                'http://data_prediction:5000/predict', data=ingestion_resp).text)
 
-            except ValueError as e:
-                print(e)
-                return 'Error in parsing the json file'
-        else:
-            return 'Wrong file format, please retry!'
+            return dash.no_update, renderPrediction(prediction_resp, param_config)
+
+        except ValueError as e:
+            print(e)
+            return 'Error in contacting the data prediction module'
+
     else:
         return 'Updated failed, please retry'
 
@@ -148,7 +152,7 @@ def renderPrediction(prediction_resp, prediction_parameters):
 
 @ app.callback(
     Output(component_id='timeseries_wrapper',
-            component_property='children'),
+           component_property='children'),
     [Input(component_id='timeseries_selector', component_property='value')],
 
     prevent_initial_call=True
@@ -166,4 +170,4 @@ def update_timeseries_wrapper(input_value):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=3000)
+    app.run_server(host="0.0.0.0", port=5000 ,debug=True)

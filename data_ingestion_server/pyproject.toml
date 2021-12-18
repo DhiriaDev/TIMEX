@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "data_ingestion_server"
+version = "0.1.0"
+description = "data ingestion module for the timex app"
+authors = ["FPuoti255 <fpuoti99@gmail.com>"]
+license = "GNU GPL 3"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+Flask = "^2.0.2"
+Flask-RESTful = "^0.3.9"
+requests = "^2.26.0"
+dateparser = "^1.1.0"
+pandas = "*"
+gunicorn = "^20.1.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

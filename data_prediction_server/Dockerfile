@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1
 
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -26,9 +26,10 @@ WORKDIR /timex
 
 ADD poetry.lock .
 ADD pyproject.toml .
-RUN poetry config virtualenvs.create false && poetry install
+
+RUN poetry config virtualenvs.create false \
+    && poetry update
 
 ADD . .
 
-CMD [ "gunicorn", "-b 0.0.0.0:5000", "-t 0" ,"app:server"]
-
+CMD [ "python", "server.py"]
