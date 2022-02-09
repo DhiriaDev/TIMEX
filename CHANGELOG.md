@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.2.2] - 2022-02-09
+- Bump dependencies
+- Managed different import mechanisms for Dash
+
 ## [1.2.1] - 2021-06-23
 - Removed automatic Seasonal part of ARIMA; it could take a long time. Further investigation on `pmdarima` is requested;
 - Fixed a bug in which CSV with dates in the format `1959-01` were not correctly recognized;
