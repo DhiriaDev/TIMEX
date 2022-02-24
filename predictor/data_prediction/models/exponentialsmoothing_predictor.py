@@ -1,12 +1,13 @@
 import logging
 import warnings
 
+from utils.predictor import PredictionModel
+
 from pandas import DataFrame
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.stattools import adfuller
 
-from data_prediction import PredictionModel
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm

@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 from .add_regressor import ingest_additional_regressors
 from data_prediction import PredictionModel
+
 from .models.arima_predictor import ARIMAModel
 from .models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from .models.lstm_predictor import LSTMModel
@@ -436,10 +437,13 @@ def get_best_predictions(ingested_data: DataFrame, param_config: dict):
                                                                                   total_xcorr)
 
     if total_xcorr is not None or "additional_regressors" in param_config:
-        timeseries_containers = get_best_multivariate_predictions(timeseries_containers=timeseries_containers, ingested_data=ingested_data,
-                                                      best_transformations=best_transformations,
-                                                      total_xcorr=total_xcorr,
-                                                      param_config=param_config)
+        timeseries_containers = get_best_multivariate_predictions(
+                                                    timeseries_containers=timeseries_containers,
+                                                    ingested_data=ingested_data,
+                                                    best_transformations=best_transformations,
+                                                    total_xcorr=total_xcorr,
+                                                    param_config=param_config
+                                                    )
 
     return timeseries_containers
 
@@ -705,25 +709,30 @@ def create_timeseries_containers(ingested_data: DataFrame, param_config: dict):
         log.debug(f"Requested the computation of historical predictions.")
         timeseries_containers = compute_historical_predictions(ingested_data, param_config)
     else:
-        if "model_parameters" in param_config:
-            log.debug(f"Computing best predictions, without history.")
-            timeseries_containers = get_best_predictions(ingested_data, param_config)
-        else:
-            log.debug(f"Creating containers only for data visualization.")
-            timeseries_containers = []
-            if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
-                total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
-            else:
-                total_xcorr = None
-
-            for col in ingested_data.columns:
-                timeseries_data = ingested_data[[col]]
-                timeseries_xcorr = total_xcorr[col] if total_xcorr is not None else None
-                timeseries_containers.append(
-                    TimeSeriesContainer(timeseries_data, None, timeseries_xcorr)
-                )
+        timeseries_containers = compute_predictions(ingested_data, param_config, model)
 
     return timeseries_containers
+
+def compute_predictions (ingested_data, param_config) :
+
+    if "model_parameters" in param_config:
+        log.debug(f"Computing best predictions, without history.")
+        return get_best_predictions(ingested_data, param_config)
+
+    else:
+        log.debug(f"Creating containers only for data visualization.")
+        timeseries_containers = []
+        if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
+            total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
+        else:
+            total_xcorr = None
+
+        for col in ingested_data.columns:
+            timeseries_data = ingested_data[[col]]
+            timeseries_xcorr = total_xcorr[col] if total_xcorr is not None else None
+            timeseries_containers.append(
+                TimeSeriesContainer(timeseries_data, None, timeseries_xcorr)
+            )
 
 
 def model_factory(model_class: str, param_config: dict, transformation: str = None) -> PredictionModel:

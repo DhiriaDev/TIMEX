@@ -1,8 +1,9 @@
 import logging
 
+from utils.predictor import PredictionModel
+
 from pandas import DataFrame
 
-from data_prediction import PredictionModel
 log = logging.getLogger(__name__)
 
 

@@ -1,12 +1,14 @@
 import logging
 
+from utils.predictor import PredictionModel
+
 from pandas import DataFrame
 import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
 
-from data_prediction import PredictionModel
+
 log = logging.getLogger(__name__)
 
 

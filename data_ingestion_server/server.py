@@ -16,6 +16,8 @@ api = Api(app)
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
+data_ingestion_address = '127.0.0.1'
+data_ingestion_port = 4000
 
 class Ingest(Resource):
     def post(self):
@@ -56,5 +58,5 @@ api.add_resource(Ingest, '/ingest')
     
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="5000" ,debug=True)
+    app.run(host=data_ingestion_address, port=data_ingestion_port ,debug=True)
 

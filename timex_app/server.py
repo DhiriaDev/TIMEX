@@ -15,6 +15,11 @@ import io
 
 from data_visualization.functions import create_timeseries_dash_children
 
+app_address = '127.0.0.1'
+app_port = 5000
+data_ingestion_address = 'http://127.0.0.1:4000/ingest'
+data_prediction_address='http://127.0.0.1:3000/predict'
+
 
 # -----------SERVER INIT-----------------------
 
@@ -102,7 +107,7 @@ def configuration_ingestion(config_file, filename):
 
             # here data has been sent to the data ingestion module
             ingestion_resp = json.loads(requests.post(
-                'http://data_ingestion:5000/ingest', data=payload).text)
+                data_ingestion_address, data=payload).text)
             ingestion_resp['dataset'] = ingestion_resp['dataset']
 
         except ValueError as e:
@@ -111,7 +116,7 @@ def configuration_ingestion(config_file, filename):
 
         try:
             prediction_resp = json.loads(requests.post(
-                'http://data_prediction:5000/predict', data=ingestion_resp).text)
+                data_prediction_address, data=ingestion_resp).text)
 
             return dash.no_update, renderPrediction(prediction_resp, param_config)
 
@@ -170,4 +175,4 @@ def update_timeseries_wrapper(input_value):
 
 
 if __name__ == '__main__':
-    app.run_server(host="0.0.0.0", port=5000 ,debug=True)
+    app.run_server(host=app_address, port=app_port ,debug=True)

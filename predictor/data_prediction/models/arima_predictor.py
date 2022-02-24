@@ -1,7 +1,7 @@
 from pandas import DataFrame
 import numpy as np
 
-from data_prediction import PredictionModel
+from utils.predictor import PredictionModel
 import pmdarima as pm
 
 

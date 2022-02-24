@@ -7,8 +7,8 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
-from ..transformation import transformation_factory
-from ..validation_performances import ValidationPerformance
+from .validation_performances import ValidationPerformance
+from .transformation import transformation_factory
 
 log = logging.getLogger(__name__)
 
