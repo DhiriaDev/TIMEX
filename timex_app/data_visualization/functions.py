@@ -18,7 +18,7 @@ from colorhash import ColorHash
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 from data_prediction import ValidationPerformance
-from data_prediction.models.predictor import SingleResult
+from data_prediction.predictor import SingleResult
 import calendar
 
 from data_prediction.timeseries_container import TimeSeriesContainer

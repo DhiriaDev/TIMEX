@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 from .add_regressor import ingest_additional_regressors
 from data_prediction import PredictionModel
+
 from .models.arima_predictor import ARIMAModel
 from .models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from .models.lstm_predictor import LSTMModel
@@ -60,7 +61,7 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
         Tuple[dict, list]:
     """
     Compute, for every column in `ingested_data` (every time-series) the best univariate prediction possible.
-    This is done using the models specified in `param_config` and testing the effect of the different transformations
+    This is done using the requested model specified in `param_config` and testing the effect of the different transformations
     specified in `param_config`. Moreover, the best feature transformation found, across the possible ones, will be
     returned.
 
@@ -130,10 +131,6 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
     """
     transformations_to_test = [*param_config["model_parameters"]["possible_transformations"].split(",")]
     main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
-    models = [*param_config["model_parameters"]["models"].split(",")]
-
-    best_transformations = dict.fromkeys(models, {})
-    timeseries_containers = []
 
     try:
         max_threads = param_config['max_threads']
@@ -145,34 +142,38 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
 
     columns = ingested_data.columns
 
+    model = param_config["model_parameters"]["models"]
+
+    best_transformations = {model :  {}}
+    timeseries_containers = []
+
     for col in columns:
         model_results = {}
         timeseries_data = ingested_data[[col]]
         xcorr = total_xcorr[col] if total_xcorr is not None else None
 
-        for model in models:
-            this_model_performances = []
+        this_model_performances = []
 
-            log.info(f"Using model {model}...")
+        log.info(f"Using model {model}...")
 
-            for transf in transformations_to_test:
-                log.info(f"Computing univariate prediction for {col} using transformation: {transf}...")
-                predictor = model_factory(model, param_config=param_config, transformation=transf)
-                _result = predictor.launch_model(timeseries_data.copy(), max_threads=max_threads)
+        for transf in transformations_to_test:
+            log.info(f"Computing univariate prediction for {col} using transformation: {transf}...")
+            predictor = model_factory(model, param_config=param_config, transformation=transf)
+            _result = predictor.launch_model(timeseries_data.copy(), max_threads=max_threads)
 
-                performances = _result.results
-                performances.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
-                performances = getattr(performances[0].testing_performances, main_accuracy_estimator.upper())
+            performances = _result.results
+            performances.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+            performances = getattr(performances[0].testing_performances, main_accuracy_estimator.upper())
 
-                this_model_performances.append((_result, performances, transf))
+            this_model_performances.append((_result, performances, transf))
 
-            this_model_performances.sort(key=lambda x: x[1])
-            best_tr = this_model_performances[0][2]
-            [log.debug(f"Error with {t}: {e}") for t, e in zip(map(lambda x: x[2], this_model_performances),
-                                                               map(lambda x: x[1], this_model_performances))]
-            log.info(f"Best transformation for {col} using {model}: {best_tr}")
-            best_transformations[model][col] = best_tr
-            model_results[model] = this_model_performances[0][0]
+        this_model_performances.sort(key=lambda x: x[1])
+        best_tr = this_model_performances[0][2]
+        [log.debug(f"Error with {t}: {e}") for t, e in zip(map(lambda x: x[2], this_model_performances),
+                                                            map(lambda x: x[1], this_model_performances))]
+        log.info(f"Best transformation for {col} using {model}: {best_tr}")
+        best_transformations[model][col] = best_tr
+        model_results[model] = this_model_performances[0][0]
 
         timeseries_containers.append(
             TimeSeriesContainer(timeseries_data, model_results, xcorr)
@@ -436,10 +437,13 @@ def get_best_predictions(ingested_data: DataFrame, param_config: dict):
                                                                                   total_xcorr)
 
     if total_xcorr is not None or "additional_regressors" in param_config:
-        timeseries_containers = get_best_multivariate_predictions(timeseries_containers=timeseries_containers, ingested_data=ingested_data,
-                                                      best_transformations=best_transformations,
-                                                      total_xcorr=total_xcorr,
-                                                      param_config=param_config)
+        timeseries_containers = get_best_multivariate_predictions(
+                                                    timeseries_containers=timeseries_containers,
+                                                    ingested_data=ingested_data,
+                                                    best_transformations=best_transformations,
+                                                    total_xcorr=total_xcorr,
+                                                    param_config=param_config
+                                                    )
 
     return timeseries_containers
 
@@ -705,25 +709,30 @@ def create_timeseries_containers(ingested_data: DataFrame, param_config: dict):
         log.debug(f"Requested the computation of historical predictions.")
         timeseries_containers = compute_historical_predictions(ingested_data, param_config)
     else:
-        if "model_parameters" in param_config:
-            log.debug(f"Computing best predictions, without history.")
-            timeseries_containers = get_best_predictions(ingested_data, param_config)
-        else:
-            log.debug(f"Creating containers only for data visualization.")
-            timeseries_containers = []
-            if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
-                total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
-            else:
-                total_xcorr = None
-
-            for col in ingested_data.columns:
-                timeseries_data = ingested_data[[col]]
-                timeseries_xcorr = total_xcorr[col] if total_xcorr is not None else None
-                timeseries_containers.append(
-                    TimeSeriesContainer(timeseries_data, None, timeseries_xcorr)
-                )
+        timeseries_containers = compute_predictions(ingested_data, param_config)
 
     return timeseries_containers
+
+def compute_predictions (ingested_data, param_config) :
+
+    if "model_parameters" in param_config:
+        log.debug(f"Computing best predictions, without history.")
+        return get_best_predictions(ingested_data, param_config)
+
+    else:
+        log.debug(f"Creating containers only for data visualization.")
+        timeseries_containers = []
+        if "xcorr_parameters" in param_config and len(ingested_data.columns) > 1:
+            total_xcorr = calc_all_xcorr(ingested_data=ingested_data, param_config=param_config)
+        else:
+            total_xcorr = None
+
+        for col in ingested_data.columns:
+            timeseries_data = ingested_data[[col]]
+            timeseries_xcorr = total_xcorr[col] if total_xcorr is not None else None
+            timeseries_containers.append(
+                TimeSeriesContainer(timeseries_data, None, timeseries_xcorr)
+            )
 
 
 def model_factory(model_class: str, param_config: dict, transformation: str = None) -> PredictionModel:

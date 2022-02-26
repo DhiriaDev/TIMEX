@@ -1,11 +1,11 @@
 import logging
 import os
 
+from ..predictor import PredictionModel
 from prophet import Prophet
+
 import pandas as pd
 from pandas import DataFrame
-
-from data_prediction import PredictionModel
 
 logging.getLogger('fbprophet').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
