@@ -139,7 +139,7 @@ def renderPrediction(prediction_resp, prediction_parameters):
     global children_for_each_timeseries
 
     children_for_each_timeseries = [{
-        'name': s.timeseries_data.columns[0],
+        'name': s.timeseries_data.columns[0]+'_'+list(s.models.keys())[0],
         'children': create_timeseries_dash_children(s, prediction_parameters)
     } for s in timeseries_containers]
 
