@@ -4,8 +4,7 @@ import logging
 from flask import Flask, request
 from flask_restful import Api, Resource
 import json
-import requests
-
+import asyncio, aiohttp
 
 app = Flask(__name__)
 api = Api(app)
@@ -16,6 +15,25 @@ logger = logging.getLogger(__name__)
 
 predictor_address = 'http://127.0.0.1:3000/'
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']
+
+async def call_predictor(session : aiohttp.ClientSession, model : str, url : str, models_results : dict):
+    async with session.post(url=url, data=request.form) as resp:
+        logger.info('asking for: '+url)       
+        results = await (resp.json())
+        results = results['timeseries_containers']
+        models_results[model]= results
+
+
+async def schedule_coroutines(models) -> dict:
+    async with aiohttp.ClientSession() as session:
+        models_results = dict.fromkeys(models, {})
+        async_requests=[call_predictor(session, 
+                                        model, 
+                                        url = str(predictor_address+model.lower()),
+                                        models_results=models_results) for model in models]
+        await asyncio.gather(*async_requests)
+        return models_results
+
 
 class Orchestrator(Resource):
 
@@ -32,33 +50,8 @@ class Orchestrator(Resource):
             logger.error('One or more of the requested models is not valid')
             return 400
 
-        
-        try:            
-            
-            models_result = dict.fromkeys(models, {}) 
-
-            for model in models:
-                #address = predictor_address + model.lower()
-                address=str(predictor_address+model.lower())
-                logger.info('asking for: '+address)
-                results = json.loads(
-                        requests.post(
-                            url=address, data=request.form).text
-                        )['timeseries_containers']
-                
-                models_result[model]=results
-
-        except ValueError as err:
-            logger.error(err)
-            return 500
-
-        '''
-        Future functionalities will be implemented, such as:
-         - calling a validation service to extract the best predictor
-        --------------------------------------------------------------------------------------
-        '''
-
-        payload = {"models_results" : models_result}
+        results = asyncio.run(schedule_coroutines(models))
+        payload = {"models_results" : results}
 
         return payload, 200
 

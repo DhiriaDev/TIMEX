@@ -1,8 +1,21 @@
 [tool.poetry]
 name = "timexseries"
-version = "0.1.0"
-description = "Dockerization of the Timex app for machine learning time series forecasting as a service"
-authors = ["FPuoti255 <fpuoti99@gmail.com>"]
+version = "1.2.1"
+description = "TIMEX is a framework for time-series-forecasting-as-a-service."
+authors = ["Alessandro Falcetta <alessandro.falcetta@polimi.it>", "Manuel Roveri <manuel.roveri@polimi.it>"]
+license = "Apache-2.0"
+
+readme = "README.md"
+
+repository = "https://github.com/AlexMV12/TIMEX"
+homepage = "https://alexmv12.github.io/TIMEX/"
+
+keywords = ["time-series", "time", "forecasting", "as-a-service"]
+
+classifiers = [
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -18,10 +31,10 @@ statsmodels = "^0.12.2"
 networkx = "^2.5"
 prophet = "^1.0.1"
 pmdarima = "^1.8.2"
-autopep8 = "^1.6.0"
-Flask = "^2.0.2"
+asyncio = "^3.4.3"
 Flask-RESTful = "^0.3.9"
-requests = "^2.26.0"
+requests = "^2.27.1"
+aiohttp = "^3.8.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"

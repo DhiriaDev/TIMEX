@@ -30,7 +30,6 @@ def prepare_folder_for_dataSaving(path: str):
 
 def predict(request: request, name: str):
     try:
-
         param_config = json.loads(request.form['param_config'])
         dataset = pickle.loads(base64.b64decode(request.form['dataset']))
         logger.info(
@@ -79,7 +78,7 @@ class MockUp(Resource):
 
 api.add_resource(Arima, '/arima')
 api.add_resource(MockUp, '/mockup')
-api.add_resource(ExponentialSmoothing, '/expsmooth')
+api.add_resource(ExponentialSmoothing, '/exponentialsmoothing')
 api.add_resource(LSTM, '/lstm')
 api.add_resource(Prophet, '/fbprophet')
 
