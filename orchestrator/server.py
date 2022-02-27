@@ -1,5 +1,3 @@
-import base64
-import pickle
 import sys
 import logging
 
@@ -37,7 +35,7 @@ class Orchestrator(Resource):
         
         try:            
             
-            timeseries_containers = [] 
+            models_result = dict.fromkeys(models, {}) 
 
             for model in models:
                 #address = predictor_address + model.lower()
@@ -48,10 +46,7 @@ class Orchestrator(Resource):
                             url=address, data=request.form).text
                         )['timeseries_containers']
                 
-                timeseries_containers.extend(
-                    pickle.loads(base64.b64decode(results))
-                )
-
+                models_result[model]=results
 
         except ValueError as err:
             logger.error(err)
@@ -60,15 +55,12 @@ class Orchestrator(Resource):
         '''
         Future functionalities will be implemented, such as:
          - calling a validation service to extract the best predictor
+        --------------------------------------------------------------------------------------
         '''
-        timeseries_containers = pickle.dumps(timeseries_containers)
-        timeseries_containers = base64.b64encode(timeseries_containers).decode('utf-8')
 
-
-        payload = {"timeseries_containers" : timeseries_containers}
+        payload = {"models_results" : models_result}
 
         return payload, 200
-
 
 
 api.add_resource(Orchestrator, '/predict')

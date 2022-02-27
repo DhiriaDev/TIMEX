@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 def prepare_folder_for_dataSaving(path: str):
-    if(not os.path.exists(path)):
+    if(not os.path.exists(path)): # If historical predictions non present yet
         cur = ""
-        print('now i will try find the path')
+        print('Finding the path...')
         for dir in (path.split('/')[:-1]):
             cur += dir
             if(not os.path.exists(cur)):

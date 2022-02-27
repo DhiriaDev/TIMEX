@@ -295,7 +295,7 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
     except KeyError:
         additional_regressors = None
 
-    models = [*param_config["model_parameters"]["models"].split(",")]
+    model = param_config["model_parameters"]["models"]
 
     try:
         max_threads = param_config['max_threads']
@@ -305,87 +305,86 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
         except:
             max_threads = 1
 
-    for model in models:
-        log.info(f"Checking optimal predictions with model {model}")
+    log.info(f"Checking optimal predictions with model {model}")
+    best_forecasts_found = 0
+    iterations = 0
+
+    while best_forecasts_found != len(ingested_data.columns):
+        log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
         best_forecasts_found = 0
-        iterations = 0
 
-        while best_forecasts_found != len(ingested_data.columns):
-            log.info(f"-> Found the optimal prediction for only {best_forecasts_found}")
-            best_forecasts_found = 0
+        for col in ingested_data.columns:
+            depends_on_other_ts = False
+            useful_extra_regressors = []
 
-            for col in ingested_data.columns:
-                depends_on_other_ts = False
-                useful_extra_regressors = []
+            log.debug(f"Look for extra regressors in other dataset's columns...")
+            try:
+                local_xcorr = total_xcorr[col][xcorr_mode_target]
 
-                log.debug(f"Look for extra regressors in other dataset's columns...")
-                try:
-                    local_xcorr = total_xcorr[col][xcorr_mode_target]
+                # Add extra regressors from the original dataset
+                for extra_regressor in local_xcorr.columns:
+                    # Look only in correlation with future lags.
+                    index_of_max = local_xcorr[extra_regressor].abs().idxmax()
+                    corr = local_xcorr.loc[index_of_max, extra_regressor]
+                    if abs(corr) > xcorr_threshold and index_of_max >= 0:
+                        log.debug(
+                            f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
 
-                    # Add extra regressors from the original dataset
-                    for extra_regressor in local_xcorr.columns:
-                        # Look only in correlation with future lags.
-                        index_of_max = local_xcorr[extra_regressor].abs().idxmax()
-                        corr = local_xcorr.loc[index_of_max, extra_regressor]
-                        if abs(corr) > xcorr_threshold and index_of_max >= 0:
-                            log.debug(
-                                f"Found a possible extra-regressor for {col}: {extra_regressor} at lag {index_of_max}")
+                        useful_extra_regressors.append(
+                            prepare_extra_regressor(next(filter(
+                                lambda x: x.timeseries_data.columns[0] == extra_regressor, timeseries_containers)), model=model))
+                        depends_on_other_ts = True
+                local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
+            except:
+                local_xcorr = None
 
-                            useful_extra_regressors.append(
-                                prepare_extra_regressor(next(filter(
-                                    lambda x: x.timeseries_data.columns[0] == extra_regressor, timeseries_containers)), model=model))
-                            depends_on_other_ts = True
-                    local_xcorr = total_xcorr[col]  # To give the full xcorr to Scenario
-                except:
-                    local_xcorr = None
+            log.debug(f"Look for user-given additional regressors...")
+            try:
+                additional_regressor_path = additional_regressors["_all"]
+                useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
+            except:
+                pass
 
-                log.debug(f"Look for user-given additional regressors...")
-                try:
-                    additional_regressor_path = additional_regressors["_all"]
-                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
-                except:
-                    pass
+            try:
+                additional_regressor_path = additional_regressors[col]
+                useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
+            except:
+                pass
 
-                try:
-                    additional_regressor_path = additional_regressors[col]
-                    useful_extra_regressors.append(ingest_additional_regressors(additional_regressor_path, param_config))
-                except:
-                    pass
+            if len(useful_extra_regressors) == 0:
+                log.debug(f"No useful extra-regressor found for {col}: skipping...")
+                best_forecasts_found += 1
+            else:
+                useful_extra_regressors = reduce(lambda x, y: x.join(y), useful_extra_regressors)
+                log.info(f"Found useful extra-regressors: {useful_extra_regressors.columns}. "
+                            f"Re-compute the prediction for {col}")
 
-                if len(useful_extra_regressors) == 0:
-                    log.debug(f"No useful extra-regressor found for {col}: skipping...")
-                    best_forecasts_found += 1
-                else:
-                    useful_extra_regressors = reduce(lambda x, y: x.join(y), useful_extra_regressors)
-                    log.info(f"Found useful extra-regressors: {useful_extra_regressors.columns}. "
-                             f"Re-compute the prediction for {col}")
+                timeseries_data = ingested_data[[col]]
 
-                    timeseries_data = ingested_data[[col]]
+                tr = best_transformations[model][col]
 
-                    tr = best_transformations[model][col]
+                predictor = model_factory(model, param_config, transformation=tr)
+                _result = predictor.launch_model(timeseries_data.copy(),
+                                                    extra_regressors=useful_extra_regressors.copy(),
+                                                    max_threads=max_threads)
+                old_this_container = next(filter(lambda x: x.timeseries_data.columns[0] == col, timeseries_containers))
 
-                    predictor = model_factory(model, param_config, transformation=tr)
-                    _result = predictor.launch_model(timeseries_data.copy(),
-                                                     extra_regressors=useful_extra_regressors.copy(),
-                                                     max_threads=max_threads)
-                    old_this_container = next(filter(lambda x: x.timeseries_data.columns[0] == col, timeseries_containers))
+                old_errors = [x.testing_performances.MAE for x in old_this_container.models[model].results]
+                min_old_error = min(old_errors)
+                min_new_error = min([x.testing_performances.MAE for x in _result.results])
 
-                    old_errors = [x.testing_performances.MAE for x in old_this_container.models[model].results]
-                    min_old_error = min(old_errors)
-                    min_new_error = min([x.testing_performances.MAE for x in _result.results])
-
-                    if min_new_error < min_old_error:
-                        log.info(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
-                        new_model_results = old_this_container.models
-                        new_model_results[model] = _result
-                        new_container = TimeSeriesContainer(timeseries_data, new_model_results, local_xcorr)
-                        timeseries_containers = [new_container if x.timeseries_data.columns[0] == col else x for x in timeseries_containers]
-                        if not depends_on_other_ts:
-                            best_forecasts_found += 1
-                    else:
-                        log.info(f"No improvements.")
+                if min_new_error < min_old_error:
+                    log.info(f"Obtained a better error: {min_new_error} vs old {min_old_error}")
+                    new_model_results = old_this_container.models
+                    new_model_results[model] = _result
+                    new_container = TimeSeriesContainer(timeseries_data, new_model_results, local_xcorr)
+                    timeseries_containers = [new_container if x.timeseries_data.columns[0] == col else x for x in timeseries_containers]
+                    if not depends_on_other_ts:
                         best_forecasts_found += 1
-            iterations += 1
+                else:
+                    log.info(f"No improvements.")
+                    best_forecasts_found += 1
+        iterations += 1
 
     log.info(f"Found the optimal prediction for all the {best_forecasts_found} time-series in {iterations} iterations!")
     return timeseries_containers

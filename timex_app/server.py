@@ -14,6 +14,7 @@ import requests
 import io
 
 from data_visualization.functions import create_timeseries_dash_children
+from data_prediction import timeseries_container
 
 
 data_ingestion_address = 'http://127.0.0.1:4000/ingest'
@@ -119,6 +120,7 @@ def configuration_ingestion(config_file, filename):
             logger.info('contacting the orchestrator')
             prediction_resp = json.loads(requests.post(
                 orchestrator_address, data=payload).text)
+            logger.info('predictions received')
 
             return dash.no_update, renderPrediction(prediction_resp, param_config)
 
@@ -131,10 +133,14 @@ def configuration_ingestion(config_file, filename):
 
 
 def renderPrediction(prediction_resp, prediction_parameters):
-
-    timeseries_containers = prediction_resp['timeseries_containers']
-    timeseries_containers = pickle.loads(
-        base64.b64decode(timeseries_containers))
+    
+    results = prediction_resp['models_results']
+    
+    timeseries_containers = [] 
+    [timeseries_containers.extend(
+        pickle.loads(base64.b64decode(results.get(res)))
+        ) for res in results ]
+    
 
     global children_for_each_timeseries
 
