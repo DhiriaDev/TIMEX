@@ -144,7 +144,9 @@ def renderPrediction(prediction_resp, prediction_parameters):
         ) for res in results ]
     
 
-    #let's now group the different models predictions received for each timeseries
+    # The orchestrator performs multiple async requests to the prediction server.
+    # Therefore, the predictions of each model for each timeseries will come divided 
+    # -> we can merge them in a single container
     def groupKey(x):
         return x.timeseries_data.columns[0]
     def mergeContainers(elements : list[TimeSeriesContainer]):
