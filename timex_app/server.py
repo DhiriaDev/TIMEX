@@ -1,4 +1,5 @@
 import logging
+from pyexpat import model
 import sys
 
 import flask
@@ -12,9 +13,10 @@ import pickle
 import base64
 import requests
 import io
+from itertools import groupby
 
 from data_visualization.functions import create_timeseries_dash_children
-from data_prediction import timeseries_container
+from data_prediction.timeseries_container import TimeSeriesContainer
 
 
 data_ingestion_address = 'http://127.0.0.1:4000/ingest'
@@ -142,10 +144,30 @@ def renderPrediction(prediction_resp, prediction_parameters):
         ) for res in results ]
     
 
+    #let's now group the different models predictions received for each timeseries
+    def groupKey(x):
+        return x.timeseries_data.columns[0]
+    def mergeContainers(elements : list[TimeSeriesContainer]):
+        merged_container = elements[0]
+        for i in range(1, len(elements)):
+            merged_container.models.update(elements[i].models)
+            if merged_container.historical_prediction is not None: 
+                merged_container.historical_prediction.update(elements[i].historical_prediction)
+        return merged_container
+    
+    # itertools.groupby generates a break or new group every time the value of the key function changes.
+    # Therefore, it is usually necessary to have sorted the data using the same key function.
+    sorted_list = sorted(timeseries_containers, key=groupKey)
+    timeseries_containers=[]
+    for key, elements in groupby(sorted_list, key=groupKey):
+        merged_container = mergeContainers(list(elements));
+        timeseries_containers.append(merged_container)
+
+
     global children_for_each_timeseries
 
     children_for_each_timeseries = [{
-        'name': s.timeseries_data.columns[0]+'_'+list(s.models.keys())[0],
+        'name': s.timeseries_data.columns[0],
         'children': create_timeseries_dash_children(s, prediction_parameters)
     } for s in timeseries_containers]
 
