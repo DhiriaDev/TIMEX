@@ -11,6 +11,7 @@ from dash.dependencies import Input, Output, State
 import json
 import pickle
 import base64
+from matplotlib.font_manager import json_dump
 import requests
 import io
 from itertools import groupby
@@ -19,16 +20,13 @@ from data_visualization.functions import create_timeseries_dash_children
 from data_prediction.timeseries_container import TimeSeriesContainer
 
 
-data_ingestion_address = 'http://127.0.0.1:4000/ingest'
-orchestrator_address='http://127.0.0.1:6000/predict'
+timex_manager_address='http://127.0.0.1:6000/predict'
 
 
 # -----------SERVER INIT-----------------------
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
 server = Flask(__name__)
-
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__,
                 server=server,
                 suppress_callback_exceptions=True,
@@ -37,9 +35,9 @@ app = dash.Dash(__name__,
                             'content': 'width=device-width, initial-scale=1.0'}]
                 )
 
-
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
+
 uploadStyle = {
     'width': '20%',
     'height': '60px',
@@ -50,8 +48,8 @@ uploadStyle = {
     'textAlign': 'center',
     'margin-top': 5
 }
-# these variables must be defined here to be shared by all the callbacks
-children_for_each_timeseries = None
+
+#--------LANDING PAGE-------------
 
 app.layout = html.Div([
     html.Div([
@@ -84,58 +82,47 @@ app.layout = html.Div([
     # it prevents the callback from being executed when the page is refreshed
     prevent_initial_call=True
 )
+
 def configuration_ingestion(config_file, filename):
 
     if(config_file is not None and filename is not None and 'json' in filename):
 
         encoding = 'utf-8'
 
+        # Check the validity of the input file
         try:
             content_type, content_string = config_file.split(',')
 
             param_config = json.load(
                 io.StringIO(((base64.b64decode(content_string)).decode(encoding))))
 
-            global prediction_parameters
-            prediction_parameters = param_config
 
         except ValueError as e:
             print(e)
             return 'Error in parsing the json file'
 
         try:
-            payload = {}
-            payload['param_config'] = json.dumps(param_config)
+            logger.info('Contacting the timex_manager')
 
-            logger.info('contacting the data ingestion module')
-            # here data has been sent to the data ingestion module
-            ingestion_resp = json.loads(requests.post(
-                data_ingestion_address, data=payload).text)
-            logger.info('data received')
-
-        except ValueError as e:
-            print(e)
-            return 'Error in contacting the data ingestion module'
-
-        try:
-            payload['dataset'] = ingestion_resp['dataset']
-            logger.info('contacting the orchestrator')
             prediction_resp = json.loads(requests.post(
-                orchestrator_address, data=payload).text)
-            logger.info('predictions received')
-
-            return dash.no_update, renderPrediction(prediction_resp, param_config)
+                timex_manager_address, 
+                data={ 'param_config' : json.dumps(param_config)}).text)
+            logger.info('Predictions received')
 
         except ValueError as e:
             print(e)
-            return 'Error in contacting the data prediction module'
+            return 'Error in contacting the prediction module'
+
+            
+        return dash.no_update, renderPrediction(prediction_resp, param_config)
 
     else:
-        return 'Updated failed, please retry'
+        return 'Updated failed, please retry', 400
 
 
 def renderPrediction(prediction_resp, prediction_parameters):
     
+    logger.info('Results rendering started.')
     results = prediction_resp['models_results']
     
     timeseries_containers = [] 
@@ -144,7 +131,7 @@ def renderPrediction(prediction_resp, prediction_parameters):
         ) for res in results ]
     
 
-    # The orchestrator performs multiple async requests to the prediction server.
+    # The timex_manager performs multiple async requests to the prediction server.
     # Therefore, the predictions of each model for each timeseries will come divided 
     # -> we can merge them in a single container
     def groupKey(x):
@@ -166,7 +153,7 @@ def renderPrediction(prediction_resp, prediction_parameters):
         timeseries_containers.append(merged_container)
 
 
-    global children_for_each_timeseries
+    #--------PREDICTION RENDERING SECTION----------
 
     children_for_each_timeseries = [{
         'name': s.timeseries_data.columns[0],
@@ -181,7 +168,8 @@ def renderPrediction(prediction_resp, prediction_parameters):
             options=[{'label': i['name'], 'value': i['name']}
                      for i in children_for_each_timeseries],
             value='Time-series'
-        ), html.Div(id="timeseries_wrapper"), html.Div(dcc.Graph(), style={'display': 'none'})
+        ), html.Div(id="timeseries_wrapper"), html.Div(dcc.Graph(), style={'display': 'none'}),
+        dcc.Store(id='children_for_each_timeseries', data=children_for_each_timeseries)
     ]
 
     return predictionDiv_children
@@ -190,13 +178,12 @@ def renderPrediction(prediction_resp, prediction_parameters):
 @ app.callback(
     Output(component_id='timeseries_wrapper',
            component_property='children'),
-    [Input(component_id='timeseries_selector', component_property='value')],
+    Input(component_id='timeseries_selector', component_property='value'),
+    Input(component_id='children_for_each_timeseries', component_property='data'),
 
     prevent_initial_call=True
 )
-def update_timeseries_wrapper(input_value):
-    global children_for_each_timeseries
-
+def update_timeseries_wrapper(input_value, children_for_each_timeseries):
     try:
         children = next(
             x['children'] for x in children_for_each_timeseries if x['name'] == input_value)
