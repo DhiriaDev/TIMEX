@@ -53,10 +53,7 @@ def predict(request: request):
         timeseries_containers = pickle.dumps(timeseries_containers)
         timeseries_containers = base64.b64encode(timeseries_containers).decode('utf-8')
 
-        payload = {}
-        payload['timeseries_containers'] = timeseries_containers
-
-        return payload, 200
+        return {"timeseries_containers" : timeseries_containers}, 200
 
     except ValueError as err:
         logger.error(err)

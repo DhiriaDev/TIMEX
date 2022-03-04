@@ -21,12 +21,53 @@ from data_prediction.validation_performances import ValidationPerformance
 from data_prediction.predictor import SingleResult
 from data_prediction.timeseries_container import TimeSeriesContainer
 import calendar
+from itertools import groupby
 
 
 log = logging.getLogger(__name__)
 
 # Default method to get a translated text.
 _ = lambda x: x
+
+
+def mergeContainers(timeseries_containers : list[TimeSeriesContainer]):
+    """
+    It keeps a list of timeseries_containers, and for each timeseries it merges the results of all the models.
+    The timex_manager performs multiple async requests to the prediction server, one for each requested model.
+    Therefore, the predictions of each model for each timeseries will come back in different timeseries containers. 
+
+    Parameters
+    ----------
+    timeseries_containers: list[TimeSeriesContainer]
+        All the results returned by the timex_manager.
+
+    Returns
+    -------
+    list[TimeSeriesContainer]
+        List of timeseries containers, one for each timeseries.
+    """
+
+    # Function that returns the attribute used to sort and to group the containers 
+    def groupKey(x):
+        return x.timeseries_data.columns[0]
+
+    def merge_routine(elements : list[TimeSeriesContainer]):
+        merged_container = elements[0]
+        for i in range(1, len(elements)):
+            merged_container.models.update(elements[i].models)
+            if merged_container.historical_prediction is not None: 
+                merged_container.historical_prediction.update(elements[i].historical_prediction)
+        return merged_container
+
+    # itertools.groupby generates a break or new group every time the value of the key function changes.
+    # Therefore, it is usually necessary to have sorted the data using the same key function.
+    sorted_list = sorted(timeseries_containers, key=groupKey)
+    timeseries_containers=[]
+    for key, elements in groupby(sorted_list, key=groupKey):
+        merged_container = merge_routine(list(elements));
+        timeseries_containers.append(merged_container)
+    
+    return timeseries_containers
 
 
 def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, param_config: dict):

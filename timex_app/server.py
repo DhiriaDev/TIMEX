@@ -16,7 +16,7 @@ import requests
 import io
 from itertools import groupby
 
-from data_visualization.functions import create_timeseries_dash_children
+from data_visualization.functions import create_timeseries_dash_children, mergeContainers
 from data_prediction.timeseries_container import TimeSeriesContainer
 
 
@@ -123,42 +123,15 @@ def configuration_ingestion(config_file, filename):
 def renderPrediction(prediction_resp, prediction_parameters):
     
     logger.info('Results rendering started.')
-    results = prediction_resp['models_results']
+    best_model = pickle.loads(base64.b64decode(prediction_resp['best_model']))
     
-    timeseries_containers = [] 
-    [timeseries_containers.extend(
-        pickle.loads(base64.b64decode(results.get(res)))
-        ) for res in results ]
-    
-
-    # The timex_manager performs multiple async requests to the prediction server.
-    # Therefore, the predictions of each model for each timeseries will come divided 
-    # -> we can merge them in a single container
-    def groupKey(x):
-        return x.timeseries_data.columns[0]
-    def mergeContainers(elements : list[TimeSeriesContainer]):
-        merged_container = elements[0]
-        for i in range(1, len(elements)):
-            merged_container.models.update(elements[i].models)
-            if merged_container.historical_prediction is not None: 
-                merged_container.historical_prediction.update(elements[i].historical_prediction)
-        return merged_container
-    
-    # itertools.groupby generates a break or new group every time the value of the key function changes.
-    # Therefore, it is usually necessary to have sorted the data using the same key function.
-    sorted_list = sorted(timeseries_containers, key=groupKey)
-    timeseries_containers=[]
-    for key, elements in groupby(sorted_list, key=groupKey):
-        merged_container = mergeContainers(list(elements));
-        timeseries_containers.append(merged_container)
-
-
     #--------PREDICTION RENDERING SECTION----------
-
-    children_for_each_timeseries = [{
-        'name': s.timeseries_data.columns[0],
-        'children': create_timeseries_dash_children(s, prediction_parameters)
-    } for s in timeseries_containers]
+    # even if we have a single result, it is better to work with lists for better scalability
+    children_for_each_timeseries = []
+    children_for_each_timeseries.append({
+        'name': best_model.timeseries_data.columns[0],
+        'children': create_timeseries_dash_children(best_model, prediction_parameters)
+    })
 
     predictionDiv_children = [
         html.H2(prediction_parameters['activity_title']),

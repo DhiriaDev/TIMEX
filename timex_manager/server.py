@@ -2,6 +2,7 @@ import sys
 import logging
 
 from flask import Flask, request
+from matplotlib.font_manager import json_load
 from pytest import param
 import requests
 from flask_restful import Api, Resource
@@ -16,8 +17,9 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
-predictor_address = 'http://127.0.0.1:3000/'
+predictor_address = 'http://127.0.0.1:3000/' #the last part of the address will be added afterward 
 data_ingestion_address = 'http://127.0.0.1:4000/ingest'
+validator_address = 'http://127.0.0.1:7000/validate'
 
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']
 
@@ -104,7 +106,7 @@ class Manager(Resource):
                 data=request.form #we can directly forward the request from the web_app
                 ).text)
 
-            logger.info('data received')
+            logger.info('Data received')
 
         except ValueError as e:
             print(e)
@@ -112,15 +114,26 @@ class Manager(Resource):
 
             
         try:
-
+            logger.info('Contacting the Predictor!')
             results = asyncio.run(schedule_coroutines(models, param_config, ingestion_resp['dataset']))
+            logger.info('Prediction results for each requested model received.')
 
         except ValueError as e:
             print(e)
             return 'Error in contacting the predictor'
+        
+        try:
+            logger.info('Contacting the validation server to get the best model')
+            best_model = json.loads(requests.post(
+                validator_address,
+                data = {'models_results' : json.dumps(results)}
+            ).text)
+        except ValueError as e:
+            print(e)
+            return 'Error in contacting the validation server'
 
-
-        return {"models_results" : results}, 200
+        #Returning the prediction of the model with the best results
+        return best_model, 200 
 
 
 api.add_resource(Manager, '/predict')

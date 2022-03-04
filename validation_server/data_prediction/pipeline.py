@@ -732,7 +732,6 @@ def compute_predictions (ingested_data, param_config) :
             timeseries_containers.append(
                 TimeSeriesContainer(timeseries_data, None, timeseries_xcorr)
             )
-        return timeseries_containers
 
 
 def model_factory(model_class: str, param_config: dict, transformation: str = None) -> PredictionModel:
