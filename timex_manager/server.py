@@ -2,10 +2,12 @@ import sys
 import logging
 
 from flask import Flask, request
+from pytest import param
 import requests
 from flask_restful import Api, Resource
 import json
 import asyncio, aiohttp
+import copy
 
 app = Flask(__name__)
 api = Api(app)
@@ -19,6 +21,39 @@ data_ingestion_address = 'http://127.0.0.1:4000/ingest'
 
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']
 
+def prepare_params(param_config:dict, models : list) -> dict :
+
+    configurations_for_each_model = dict.fromkeys(models, {})
+    hist_paths = []
+
+    for model in models:
+        model_config = copy.deepcopy(param_config)
+
+        model_config["model_parameters"]["models"] = model
+
+        # Let's check the historical predictions (if requested)
+        if 'historical_prediction_parameters' in param_config:            
+            
+            if len(hist_paths) == 0 : #list __init__ just at the first iteration
+                hist_paths = (param_config['historical_prediction_parameters']['save_path']).split(',')
+            
+            # Check if the historical predictions are requested for the current model
+            hist_path = ''
+            for path in hist_paths:
+                if (model in path):
+                    hist_path = path
+
+            if hist_path == '':
+                model_config.pop('historical_prediction_parameters')
+            else :
+                model_config['historical_prediction_parameters']['save_path']=hist_path
+        
+        configurations_for_each_model[model]=model_config
+    
+    logger.info("configurations for each model completed")
+    return configurations_for_each_model
+
+
 async def call_predictor(session : aiohttp.ClientSession, model : str, url : str, models_results : dict, payload : dict):
     async with session.post(url=url, data=payload) as resp:
         logger.info('Asking for: '+ url)       
@@ -27,14 +62,20 @@ async def call_predictor(session : aiohttp.ClientSession, model : str, url : str
         models_results[model]= results
 
 
-async def schedule_coroutines(models: list, payload : dict) -> dict:
+async def schedule_coroutines(models: list, param_config : dict, dataset) -> dict:
     
-    async with aiohttp.ClientSession() as session:
+    configurations_for_each_model = prepare_params(param_config, models)
+    session_timeout = aiohttp.ClientTimeout(total=None) #timeout disabled
+
+    async with aiohttp.ClientSession(timeout=session_timeout) as session:
         models_results = dict.fromkeys(models, {})
         async_requests=[call_predictor(session, 
                                         model, 
                                         url = str(predictor_address+model.lower()),
-                                        payload = payload,
+                                        payload = { 
+                                            "param_config" : json.dumps(configurations_for_each_model[model]),
+                                            "dataset" : dataset
+                                            },
                                         models_results=models_results) for model in models]
         await asyncio.gather(*async_requests)
         return models_results
@@ -71,12 +112,8 @@ class Manager(Resource):
 
             
         try:
-            payload = {
-                "param_config" : json.dumps(param_config),
-                "dataset" : ingestion_resp['dataset']
-                }
 
-            results = asyncio.run(schedule_coroutines(models, payload))
+            results = asyncio.run(schedule_coroutines(models, param_config, ingestion_resp['dataset']))
 
         except ValueError as e:
             print(e)

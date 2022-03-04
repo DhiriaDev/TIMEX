@@ -7,11 +7,16 @@ from flask_restful import Api, Resource
 import json
 import pickle
 import base64
+from joblib import parallel_backend
+
+from pytest import param
 
 from data_prediction import create_timeseries_containers
 
 app = Flask(__name__)
 api = Api(app)
+
+
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -28,7 +33,7 @@ def prepare_folder_for_dataSaving(path: str):
                 os.makedirs(cur)
 
 
-def predict(request: request, name: str):
+def predict(request: request):
     try:
         param_config = json.loads(request.form['param_config'])
         dataset = pickle.loads(base64.b64decode(request.form['dataset']))
@@ -39,7 +44,6 @@ def predict(request: request, name: str):
             prepare_folder_for_dataSaving(
                 param_config['historical_prediction_parameters']['save_path'])
 
-        param_config["model_parameters"]["models"] = name
 
         timeseries_containers = create_timeseries_containers(
             dataset, param_config)
@@ -60,20 +64,24 @@ def predict(request: request, name: str):
 
 class Arima(Resource):
     def post(self):
-        logger.info('post request received')
-        return predict(request, 'arima')
+        logger.info('Arima: post request received')
+        return predict(request)
 class ExponentialSmoothing(Resource):
     def post(self):
-        return predict(request, 'exponentialsmoothing')
+        logger.info('ExponentialSmoothing: post request received')
+        return predict(request)
 class LSTM(Resource):
     def post(self):
-        return predict(request, 'lstm')
+        logger.info('LSTM: post request received')
+        return predict(request)
 class Prophet(Resource):
     def post(self):
-        return predict(request, 'fbprophet')
+        logger.info('Prophet: post request received')
+        return predict(request)
 class MockUp(Resource):
     def post(self):
-        return predict(request, 'mockup')
+        logger.info('MockUp: post request received')
+        return predict(request)
 
 
 api.add_resource(Arima, '/arima')

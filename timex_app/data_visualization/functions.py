@@ -17,11 +17,11 @@ import dash_bootstrap_components as dbc
 from colorhash import ColorHash
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-from data_prediction import ValidationPerformance
+from data_prediction.validation_performances import ValidationPerformance
 from data_prediction.predictor import SingleResult
+from data_prediction.timeseries_container import TimeSeriesContainer
 import calendar
 
-from data_prediction.timeseries_container import TimeSeriesContainer
 
 log = logging.getLogger(__name__)
 
