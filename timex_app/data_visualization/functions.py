@@ -17,9 +17,9 @@ import dash_bootstrap_components as dbc
 from colorhash import ColorHash
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-from data_prediction.validation_performances import ValidationPerformance
-from data_prediction.predictor import SingleResult
-from data_prediction.timeseries_container import TimeSeriesContainer
+from utils import ValidationPerformance
+from utils.predictor import SingleResult
+from utils.timeseries_container import TimeSeriesContainer
 import calendar
 from itertools import groupby
 
@@ -32,7 +32,10 @@ _ = lambda x: x
 
 def mergeContainers(timeseries_containers : list[TimeSeriesContainer]):
     """
-    It keeps a list of timeseries_containers, and for each timeseries it merges the results of all the models.
+    After the deployment of the validator module (which takes a list of time-series containers 
+    and returns a the model with the best performance) there's no more need of this function.
+    However, this function takes a list of timeseries_containers, and for each timeseries it merges the results 
+    of all the models.
     The timex_manager performs multiple async requests to the prediction server, one for each requested model.
     Therefore, the predictions of each model for each timeseries will come back in different timeseries containers. 
 
@@ -213,7 +216,7 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
     return children
 
 
-def create_dash_children(timeseries_containers: [TimeSeriesContainer], param_config: dict):
+def create_dash_children(timeseries_containers: list[TimeSeriesContainer], param_config: dict):
     """
     Create Dash children, in order, for a list of `timexseries.timeseries_container.TimeSeriesContainer`.
 
@@ -1009,7 +1012,7 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
     return html.Div(new_children)
 
 
-def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: [ValidationPerformance],
+def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performances: list[ValidationPerformance],
                      test_values: int) -> dcc.Graph:
     """
     Create and return the performance plot of the model; for every error kind (i.e. MSE, MAE, etc) plot the values it
@@ -1090,7 +1093,7 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     return g
 
 
-def plot_every_prediction(df: DataFrame, model_results: [SingleResult],
+def plot_every_prediction(df: DataFrame, model_results: list[SingleResult],
                           main_accuracy_estimator: str, test_values: int):
     new_childrens = [html.Div("EXTRA: plot _EVERY_ prediction\n")]
 
@@ -1110,7 +1113,7 @@ def plot_every_prediction(df: DataFrame, model_results: [SingleResult],
     return new_childrens
 
 
-def characteristics_list(model_characteristics: dict, testing_performances: [ValidationPerformance]) -> html.Div:
+def characteristics_list(model_characteristics: dict, testing_performances: list[ValidationPerformance]) -> html.Div:
     """
     Create and return an HTML Div which contains a list of natural language characteristic
     relative to a prediction model.

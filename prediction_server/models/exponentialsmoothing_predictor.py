@@ -1,7 +1,7 @@
 import logging
 import warnings
 
-from ..predictor import PredictionModel
+from utils import PredictionModel
 
 from pandas import DataFrame
 from sklearn.metrics import mean_squared_error, mean_absolute_error

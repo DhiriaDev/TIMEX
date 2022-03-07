@@ -7,17 +7,16 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 
-from .add_regressor import ingest_additional_regressors
-from data_prediction import PredictionModel
+from utils import PredictionModel
+from utils import TimeSeriesContainer
+from utils.add_regressor import ingest_additional_regressors
+from utils.xcorr import calc_all_xcorr
 
-from .models.arima_predictor import ARIMAModel
-from .models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from .models.lstm_predictor import LSTMModel
-from .models.mockup_predictor import MockUpModel
-# from data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from .models.prophet_predictor import FBProphetModel
-from .xcorr import calc_all_xcorr
-from .timeseries_container import TimeSeriesContainer
+from models.arima_predictor import ARIMAModel
+from models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from models.lstm_predictor import LSTMModel
+from models.mockup_predictor import MockUpModel
+from models.prophet_predictor import FBProphetModel
 
 log = logging.getLogger(__name__)
 
@@ -182,7 +181,7 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
     return best_transformations, timeseries_containers
 
 
-def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContainer], ingested_data: DataFrame,
+def get_best_multivariate_predictions(timeseries_containers: list[TimeSeriesContainer], ingested_data: DataFrame,
                                       best_transformations: dict, total_xcorr: dict, param_config: dict):
     """
     Starting from the a list of `timexseries.timeseries_container.TimeSeriesContainer`, use the available univariated

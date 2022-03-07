@@ -1,7 +1,7 @@
 import logging
 import os
 
-from ..predictor import PredictionModel
+from utils import PredictionModel
 from prophet import Prophet
 
 import pandas as pd

@@ -7,11 +7,8 @@ from flask_restful import Api, Resource
 import json
 import pickle
 import base64
-from joblib import parallel_backend
 
-from pytest import param
-
-from data_prediction import create_timeseries_containers
+from pipeline import create_timeseries_containers
 
 app = Flask(__name__)
 api = Api(app)

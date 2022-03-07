@@ -17,7 +17,7 @@ import io
 from itertools import groupby
 
 from data_visualization.functions import create_timeseries_dash_children, mergeContainers
-from data_prediction.timeseries_container import TimeSeriesContainer
+from utils import TimeSeriesContainer
 
 
 timex_manager_address='http://127.0.0.1:6000/predict'

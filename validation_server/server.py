@@ -2,7 +2,6 @@ import base64
 import pickle
 import sys
 import logging
-import time
 
 from flask import Flask, request
 from flask_restful import Api, Resource
@@ -10,7 +9,7 @@ import json
 from random import choice, seed
 from datetime import datetime
 
-from data_prediction.timeseries_container import TimeSeriesContainer
+from utils import TimeSeriesContainer
 
 app = Flask(__name__)
 api = Api(app)

@@ -1,6 +1,6 @@
 import logging
 
-from ..predictor import PredictionModel
+from utils import PredictionModel
 
 from pandas import DataFrame
 import numpy as np
