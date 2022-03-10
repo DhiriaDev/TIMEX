@@ -1,8 +1,6 @@
 import logging
-from pyexpat import model
 import sys
 
-import flask
 from flask import Flask, request
 import dash
 import dash_core_components as dcc
@@ -14,9 +12,8 @@ import base64
 from matplotlib.font_manager import json_dump
 import requests
 import io
-from itertools import groupby
 
-from data_visualization.functions import create_timeseries_dash_children, mergeContainers
+from data_visualization.functions import create_timeseries_dash_children
 from utils import TimeSeriesContainer
 
 
@@ -167,6 +164,7 @@ def update_timeseries_wrapper(input_value, children_for_each_timeseries):
 
 
 app_address = '127.0.0.1'
+app_docker_address='0.0.0.0'
 app_port = 5000
 
 if __name__ == '__main__':

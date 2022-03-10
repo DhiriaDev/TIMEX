@@ -49,7 +49,7 @@ class ModelResult:
         the prediction that users are most likely to want.
     """
 
-    def __init__(self, results: [SingleResult], characteristics: dict, best_prediction: DataFrame):
+    def __init__(self, results: list[SingleResult], characteristics: dict, best_prediction: DataFrame):
         self.results = results
         self.characteristics = characteristics
         self.best_prediction = best_prediction
@@ -303,7 +303,7 @@ class PredictionModel:
         train_sets_number = math.ceil(len(train_ts) / self.delta_training_values)
         log.info(f"Model will use {train_sets_number} different training sets...")
 
-        def c(targets: [int]):
+        def c(targets: list[int]):
             _results = []
 
             for _i in range(targets[0], targets[1]):
@@ -369,7 +369,7 @@ class PredictionModel:
         results = reduce(lambda x, y: x+y, [res for res in results])
         return results
 
-    def _compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult],
+    def _compute_best_prediction(self, ingested_data: DataFrame, training_results: list[SingleResult],
                                  extra_regressors: DataFrame = None):
         """
         Given the ingested data and the training results, identify the best training window and compute a prediction

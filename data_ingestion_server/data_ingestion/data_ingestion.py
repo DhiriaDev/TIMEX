@@ -420,7 +420,7 @@ def select_timeseries_portion(data_frame, param_config):
     return data_frame
 
 
-def add_diff_columns(data_frame: DataFrame, column_name_target_diff: [str], group_by: str = None):
+def add_diff_columns(data_frame: DataFrame, column_name_target_diff: list[str], group_by: str = None):
     """Function for adding a 1-step diff column computed for each column name specified in `column_name_target_diff` of
     the `data_frame`.
 

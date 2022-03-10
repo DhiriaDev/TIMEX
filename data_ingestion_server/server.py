@@ -1,10 +1,9 @@
 import logging
-from os import stat
 import sys
 
-from flask import Flask, request, Response
+from flask import Flask, request
 from flask_restful import Api, Resource
-import json, pickle, base64, requests
+import json, pickle, base64
 
 from data_ingestion.data_ingestion import ingest_timeseries
 
@@ -16,8 +15,6 @@ api = Api(app)
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
-data_ingestion_address = '127.0.0.1'
-data_ingestion_port = 4000
 
 class Ingest(Resource):
     def post(self):
@@ -56,7 +53,10 @@ class Ingest(Resource):
 
 api.add_resource(Ingest, '/ingest')
     
+data_ingestion_address = '127.0.0.1'
+data_ingestion_docker_address='0.0.0.0'
+data_ingestion_port = 4000
 
 if __name__ == '__main__':
-    app.run(host=data_ingestion_address, port=data_ingestion_port ,debug=True)
+    app.run(host=data_ingestion_docker_address, port=data_ingestion_port ,debug=True)
 

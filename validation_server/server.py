@@ -59,8 +59,9 @@ class Validator(Resource):
 api.add_resource(Validator, '/validate')
 
 validator_address = '127.0.0.1'
+validator_docker_address = '0.0.0.0'
 validator_port = 7000
 
 if __name__ == '__main__':
-    app.run(host=validator_address,
+    app.run(host=validator_docker_address,
             port=validator_port, debug=True)
