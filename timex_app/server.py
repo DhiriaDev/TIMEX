@@ -9,7 +9,6 @@ from dash.dependencies import Input, Output, State
 import json
 import pickle
 import base64
-from matplotlib.font_manager import json_dump
 import requests
 import io
 
@@ -168,4 +167,4 @@ app_docker_address='0.0.0.0'
 app_port = 5000
 
 if __name__ == '__main__':
-    app.run_server(host=app_address, port=app_port ,debug=True)
+    app.run_server(host=app_docker_address, port=app_port ,debug=True)
