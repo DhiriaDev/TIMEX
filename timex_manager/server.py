@@ -2,8 +2,6 @@ import sys
 import logging
 
 from flask import Flask, request
-from matplotlib.font_manager import json_load
-from pytest import param
 import requests
 from flask_restful import Api, Resource
 import json
@@ -17,7 +15,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
-predictor_address = 'http://127.0.0.1:3000/' #the last part of the address will be added afterward 
+predictor_address = 'http://127.0.0.1:3000/' #the last part of the address will be added afterward according to the requested model
 data_ingestion_address = 'http://127.0.0.1:4000/ingest'
 validator_address = 'http://127.0.0.1:7000/validate'
 
@@ -139,6 +137,7 @@ class Manager(Resource):
 api.add_resource(Manager, '/predict')
 
 timex_manager_address = '127.0.0.1'
+timex_manager_docker_address= '0.0.0.0'
 timex_manager_port = 6000
 
 if __name__ == '__main__':

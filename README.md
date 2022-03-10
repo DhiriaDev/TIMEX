@@ -16,4 +16,3 @@
     it receives the dataset and the configuration file, it computes the prediction using the chosen algorithm(s)
 5. **validation_server**:\
     it receives a set of {model , predictions} for a given time series and it performs the validation, returning the model reaching the best performance
-
