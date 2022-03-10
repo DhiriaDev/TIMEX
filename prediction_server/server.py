@@ -86,7 +86,8 @@ api.add_resource(Prophet, '/fbprophet')
 
 
 predictor_address = '127.0.0.1'
+predictor_docker_address = '0.0.0.0'
 predictor_port = 3000
 
 if __name__ == '__main__':
-    app.run(host=predictor_address, port=predictor_port, debug=True)
+    app.run(host=predictor_docker_address, port=predictor_port, debug=True)
