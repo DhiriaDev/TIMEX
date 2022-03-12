@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timex-app-deployment
+  labels:
+    app: timex-app
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timex-app
+  template:
+    metadata:
+      labels:
+        app: timex-app
+        tier: frontend
+    spec:
+      containers:
+      - name: timex-app
+        image: timex_app:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: timex-app-service
+spec:
+  selector:
+    app: timex-app
+    tier: frontend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30000

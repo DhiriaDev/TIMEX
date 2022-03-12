@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mvi-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      run: timex-manager
+  template:
+    metadata:
+      labels:
+        run: timex-manager
+    spec:
+      containers:
+      - name: timex-manager
+        image: timex_manager:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 6000
+      - name: timex-validator
+        image: timex_validation_server:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 7000
+      - name: data-ingestion
+        image: timex_data_ingestion:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: timex-manager-service
+  labels:
+    run: timex-manager
+spec:
+  selector:
+    run: timex-manager
+  ports:
+    - port: 6000
+      targetPort: 6000

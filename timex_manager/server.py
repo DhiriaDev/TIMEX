@@ -15,9 +15,14 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
-predictor_address = 'http://127.0.0.1:3000/' #the last part of the address will be added afterward according to the requested model
-data_ingestion_address = 'http://127.0.0.1:4000/ingest'
-validator_address = 'http://127.0.0.1:7000/validate'
+predictor_address = 'http://timex-predictor-service:3000/' #the last part of the address will be added afterward according to the requested model
+
+'''
+The timex_manager, the data_ingestion and the validation_server will be deployed to the same pod.
+Containers in the same pod are accessible via “localhost”, and they use the same network namespace.
+'''
+data_ingestion_address = 'http://localhost:4000/ingest'
+validator_address = 'http://localhost:7000/validate'
 
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']
 
@@ -136,10 +141,10 @@ class Manager(Resource):
 
 api.add_resource(Manager, '/predict')
 
-timex_manager_address = '127.0.0.1'
-timex_manager_docker_address= '0.0.0.0'
-timex_manager_port = 6000
+address = '127.0.0.1'
+docker_address= '0.0.0.0'
+port = 6000
 
 if __name__ == '__main__':
-    app.run(host=timex_manager_address,
-            port=timex_manager_port, debug=True)
+    app.run(host=docker_address,
+            port=port, debug=True)

@@ -16,7 +16,9 @@ from data_visualization.functions import create_timeseries_dash_children
 from utils import TimeSeriesContainer
 
 
-timex_manager_address='http://127.0.0.1:6000/predict'
+timex_manager_address='http://timex-manager-service:6000/predict'
+
+
 
 
 # -----------SERVER INIT-----------------------
