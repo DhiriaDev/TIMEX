@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 predictor_address = 'http://timex-predictor-service:3000/' #the last part of the address will be added afterward according to the requested model
+data_ingestion_address = 'http://data-ingestion-service:4000/ingest'
 
 '''
-The timex_manager, the data_ingestion and the validation_server will be deployed to the same pod.
+The timex_manager and the validation_server will be deployed to the same pod.
 Containers in the same pod are accessible via “localhost”, and they use the same network namespace.
 '''
-data_ingestion_address = 'http://localhost:4000/ingest'
 validator_address = 'http://localhost:7000/validate'
 
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']

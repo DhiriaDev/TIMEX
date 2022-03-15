@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mvi-deployment
+  name: manager-validator-deployment
 spec:
   replicas: 1
   selector: 
@@ -23,11 +23,6 @@ spec:
         imagePullPolicy: Never
         ports:
         - containerPort: 7000
-      - name: data-ingestion
-        image: timex_data_ingestion:latest
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 4000
 ---
 apiVersion: v1
 kind: Service
