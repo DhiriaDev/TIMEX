@@ -17,6 +17,10 @@
 5. **validation_server**:\
     it receives a set of {model , predictions} for a given time series and it performs the validation, returning the model reaching the best performance
 
+## **Project general dependencies**
+In addition to the dependencies of each submodule, also the general dependencies poetry configuration files have been created. In order to install it, it is recommend to limit the RAM usage. The command is:
+`systemd-run --scope -p MemoryLimit=<desired_ram_usage_limit> ./dependencies-update_command.sh`
+
 ## **Docker Images build**
 The first image to be built is the "timex_utils".
 In fact, that image will be the *base image* for the validator_server, the prediction_server and the timex_app. In fact, these three modules share some of the functions contained in the utils module.
