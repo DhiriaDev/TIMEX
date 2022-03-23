@@ -1,7 +1,7 @@
 from math import sqrt
 
-from pandas import DataFrame, Series
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from pandas import Series
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 class ValidationPerformance:
@@ -16,8 +16,8 @@ class ValidationPerformance:
 
     Attributes
     ----------
-    MSE : float
-        Mean Squared Error. Default 0
+    R2 : float
+        The stationary R-squared to compare the stationary part of the model to a simple mean model. Default 0
     RMSE: float
         Root Mean Squared Error. Default 0
     MAE: float
@@ -27,13 +27,16 @@ class ValidationPerformance:
     SD: float
         Standard deviation of error. Default 0
     """
+
     def __init__(self, first_used_index=None):
         self.first_used_index = first_used_index
-        self.MSE = 0
+        self.R2 = 0
         self.RMSE = 0
         self.MAE = 0
         self.AM = 0
         self.SD = 0
+
+
 
     def set_testing_stats(self, actual: Series, predicted: Series):
         """
@@ -62,15 +65,19 @@ class ValidationPerformance:
         >>> print(perf.MAE)
         2.0
 
-        >>> print(perf.MSE)
-        4.0
+        >>> print(perf.RMSE)
+        2.0
         """
-        self.MSE = mean_squared_error(actual, predicted)
+        self.R2 = r2_score(actual, predicted)
         self.MAE = mean_absolute_error(actual, predicted)
-        self.RMSE = sqrt(self.MSE)
+        self.RMSE = sqrt(mean_squared_error(actual, predicted))
         self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
         self.SD = (actual - predicted).std(ddof=0)
-
+    
+    @staticmethod
+    def get_available_metrics() -> list[str]:
+        return ['R2', 'RMSE', 'MAE', 'AM', 'SD']
+    
     def get_dict(self) -> dict:
         """
         Return all the parameters, in a dict.
@@ -85,7 +92,7 @@ class ValidationPerformance:
         >>> perf = ValidationPerformance()
         >>> perf.set_testing_stats(actual_dataframe['a'], predicted_dataframe['yhat'])
         >>> perf.get_dict()
-        {'first_used_index': None, 'MSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0, 'SD': 0.0}
+        {'first_used_index': None, 'RMSE': 4.0, 'RMSE': 2.0, 'MAE': 2.0, 'AM': -2.0, 'SD': 0.0}
         """
         d = {}
         for attribute, value in self.__dict__.items():

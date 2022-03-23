@@ -2,14 +2,16 @@ import logging
 import gettext
 import pathlib
 import os
+from matplotlib.style import available
 
 import pandas
 from pandas import Grouper, DataFrame
 import plotly.graph_objects as go
 import numpy as np
+from random import randint
 
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from plotly.subplots import make_subplots
 import networkx as nx
 import dash_bootstrap_components as dbc
@@ -1042,50 +1044,52 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     --------
     Check `create_timeseries_dash_children` to check the use.
     """
-    fig = make_subplots(rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.02)
-
     training_data = df.iloc[:-test_values]
 
     data_performances = []
 
     for tp in testing_performances:
-        data_performances.append([tp.first_used_index, tp.MAE, tp.MSE, tp.AM])
+        data_performances.append([* list(tp.get_dict().values())])
+    
+    available_metrics = ValidationPerformance.get_available_metrics()
+    number_of_subplots = len(available_metrics)+1
 
-    df_performances = pandas.DataFrame(data_performances, columns=['index', 'mae', 'mse', 'am'])
+    df_columns = ['index']
+    df_columns.extend(available_metrics)
+
+    df_performances = pandas.DataFrame(data_performances, columns=df_columns)
     df_performances.set_index('index', drop=True, inplace=True)
     df_performances.sort_index(inplace=True)
 
-    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['mae'],
-                                line=dict(color='red'),
-                                mode="lines+markers",
-                                name='MAE'), row=1, col=1)
+    colors = []
+    for i in range(number_of_subplots):
+        colors.append('#%06X' % randint(0, 0xFFFFFF))
 
-    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['mse'],
-                                line=dict(color='green'),
-                                mode="lines+markers",
-                                name='MSE'), row=2, col=1)
+    fig = make_subplots(rows=number_of_subplots, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
-    fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances['am'],
-                                line=dict(color='blue'),
-                                mode="lines+markers",
-                                name='AM'), row=3, col=1)
+    i=1
+    for metric in available_metrics:
+        fig.append_trace(go.Scatter(x=df_performances.index, y=df_performances[metric],
+                                    line=dict(color=colors[i-1]),
+                                    mode="lines+markers",
+                                    name=metric), row=i, col=1)
+        #fig.update_yaxes(title_text=metric, row=i, col=1)
+        i+=1
 
     fig.append_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
-                                line=dict(color='black'),
+                                line=dict(color=colors[i-1]),
                                 mode='markers',
-                                name=_('training data')), row=4, col=1)
+                                name=_('training data')), row=i, col=1)
+
 
     # Small trick to make the x-axis have the same length of the "Prediction plot"
     predicted_data.iloc[:, 0] = "nan"
     fig.append_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                                 mode='lines+markers',
-                                name='yhat', showlegend=False), row=4, col=1)
+                                name='yhat', showlegend=False), row=i, col=1)
 
-    fig.update_yaxes(title_text="MAE", row=1, col=1)
-    fig.update_yaxes(title_text="MSE", row=2, col=1)
-    fig.update_yaxes(title_text="AM", row=3, col=1)
-    fig.update_yaxes(title_text=df.columns[0], row=4, col=1)
 
+    fig.update_yaxes(title_text=df.columns[0], row=i, col=1)
     fig.update_layout(title=_('Performances with different training windows'), height=900)
     g = dcc.Graph(
         figure=fig
