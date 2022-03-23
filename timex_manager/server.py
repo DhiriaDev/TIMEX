@@ -129,7 +129,8 @@ class Manager(Resource):
             logger.info('Contacting the validation server to get the best model')
             best_model = json.loads(requests.post(
                 validator_address,
-                data = {'models_results' : json.dumps(results)}
+                data = {'param_config' : json.dumps(param_config), 
+                        'models_results' : json.dumps(results)}
             ).text)
         except ValueError as e:
             print(e)

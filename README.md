@@ -67,3 +67,17 @@ We have basically two m ain methods:
 
 **NOTE**: the second method is preferred for developing purposes because one can leverage the docker cache when building the images
 
+## **MODELS VALIDATION**
+To perform validation, and thus to choose the best model among those requested, some metrics are taken into account:
+- R_squared:\
+  It denotes the proportion of the dependent variable’s variance that may be explained by the independent variable’s variance. A high R2 value shows that the model’s variance is similar to that of the true values, whereas a low R2 value suggests that the two values are not strongly related. The most important thing to remember about R-squared is that it does not indicate whether or not the model is capable of making accurate future predictions. It shows whether or not the model is a good fit for the observed values, as well as how good of a fit it is. A high R2 indicates that the observed and anticipated values have a strong association. Moreover, the R2 compares the given model with the simple "average predictor". Thus, having a negative R2 means that the model is worse than a simple average predictor. Ideally, we would like to have R2=1.
+- Root Mean Squared Error (RMSE) & Mean Absolute Error (MAE):\
+  When comparing forecast methods applied to a single time series the the RMSE and the MAE are very popular since they are straightforward to both compute and understand (the MAE little bit more than the other one).
+    - Minimizing the MAE will lead to forecasts of the median
+    - Minimizing the RMSE will lead to forecasts of the mean.
+    - The greater difference between them, the greater the variance in the individual errors in the sample.
+    - If the RMSE=MAE, then all the errors are of the same magnitude
+  Notice: RMSE >= MAE.
+  In case of multiple time series, the RMSE and the MAE cannot be used as-is anymore, since they are scale-dependent. Other metrics can be used, such as the NormalizedRMSE
+- Arithmetic Mean of error (AM)
+- Standard deviation of error (SD)

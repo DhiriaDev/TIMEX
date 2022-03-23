@@ -773,8 +773,6 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return FBProphetModel(params=param_config, transformation=transformation)
     if model_class == "lstm":
         return LSTMModel(param_config, transformation)
-    # if model_class == "neuralprophet":
-    #     return NeuralProphetModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
     if model_class == "exponentialsmoothing":

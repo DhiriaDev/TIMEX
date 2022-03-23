@@ -2,7 +2,6 @@ import logging
 import gettext
 import pathlib
 import os
-from matplotlib.style import available
 
 import pandas
 from pandas import Grouper, DataFrame
@@ -23,56 +22,11 @@ from utils import ValidationPerformance
 from utils.predictor import SingleResult
 from utils.timeseries_container import TimeSeriesContainer
 import calendar
-from itertools import groupby
-
 
 log = logging.getLogger(__name__)
 
 # Default method to get a translated text.
 _ = lambda x: x
-
-
-def mergeContainers(timeseries_containers : list[TimeSeriesContainer]):
-    """
-    After the deployment of the validator module (which takes a list of time-series containers 
-    and returns a the model with the best performance) there's no more need of this function.
-    However, this function takes a list of timeseries_containers, and for each timeseries it merges the results 
-    of all the models.
-    The timex_manager performs multiple async requests to the prediction server, one for each requested model.
-    Therefore, the predictions of each model for each timeseries will come back in different timeseries containers. 
-
-    Parameters
-    ----------
-    timeseries_containers: list[TimeSeriesContainer]
-        All the results returned by the timex_manager.
-
-    Returns
-    -------
-    list[TimeSeriesContainer]
-        List of timeseries containers, one for each timeseries.
-    """
-
-    # Function that returns the attribute used to sort and to group the containers 
-    def groupKey(x):
-        return x.timeseries_data.columns[0]
-
-    def merge_routine(elements : list[TimeSeriesContainer]):
-        merged_container = elements[0]
-        for i in range(1, len(elements)):
-            merged_container.models.update(elements[i].models)
-            if merged_container.historical_prediction is not None: 
-                merged_container.historical_prediction.update(elements[i].historical_prediction)
-        return merged_container
-
-    # itertools.groupby generates a break or new group every time the value of the key function changes.
-    # Therefore, it is usually necessary to have sorted the data using the same key function.
-    sorted_list = sorted(timeseries_containers, key=groupKey)
-    timeseries_containers=[]
-    for key, elements in groupby(sorted_list, key=groupKey):
-        merged_container = merge_routine(list(elements));
-        timeseries_containers.append(merged_container)
-    
-    return timeseries_containers
 
 
 def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, param_config: dict):
@@ -1052,7 +1006,7 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
         data_performances.append([* list(tp.get_dict().values())])
     
     available_metrics = ValidationPerformance.get_available_metrics()
-    number_of_subplots = len(available_metrics)+1
+    number_of_subplots = len(available_metrics)+1 #+2 because one is for training data and one for prediction results
 
     df_columns = ['index']
     df_columns.extend(available_metrics)
@@ -1062,10 +1016,11 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
     df_performances.sort_index(inplace=True)
 
     colors = []
-    for i in range(number_of_subplots):
+    for i in range(number_of_subplots+1):
         colors.append('#%06X' % randint(0, 0xFFFFFF))
 
-    fig = make_subplots(rows=number_of_subplots, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+    fig = make_subplots(rows=number_of_subplots, cols=1, shared_xaxes=True,
+                            vertical_spacing=0.02)
 
     i=1
     for metric in available_metrics:
@@ -1073,24 +1028,16 @@ def performance_plot(df: DataFrame, predicted_data: DataFrame, testing_performan
                                     line=dict(color=colors[i-1]),
                                     mode="lines+markers",
                                     name=metric), row=i, col=1)
-        #fig.update_yaxes(title_text=metric, row=i, col=1)
+        fig.update_yaxes(title_text=metric, row=i, col=1)
         i+=1
-
+    
     fig.append_trace(go.Scatter(x=training_data.index, y=training_data.iloc[:, 0],
                                 line=dict(color=colors[i-1]),
-                                mode='markers',
-                                name=_('training data')), row=i, col=1)
-
-
-    # Small trick to make the x-axis have the same length of the "Prediction plot"
-    predicted_data.iloc[:, 0] = "nan"
-    fig.append_trace(go.Scatter(x=predicted_data.index, y=predicted_data.iloc[:, 0],
                                 mode='lines+markers',
-                                name='yhat', showlegend=False), row=i, col=1)
-
-
+                                name=_('training data')), row=i, col=1)
     fig.update_yaxes(title_text=df.columns[0], row=i, col=1)
-    fig.update_layout(title=_('Performances with different training windows'), height=900)
+
+    fig.update_layout(title=_('Performances with different training windows'), height=1500)
     g = dcc.Graph(
         figure=fig
     )

@@ -6,10 +6,8 @@ import logging
 from flask import Flask, request
 from flask_restful import Api, Resource
 import json
-from random import choice, seed
-from datetime import datetime
 
-from utils import TimeSeriesContainer
+from validation_functions import validate
 
 app = Flask(__name__)
 api = Api(app)
@@ -17,19 +15,10 @@ api = Api(app)
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
-def validate (results : list[TimeSeriesContainer]) -> list[TimeSeriesContainer]:
-    '''
-    For the time being, the Validation module will take a model randomly.
-    Successively, real validation functions will be implemented
-    '''
-    seed(datetime.now())
-    best_model = choice(results)
-    
-    return best_model
-
-
 class Validator(Resource):
     def post(self):
+
+        param_config = json.loads(request.form['param_config'])
 
         models_results = request.form['models_results']
         predictions = json.loads(models_results)
@@ -42,7 +31,7 @@ class Validator(Resource):
         try:
 
             if(len(timeseries_containers) > 1):
-                best_model = validate(timeseries_containers)
+                best_model = validate(timeseries_containers, param_config)
             else:
                 best_model = timeseries_containers[0]
 
