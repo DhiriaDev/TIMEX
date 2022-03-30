@@ -16,10 +16,12 @@
     it receives the dataset and the configuration file, it computes the prediction using the chosen algorithm(s)
 5. **validation_server**:\
     it receives a set of {model , predictions} for a given time series and it performs the validation, returning the model reaching the best performance
+For further information, open the [Timex power point](Documents/Timex.pptx)
 
 ## **Project general dependencies**
 In addition to the dependencies of each submodule, also the general dependencies poetry configuration files have been created. In order to install it, it is recommend to limit the RAM usage. The command is:
 `systemd-run --scope -p MemoryLimit=<desired_ram_usage_limit> ./dependencies-update_command.sh`
+When running the servers outside a docker container, you need to add to the shell: `$PYTHONPATH:$(pwd)/utils:$(pwd)/prediction_server/models` before of starting the server.
 
 ## **Docker Images build**
 The first image to be built is the "timex_utils".
@@ -46,6 +48,12 @@ Example of running the containers. The ports and the host network are needed.
    `docker run -p 6000:6000 -d --network="host"  timex_manager` 
 5. **timex_validation_server**: \
    `docker run -p 7000:7000 -d timex_validation_server`
+
+## **Docker configuration for NVIDIA GPU Accelerated Containers**
+Starting from Docker version 19.03, NVIDIA GPUs are natively supported as Docker devices. \
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) is the recommended way of running containers that leverage NVIDIA GPUs. \
+Once installed Nvidia-container-toolkit, let's run the container adding the argument `--gpus <how_many_gpus>`. \
+For more information [visit here](https://wiki.archlinux.org/titleDocker#Run_GPU_accelerated_Docker_containers_with_NVIDIA_GPUs).
 
 ## **Containers Configuration For Minikube**
 We have basically two m ain methods:

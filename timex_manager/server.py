@@ -31,6 +31,13 @@ def prepare_params(param_config:dict, models : list) -> dict :
     configurations_for_each_model = dict.fromkeys(models, {})
     hist_paths = []
 
+    # parsing a google drive link
+    dataset_url = param_config['input_parameters']['source_data_url']
+    dataset_url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + \
+                    dataset_url.split('/')[-2]
+    param_config['input_parameters']['source_data_url'] = dataset_url
+    
+
     for model in models:
         model_config = copy.deepcopy(param_config)
 

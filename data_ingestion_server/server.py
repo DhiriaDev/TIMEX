@@ -24,10 +24,6 @@ class Ingest(Resource):
         '''
         try:
             param_config = json.loads(request.form['param_config'])
-            dataset_url = param_config['input_parameters']['source_data_url']
-
-            param_config['input_parameters']['source_data_url'] = 'https://drive.google.com/uc?id=' + \
-                dataset_url.split('/')[-2]  # parsing the google drive link
 
             dataset = ingest_timeseries(param_config)
 

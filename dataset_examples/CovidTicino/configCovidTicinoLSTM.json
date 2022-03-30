@@ -1,0 +1,25 @@
+{
+    "activity_title": "Ticino Covid-19 forecasting",
+    "verbose": "INFO",
+    "input_parameters": {
+        "source_data_url": "https://drive.google.com/file/d/1JSGHW7xFPrutPQiIToCiiJ9p2lIObRQU/view?usp=sharing",
+        "columns_to_load_from_url": "date,current_hosp",
+        "datetime_column_name": "date",
+        "index_column_name": "date",
+        "frequency": "D",
+        "add_diff_column": "current_hosp"
+    },
+    "model_parameters": {
+        "test_values": 10,
+        "delta_training_percentage": 30,
+        "prediction_lags": 10,
+        "possible_transformations": "none,log_modified",
+        "models": "lstm",
+        "main_accuracy_estimator": "mae"
+    },
+    "visualization_parameters": {
+        "xcorr_graph_threshold": 0.8,
+        "box_plot_frequency": "1W"
+    },
+    "max_threads" : 1
+}

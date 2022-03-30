@@ -135,3 +135,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 trial_notebook.ipynb
+dataset_examples/ElectricityLoad/ElectricityLoadDiagrams2011_2014.txt
