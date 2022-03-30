@@ -26,16 +26,17 @@ validator_address = 'http://localhost:7000/validate'
 
 available_predictors = ['arima', 'fbprophet', 'lstm', 'mockup', 'exponentialsmoothing']
 
+def parse_source_data_url(data_url : str) -> str :
+    if 'drive.google.com' in data_url:
+        return 'https://drive.google.com/uc?export=download&confirm=t&id=' + \
+                        data_url.split('/')[-2]
+    else:
+        return data_url
+
 def prepare_params(param_config:dict, models : list) -> dict :
 
     configurations_for_each_model = dict.fromkeys(models, {})
     hist_paths = []
-
-    # parsing a google drive link
-    dataset_url = param_config['input_parameters']['source_data_url']
-    dataset_url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + \
-                    dataset_url.split('/')[-2]
-    param_config['input_parameters']['source_data_url'] = dataset_url
     
 
     for model in models:
@@ -100,6 +101,9 @@ class Manager(Resource):
         logger.info('Request received')
         param_config = json.loads(request.form['param_config'])
 
+        dataset_url = param_config['input_parameters']['source_data_url']
+        param_config['input_parameters']['source_data_url'] = parse_source_data_url(dataset_url)
+
         # First, we check if the requested model(s) is(are) valid.
         # If not, the request is not even forwarded to the data ingestion module
         models = [*param_config["model_parameters"]["models"].split(",")]
@@ -113,7 +117,7 @@ class Manager(Resource):
             # here data has been sent to the data ingestion module
             ingestion_resp = json.loads(requests.post(
                 data_ingestion_address, 
-                data=request.form #we can directly forward the request from the web_app
+                data={'param_config' : json.dumps(param_config)}
                 ).text)
 
             logger.info('Data received')
