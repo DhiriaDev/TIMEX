@@ -136,3 +136,6 @@ dmypy.json
 .pyre/
 trial_notebook.ipynb
 dataset_examples/ElectricityLoad/ElectricityLoadDiagrams2011_2014.txt
+dataset_examples/ElectricityLoad/ElectricityLoad2011_14.csv
+utilScript.py
+possibleNewTechnologies.md

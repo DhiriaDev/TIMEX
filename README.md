@@ -24,6 +24,8 @@ In addition to the dependencies of each submodule, also the general dependencies
 When running the servers outside a docker container, you need to add to the shell: `$PYTHONPATH:$(pwd)/utils:$(pwd)/prediction_server/models` before of starting the server.
 
 ## **Docker Images build**
+### **Note: you can use the create_containers.sh to build and push all the images**
+
 The first image to be built is the "timex_utils".
 In fact, that image will be the *base image* for the validator_server, the prediction_server and the timex_app. In fact, these three modules share some of the functions contained in the utils module.
 
@@ -55,23 +57,26 @@ Starting from Docker version 19.03, NVIDIA GPUs are natively supported as Docker
 Once installed Nvidia-container-toolkit, let's run the container adding the argument `--gpus <how_many_gpus>`. \
 For more information [visit here](https://wiki.archlinux.org/titleDocker#Run_GPU_accelerated_Docker_containers_with_NVIDIA_GPUs).
 
-## **Containers Configuration For Minikube**
-We have basically two m ain methods:
+## **Minikube**
+NOTE: it's needed to configure minikube to use the kvm2 driver for virtualization, otherwise hardware acceleration would not work. For more information [look here](https://minikube.sigs.k8s.io/docs/drivers/kvm2/). \
+
+### **Containers Usage**
+We have basically two main methods:
 1. After having built the images, we upload them to minikube \
     `minikube image load <image_name>`
   Set the imagePullPolicy to Never, otherwise Kubernetes will try to download the image.
 
 2. we can directly build the image inside minikube: \
-   As the [README](https://github.com/kubernetes/minikube/blob/0c616a6b42b28a1aab8397f5a9061f8ebbd9f3d9/README.md#reusing-the-docker-daemon) describes, you can reuse the Docker daemon from Minikube with eval $(minikube docker-env). So to use an image without uploading it, you can follow these steps:
-   
-   - Set the environment variables with `eval $(minikube docker-env)`
-   - Build the image with the Docker daemon of Minikube (e.g. `docker build -t my-image .`)
-   - Set the image in the pod spec like the build tag (e.g. my-image)
+  As the [README](https://github.com/kubernetes/minikube/blob/0c616a6b42b28a1aab8397f5a9061f8ebbd9f3d9/README.md#reusing-the-docker-daemon) describes, you can reuse the Docker daemon from Minikube with eval $(minikube docker-env). So to use an image without uploading it, you can follow these steps:
+  
+  - Set the environment variables with `eval $(minikube docker-env)`
+  - Build the image with the Docker daemon of Minikube (e.g. `docker build -t my-image .`)
+  - Set the image in the pod spec like the build tag (e.g. my-image)
     *Important notes*: You have to run eval $(minikube docker-env) on each terminal you want to use, since it only sets the environment variables for the current shell session. Also in this case, set the imagePullPolicy to Never, otherwise Kubernetes will try to download the image.
 
 
 3. we can deploy a docker registry as explained [here](https://docs.docker.com/registry/deploying/). 
-   In the deployment configuration file we need now to specify `<registry_ip_address>/<image_name>`
+  In the deployment configuration file we need now to specify `<registry_ip_address>/<image_name>`
 
 **NOTE**: the second method is preferred for developing purposes because one can leverage the docker cache when building the images
 
