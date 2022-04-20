@@ -51,23 +51,23 @@ if [ choice == 'n']; then
     exit 0
 else
     printf "\n\n--------- PUSHING IMAGES ---------\n"
-    docker tag timex_data_ingestion 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_data_ingestion
+    docker tag timex_data_ingestion 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_data_ingestion
 
-    docker tag timex_prediction_server 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_prediction_server
+    docker tag timex_prediction_server 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_prediction_server
 
-    docker tag timex_app 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_app
-    docker tag timex_manager 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_manager
+    docker tag timex_app 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_app
+    docker tag timex_manager 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_manager
 
-    docker tag timex_validation_server 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_validation_server
+    docker tag timex_validation_server 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_validation_server
 
 
-    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 485540626268.dkr.ecr.us-east-1.amazonaws.com    
+    aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 485540626268.dkr.ecr.eu-west-1.amazonaws.com    
 
-    docker push 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_data_ingestion
-    docker push 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_manager
-    docker push 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_app
-    docker push 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_validation_server
-    docker push 485540626268.dkr.ecr.us-east-1.amazonaws.com/dhiria_repo:timex_prediction_server
+    docker push 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_data_ingestion
+    docker push 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_manager
+    docker push 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_app
+    docker push 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_validation_server
+    docker push 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:timex_prediction_server
 
     echo "\n\nCONTAINERS SUCCESSFULLY PUSHED!"
     exit 0

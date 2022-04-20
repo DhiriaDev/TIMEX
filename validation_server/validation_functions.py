@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 def validate (timeseries_containers : list[TimeSeriesContainer], param_config : dict) -> TimeSeriesContainer:
     main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
 
-    logger.info (-f'Validation Started: using {main_accuracy_estimator} as main accuracy estimator!')
+    logger.info ('Validation started using %s as main accuracy estimator!', main_accuracy_estimator)
     '''
     Since the prediction request are asynchronous for each requested model, now we have to merge the results of
     all the models for the requested timeseries in a single container
@@ -25,7 +25,7 @@ def validate (timeseries_containers : list[TimeSeriesContainer], param_config : 
 
     timeseries_container.models = { best_model_name : timeseries_container.models[best_model_name] }
 
-    logger.info (-f'Validation finished: best model = {best_model_name}')
+    logger.info ('Validation finished: best model = %s', best_model_name)
 
     
     return timeseries_container
