@@ -76,10 +76,10 @@ class PredictionModel:
     ----------
     freq : str
         If available, the frequency of the time-series.
-    test_values : int
+    validation_values : int
         Number of the last points of the time-series to use for the validation set. Default -1. If this is not available
-        in the configuration parameter dictionary, `test_percentage` will be used.
-    test_percentage : float
+        in the configuration parameter dictionary, `validation_percentage` will be used.
+    validation_percentage : float
         Percentage of the time-series length to used for the validation set. Default 10.
     transformation : str
         Transformation to apply to the time series before using it. Default None
@@ -109,8 +109,8 @@ class PredictionModel:
         log.info(f"Creating a {self.name} model...")
 
         # Default settings.
-        self.test_percentage = 10
-        self.test_values = -1  # Will be set by user, if specified a precise value, or by `launch_model()`.
+        self.validation_percentage = 10
+        self.validation_values = -1  # Will be set by user, if specified a precise value, or by `launch_model()`.
         self.delta_training_percentage = 20
         self.prediction_lags = 10
         self.main_accuracy_estimator = "mae"
@@ -124,15 +124,24 @@ class PredictionModel:
             model_parameters = params["model_parameters"]
 
             try:
-                self.test_values = model_parameters["test_values"]
+                self.validation_values = model_parameters["validation_values"]
             except KeyError:
-                pass
+                try:
+                    self.validation_values = model_parameters["test_values"]
+                    log.info(f"The parameter 'key_values' is deprecated. Use 'validation_values'.")
+                except KeyError:
+                    pass
 
             try:
-                self.test_percentage = model_parameters["test_percentage"]
-                self.test_values = -1
+                self.validation_percentage = model_parameters["validation_percentage"]
+                self.validation_values = -1
             except KeyError:
-                pass
+                try:
+                    self.validation_percentage = model_parameters["test_percentage"]
+                    log.info(f"The parameter 'test_percentage' is deprecated. Use 'test_values'.")
+                    self.validation_values = -1
+                except KeyError:
+                    pass
 
             try:
                 self.prediction_lags = model_parameters["prediction_lags"]
@@ -315,7 +324,7 @@ class PredictionModel:
 
                 future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                              start=tr.index.values[0],
-                                                             periods=len(tr) + self.test_values + self.prediction_lags),
+                                                             periods=len(tr) + self.validation_values + self.prediction_lags),
                                          columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
                 forecast = self.predict(future_df, extra_regressors)
@@ -330,7 +339,7 @@ class PredictionModel:
 
                 forecast = self.adjust_forecast(train_ts.columns[0], forecast)
 
-                testing_prediction = forecast.iloc[-self.prediction_lags - self.test_values:-self.prediction_lags]
+                testing_prediction = forecast.iloc[-self.prediction_lags - self.validation_values:-self.prediction_lags]
 
                 first_used_index = tr.index.values[0]
 
@@ -475,7 +484,7 @@ class PredictionModel:
 
         As well as the `characteristic` dictionary, which contains useful information on the model:
         >>> model_output.characteristics
-        {'name': 'FBProphet', 'delta_training_percentage': 20, 'delta_training_values': 6, 'test_values': 3,
+        {'name': 'FBProphet', 'delta_training_percentage': 20, 'delta_training_values': 6, 'validation_values': 3,
         'transformation': <timexseries.data_prediction.transformation.Identity object at 0x7f29214b3a00>}
 
         The `results` attribute, instead, contains the results of the training on each of the tested sub-training-sets.
@@ -495,15 +504,15 @@ class PredictionModel:
 
         self.delta_training_values = int(round(len(ingested_data) * self.delta_training_percentage / 100))
 
-        if self.test_values == -1:
-            self.test_values = int(round(len(ingested_data) * (self.test_percentage / 100)))
+        if self.validation_values == -1:
+            self.validation_values = int(round(len(ingested_data) * (self.validation_percentage / 100)))
 
         self.freq = pd.infer_freq(ingested_data.index)
 
         # We need to pass ingested data both to compute_training and compute_best_prediction, so better use copy()
         # because, otherwise, we may have side effects.
-        train_ts = ingested_data.copy().iloc[:-self.test_values]
-        test_ts = ingested_data.copy().iloc[-self.test_values:]
+        train_ts = ingested_data.copy().iloc[:-self.validation_values]
+        test_ts = ingested_data.copy().iloc[-self.validation_values:]
 
         train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
 
@@ -517,7 +526,7 @@ class PredictionModel:
         model_characteristics["name"] = self.name
         model_characteristics["delta_training_percentage"] = self.delta_training_percentage
         model_characteristics["delta_training_values"] = self.delta_training_values
-        model_characteristics["test_values"] = self.test_values
+        model_characteristics["validation_values"] = self.validation_values
         model_characteristics["transformation"] = self.transformation
 
         return ModelResult(results=model_training_results, characteristics=model_characteristics,

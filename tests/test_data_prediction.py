@@ -17,6 +17,7 @@ from timexseries.data_prediction.models.exponentialsmoothing_predictor import Ex
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
+from timexseries.data_prediction.models.persistence_predictor import PersistenceModel
 from timexseries.data_prediction.models.predictor import ModelResult
 from timexseries.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
 
@@ -201,7 +202,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [20, 40, 60, 80, 90]
 
-            assert predictor.test_values == 10
+            assert predictor.validation_values == 10
             assert predictor.delta_training_values == 20
             assert predictor.main_accuracy_estimator == "mae"
 
@@ -239,7 +240,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [19, 38, 57, 76, 89]
 
-            assert predictor.test_values == 12
+            assert predictor.validation_values == 12
             assert predictor.delta_training_values == 19
             assert predictor.main_accuracy_estimator == "mae"
 
@@ -276,7 +277,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [20, 40, 60, 80, 95]
 
-            assert predictor.test_values == 5
+            assert predictor.validation_values == 5
             assert predictor.delta_training_values == 20
             assert predictor.main_accuracy_estimator == "mae"
 
@@ -314,7 +315,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [95]
 
-            assert predictor.test_values == 5
+            assert predictor.validation_values == 5
             assert predictor.delta_training_values == 100
             assert predictor.main_accuracy_estimator == "mae"
 
@@ -349,7 +350,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [2, 4, 6, 8, 9]
 
-            assert predictor.test_values == 1
+            assert predictor.validation_values == 1
             assert predictor.delta_training_values == 2
             assert predictor.main_accuracy_estimator == "mae"
             assert type(predictor.transformation) == Identity
@@ -390,7 +391,7 @@ class Test_Models_General:
 
             expected_train_set_lengths = [2, 4, 6, 8, 9]
 
-            assert predictor.test_values == 1
+            assert predictor.validation_values == 1
             assert predictor.delta_training_values == 2
             assert predictor.main_accuracy_estimator == "mae"
             assert len(model_result.results) == 5
@@ -492,7 +493,7 @@ class Test_Models_Specific:
         # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, True),
         #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
         [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
-         (MockUpModel, True), (ExponentialSmoothingModel, False)]
+         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
@@ -665,8 +666,8 @@ class TestGetPredictions:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 2
-                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
-                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction['series'].index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
+                assert hist_prediction['series'].index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
 
         # Simulate a 1-step ahead in time, so we have collected a new point.
         # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
@@ -680,26 +681,26 @@ class TestGetPredictions:
 
         for s in timeseries_containers:
             for model in s.historical_prediction:
-                hist_prediction = s.historical_prediction[model]
+                hist_prediction = s.historical_prediction[model]['series']
                 assert len(hist_prediction) == 3
                 assert hist_prediction.index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
                 assert hist_prediction.index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
                 assert hist_prediction.index[2] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
-        assert b_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[
+        assert b_old_hist['fbprophet']['series'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet']['series'].iloc[
             0, 0]
-        assert b_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[0].historical_prediction['fbprophet'].iloc[
+        assert b_old_hist['fbprophet']['series'].iloc[1, 0] == timeseries_containers[0].historical_prediction['fbprophet']['series'].iloc[
             1, 0]
-        assert b_old_hist['mockup'].iloc[0, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[0, 0]
-        assert b_old_hist['mockup'].iloc[1, 0] == timeseries_containers[0].historical_prediction['mockup'].iloc[1, 0]
+        assert b_old_hist['mockup']['series'].iloc[0, 0] == timeseries_containers[0].historical_prediction['mockup']['series'].iloc[0, 0]
+        assert b_old_hist['mockup']['series'].iloc[1, 0] == timeseries_containers[0].historical_prediction['mockup']['series'].iloc[1, 0]
 
-        assert c_old_hist['fbprophet'].iloc[0, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[
+        assert c_old_hist['fbprophet']['series'].iloc[0, 0] == timeseries_containers[1].historical_prediction['fbprophet']['series'].iloc[
             0, 0]
-        assert c_old_hist['fbprophet'].iloc[1, 0] == timeseries_containers[1].historical_prediction['fbprophet'].iloc[
+        assert c_old_hist['fbprophet']['series'].iloc[1, 0] == timeseries_containers[1].historical_prediction['fbprophet']['series'].iloc[
             1, 0]
-        assert c_old_hist['mockup'].iloc[0, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[0, 0]
-        assert c_old_hist['mockup'].iloc[1, 0] == timeseries_containers[1].historical_prediction['mockup'].iloc[1, 0]
+        assert c_old_hist['mockup']['series'].iloc[0, 0] == timeseries_containers[1].historical_prediction['mockup']['series'].iloc[0, 0]
+        assert c_old_hist['mockup']['series'].iloc[1, 0] == timeseries_containers[1].historical_prediction['mockup']['series'].iloc[1, 0]
 
     def test_compute_predictions_2(self, tmp_path):
 
@@ -827,7 +828,7 @@ class TestGetPredictions:
         for s in timeseries_containers:
             scen_name = s.timeseries_data.columns[0]
             for model in s.historical_prediction:
-                hist_prediction = s.historical_prediction[model]
+                hist_prediction = s.historical_prediction[model]['series']
                 assert len(hist_prediction) == 10
                 id = 0
                 for i in pandas.date_range('2000-01-21', periods=10):
@@ -859,7 +860,7 @@ class TestGetPredictions:
                 if endpoint == pd.Timestamp('2000-01-29 00:00:00'):  # Last point, remove last 2 points
                     expected_hist_pred = expected_hist_pred.iloc[0:1]
 
-                computed_hist_pred = s.historical_prediction['fbprophet'].loc[
+                computed_hist_pred = s.historical_prediction['fbprophet']['series'].loc[
                                      endpoint + pandas.Timedelta(days=1):endpoint + pandas.Timedelta(days=3), scen_name]
 
                 assert expected_hist_pred.equals(computed_hist_pred)
@@ -1026,7 +1027,7 @@ class TestCreateScenarios:
                 assert container.models['mockup'].characteristics['extra_regressors'] == expected_extra_regressors[name]
 
             if historical_predictions:
-                hp = container.historical_prediction['mockup']
+                hp = container.historical_prediction['mockup']['series']
                 assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].all() == expected_value
             else:
                 assert container.historical_prediction is None

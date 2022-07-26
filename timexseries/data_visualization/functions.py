@@ -137,7 +137,7 @@ def create_timeseries_dash_children(timeseries_container: TimeSeriesContainer, p
             model_results = model.results
             model_characteristic = model.characteristics
 
-            test_values = model_characteristic["test_values"]
+            test_values = model_characteristic["validation_values"]
             main_accuracy_estimator = model_parameters["main_accuracy_estimator"]
             model_results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
 
@@ -899,19 +899,16 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
     timeseries_name = real_data.columns[0]
-    first_predicted_index = historical_prediction.index[0]
-    last_real_index = real_data.index[-1]
+    first_predicted_index = historical_prediction['series'].index[0]
 
     validation_real_data = real_data.loc[first_predicted_index:, timeseries_name]
 
-    testing_performance = ValidationPerformance(first_predicted_index)
-    testing_performance.set_testing_stats(actual=validation_real_data,
-                                          predicted=historical_prediction.loc[:last_real_index, timeseries_name])
     new_children.extend([
         html.Div(_("This model, during the history, reached these performances on unseen data:")),
-        show_errors(testing_performance),
+        show_errors(historical_prediction['metrics']),
         html.Div(_("Range of validation data: ") + str(validation_real_data.max() - validation_real_data.min()))])
 
+    historical_prediction = historical_prediction['series']
     fig.add_trace(go.Scatter(x=real_data.index, y=real_data.iloc[:, 0],
                              line=dict(color='red'),
                              mode='markers',
@@ -1091,7 +1088,7 @@ def characteristics_list(model_characteristics: dict, testing_performances: [Val
         value = str(value)
         switcher = {
             "name": _("Model type: ") + value,
-            "test_values": _('Values used for testing: last ') + value + _(' values'),
+            "validation_values": _('Values used for validation: last ') + value + _(' values'),
             "delta_training_percentage": _('The length of the training windows is the ') + value
                                          + "%" + _(' of the length of the time series.'),
             "delta_training_values": _('Training windows are composed of ') + value + _(' values.'),

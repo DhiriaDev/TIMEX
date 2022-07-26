@@ -8,12 +8,13 @@ import dateparser
 from pandas import DataFrame
 
 from timexseries.data_ingestion import ingest_additional_regressors
-from timexseries.data_prediction import PredictionModel
+from timexseries.data_prediction import PredictionModel, ValidationPerformance
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
+from timexseries.data_prediction.models.persistence_predictor import PersistenceModel
 from timexseries.data_prediction.models.prophet_predictor import FBProphetModel
 from timexseries.data_prediction.xcorr import calc_all_xcorr
 from timexseries.timeseries_container import TimeSeriesContainer
@@ -103,7 +104,7 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
     ...     "possible_transformations": "none,log_modified",  # Possible feature transformation to test.
     ...     "main_accuracy_estimator": "mae",
     ...     "delta_training_percentage": 20,  # Training windows will be incremented by the 20% each step...
-    ...     "test_values": 5,  # Use the last 5 values as validation set.
+    ...     "validation_values": 5,  # Use the last 5 values as validation set.
     ...     "prediction_lags": 7,  # Predict the next 7 points after 2000-01-30.
     ...     }
     ... }
@@ -258,7 +259,7 @@ def get_best_multivariate_predictions(timeseries_containers: [TimeSeriesContaine
     ...         "possible_transformations": "none,log_modified",
     ...         "main_accuracy_estimator": "mae",
     ...         "delta_training_percentage": 20,
-    ...         "test_values": 5,
+    ...         "validation_values": 5,
     ...         "prediction_lags": 7,
     ...     },
     ...     "xcorr_parameters": {
@@ -509,7 +510,7 @@ def compute_historical_predictions(ingested_data, param_config):
     ...         "possible_transformations": "none,log_modified",
     ...         "main_accuracy_estimator": "mae",
     ...         "delta_training_percentage": 20,
-    ...         "test_values": 5,
+    ...         "validation_values": 5,
     ...         "prediction_lags": 7,
     ...     },
     ...     "historical_prediction_parameters": {
@@ -633,8 +634,16 @@ def compute_historical_predictions(ingested_data, param_config):
     for s in timeseries_containers:
         timeseries_name = s.timeseries_data.columns[0]
         timeseries_historical_predictions = {}
+        timeseries_historical_predictions = {}
         for model in historical_prediction:
-            timeseries_historical_predictions[model] = DataFrame(historical_prediction[model].loc[:, timeseries_name])
+            metrics = ValidationPerformance()
+            metrics.set_testing_stats(s.timeseries_data.iloc[-len(historical_prediction[model]):, 0],
+                                      historical_prediction[model].loc[:, timeseries_name])
+
+            timeseries_historical_predictions[model] = {}
+            timeseries_historical_predictions[model]['series'] = DataFrame(historical_prediction[model].loc[:, timeseries_name])
+            timeseries_historical_predictions[model]['metrics'] = metrics
+
         s.set_historical_prediction(timeseries_historical_predictions)
 
     return timeseries_containers
@@ -751,7 +760,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     ...        "possible_transformations": "none,log_modified",
     ...        "main_accuracy_estimator": "mae",
     ...        "delta_training_percentage": 20,
-    ...        "test_values": 5,
+    ...        "validation_values": 5,
     ...        "prediction_lags": 7,
     ...    },
     ...}
@@ -769,6 +778,8 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     #     return NeuralProphetModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
+    if model_class == "persistence" or model_class == "naive":
+        return PersistenceModel(param_config, transformation)
     if model_class == "exponentialsmoothing":
         return ExponentialSmoothingModel(param_config, transformation)
     else:

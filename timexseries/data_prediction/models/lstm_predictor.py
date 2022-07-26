@@ -155,7 +155,6 @@ class LSTMModel(PredictionModel):
                     result = torch.cat((result, tensors_to_append[i].to(dev)))
                 x_input = torch.cat((x_input, result.view(1, -1)))
 
-
         results = x_input[-requested_prediction:]
         results = results.to("cpu")
         results = [x[0] for x in results]
