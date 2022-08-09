@@ -26,6 +26,7 @@ pmdarima = "^1.8.5"
 torch = "^1.11.0"
 prophet = "^1.0.1"
 ipykernel = "^6.9.2"
+confluent-kafka = "^1.9.2"
 
 [tool.poetry.dev-dependencies]
 

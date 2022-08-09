@@ -1,12 +1,15 @@
-import sys
-import logging
+import sys, logging, os
+import json, copy
 
-from flask import Flask, request
-import requests
-from flask_restful import Api, Resource
-import json
-import asyncio, aiohttp
-import copy
+from utils import *
+from multiprocessing import Process
+from confluent_kafka import *
+
+kafka_address = '0.0.0.0:9092'
+control_topic = 'manager_control'
+client_id = 'timex_manager'
+group_id = 'timex_manager'
+
 
 app = Flask(__name__)
 api = Api(app)
@@ -94,6 +97,7 @@ async def schedule_coroutines(models: list, param_config : dict, dataset) -> dic
         return models_results
 
 
+
 class Manager(Resource):
 
     def post(self):
@@ -115,10 +119,10 @@ class Manager(Resource):
         try:
             logger.info('Contacting the data ingestion module')
             # here data has been sent to the data ingestion module
-            ingestion_resp = json.loads(requests.post(
-                data_ingestion_address, 
-                data={'param_config' : json.dumps(param_config)}
-                ).text)
+            ingestion_resp = json.loads(
+                requests.post(data_ingestion_address,
+                    data={'param_config' : json.dumps(param_config)}).text
+                    )
 
             logger.info('Data received')
 
@@ -151,12 +155,45 @@ class Manager(Resource):
         return best_model, 200 
 
 
-api.add_resource(Manager, '/predict')
 
-address = '127.0.0.1'
-docker_address= '0.0.0.0'
-port = 6000
 
-if __name__ == '__main__':
-    app.run(host=docker_address,
-            port=port, debug=True)
+
+
+
+
+def call_data_ingestion(param_config : str) :
+    
+    data_ingestion_control_topic = 'ingestion_control'
+    conf = {
+        "bootstrap.servers" : kafka_address, 
+        "client.id": client_id, 
+        "acks":1,
+        "retries":3,
+        "batch.size":1,
+        "max.in.flight.requests.per.connection":1
+    }
+
+    producer = Producer(conf)
+
+    headers = {'prod_id' : str(client_id),
+               'type' : str(MessageType.control_message.value)}
+
+    data = param_config
+
+    producer.produce(topic = ingestion_topic,
+                        value = json.dumps(data).encode('utf-8'),
+                        headers = headers)
+    producer.flush()
+
+
+if __name__ == "__main__" :
+    timex_watcher_config = {"bootstrap.servers" : kafka_address,
+                            "client.id" : client_id,
+                            "group.id" : group_id,
+                            "max.in.flight.requests.per.connection" : 1,
+                            "auto.offset.reset":'earliest'
+                            }
+    works_to_do = [call_data_ingestion]
+
+    watcher = Watcher(config_dict= timex_watcher_config, works_to_do= works_to_do)
+    watcher.listen_on_control(control_topic = control_topic)
