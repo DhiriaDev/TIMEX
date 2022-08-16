@@ -14,6 +14,7 @@ from scipy.stats import yeojohnson
 
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -492,8 +493,9 @@ class Test_Models_Specific:
         "model_class,check_multivariate",
         # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, True),
         #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
-        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
-         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
+        # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
+        #  (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
+        [(FLAMLModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)

@@ -31,6 +31,7 @@ networkx = "^2.6.3"
 prophet = "^1.0.1"
 pmdarima = "^1.8.4"
 dash-bootstrap-components = "^1.0.3"
+FLAML = {extras = ["ts_forecast"], version = "^1.0.10"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"

@@ -11,6 +11,7 @@ from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction import PredictionModel, ValidationPerformance
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -782,5 +783,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return PersistenceModel(param_config, transformation)
     if model_class == "exponentialsmoothing":
         return ExponentialSmoothingModel(param_config, transformation)
+    if model_class == "flaml":
+        return FLAMLModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)
