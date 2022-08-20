@@ -25,7 +25,7 @@ class FBProphetModel(PredictionModel):
         except KeyError:
             self.fbprophet_parameters = None
 
-    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
 
         if self.fbprophet_parameters is not None:

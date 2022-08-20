@@ -183,13 +183,13 @@ class Test_Xcorr:
 
 
 class Test_Models_General:
-    def test_launch_model_test_percentage(self):
-        # Percentages' sum is not 100%; adapt the windows. Use "test_percentage".
+    def test_launch_model_validation_percentage(self):
+        # Percentages' sum is not 100%; adapt the windows. Use "validation_percentage".
         param_config = {
             "model_parameters": {
-                "test_percentage": 10,
+                "validation_percentage": 10,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "transformation": "none",
                 "main_accuracy_estimator": "mae"
             },
@@ -222,12 +222,12 @@ class Test_Models_General:
             assert len(expected_train_set_lengths) == 0
 
     def test_launch_model_float_percentages(self):
-        # Percentages' sum is not 100% and values are float; adapt the windows. Use "test_percentage".
+        # Percentages' sum is not 100% and values are float; adapt the windows. Use "validation_percentage".
         param_config = {
             "model_parameters": {
-                "test_percentage": 11.7,
+                "validation_percentage": 11.7,
                 "delta_training_percentage": 18.9,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "transformation": "none",
                 "main_accuracy_estimator": "mae"
             },
@@ -259,13 +259,13 @@ class Test_Models_General:
 
             assert len(expected_train_set_lengths) == 0
 
-    def test_launch_model_test_values(self):
-        # Percentages' sum is not 100%; adapt the windows. Use "test_values".
+    def test_launch_model_validation_percentage(self):
+        # Percentages' sum is not 100%; adapt the windows. Use "validation_percentage".
         param_config = {
             "model_parameters": {
-                "test_values": 5,
+                "validation_percentage": 5,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "transformation": "none",
                 "main_accuracy_estimator": "mae"
             },
@@ -300,9 +300,9 @@ class Test_Models_General:
         # Percentages' sum is over 100%; adapt the window.
         param_config = {
             "model_parameters": {
-                "test_values": 5,
+                "validation_percentage": 5,
                 "delta_training_percentage": 100,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "transformation": "none",
                 "main_accuracy_estimator": "mae"
             },
@@ -365,7 +365,7 @@ class Test_Models_General:
 
                 used_training_set = df.loc[first_used_index:]
                 used_training_set = used_training_set.iloc[:-1]
-                assert len(prediction) == len(used_training_set) + 1 + 10
+                assert len(prediction) == len(used_training_set) + 1 + 1
                 expected_train_set_lengths.remove(len(used_training_set))
 
             assert len(expected_train_set_lengths) == 0
@@ -374,9 +374,9 @@ class Test_Models_General:
         # Test extra-regressors.
         param_config = {
             "model_parameters": {
-                "test_percentage": 10,
+                "validation_percentage": 10,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "transformation": "none",
                 "main_accuracy_estimator": "mae"
             },
@@ -422,9 +422,9 @@ class Test_Models_General:
         param_config = {
             "max_threads": n_threads,
             "model_parameters": {
-                "test_percentage": 10,
+                "validation_percentage": 10,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "none",
                 "models": "mockup",
                 "mockup_confidence": mockup_confidence,
@@ -493,9 +493,9 @@ class Test_Models_Specific:
         "model_class,check_multivariate",
         # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, True),
         #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
-        # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
-        #  (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
-        [(FLAMLModel, False)]
+        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
+         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
+        # [(FLAMLModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
@@ -515,7 +515,7 @@ class Test_Models_Specific:
         model = model_class({})
         model.freq = "1d"
 
-        model.train(df.copy())
+        model.train(df.copy(), 10)
         result = model.predict(future_df.copy())
 
         for i in range(100, 110):
@@ -525,7 +525,7 @@ class Test_Models_Specific:
             model = model_class({})
             model.freq = "1d"
 
-            model.train(df.copy(), extra_regressors.copy())
+            model.train(df.copy(), 10, extra_regressors.copy())
             result_with_extra_regressors = model.predict(future_df.copy(), extra_regressors.copy())
 
             assert not result.equals(result_with_extra_regressors)
@@ -534,11 +534,11 @@ class Test_Models_Specific:
 class TestGetPredictions:
 
     def test_prepare_extra_regressors(self):
-        ing_data = DataFrame({"a": np.arange(0, 10), "b": np.arange(10, 20)})
+        ing_data = DataFrame({"a": np.arange(0.0, 10.0), "b": np.arange(10.0, 20.0)})
         ing_data.set_index("a", inplace=True)
 
         # Simulate the best forecast with overlapping index with time-series data...
-        forecast = DataFrame({"a": np.arange(8, 15), "yhat": np.arange(40, 47)})
+        forecast = DataFrame({"a": np.arange(8.0, 15.0), "yhat": np.arange(40.0, 47.0)})
         forecast.set_index("a", inplace=True)
 
         models = {'fbprophet': ModelResult(None, None, forecast)}
@@ -551,6 +551,8 @@ class TestGetPredictions:
                                              44.0, 45.0, 46.0])})
         expected.set_index("a", inplace=True)
 
+        print(expected)
+        print(result)
         assert expected.equals(result)
 
     def test_get_best_univariate_and_multivariate_predictions(self):
@@ -569,9 +571,9 @@ class TestGetPredictions:
                 "xcorr_mode_target": "pearson"
             },
             "model_parameters": {
-                "test_values": 2,
+                "validation_percentage": 2,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "log_modified,none",
                 "models": "fbprophet,mockup",
                 "main_accuracy_estimator": "mae",
@@ -639,9 +641,9 @@ class TestGetPredictions:
             },
             "input_parameters": {},
             "model_parameters": {
-                "test_values": 2,
+                "validation_percentage": 2,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "log_modified,none",
                 "models": "mockup,fbprophet",
                 "main_accuracy_estimator": "mae",
@@ -714,9 +716,9 @@ class TestGetPredictions:
         param_config = {
             "input_parameters": {},
             "model_parameters": {
-                "test_values": 5,
+                "validation_percentage": 5,
                 "delta_training_percentage": 30,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "none",
                 "models": "fbprophet",
                 "main_accuracy_estimator": "mae",
@@ -728,7 +730,7 @@ class TestGetPredictions:
         }
 
         # You can verify with this code that tr_1 is the best training window.
-        # test_values = 5
+        # validation_percentage = 5
         # tr_1 = ing_data.copy().iloc[-35:-5][['nuovi_positivi']]
         # tr_2 = ing_data.copy().iloc[-65:-5][['nuovi_positivi']]
         # tr_3 = ing_data.copy().iloc[-95:-5][['nuovi_positivi']]
@@ -748,7 +750,7 @@ class TestGetPredictions:
         #
         #     future_df = pd.DataFrame(index=pd.date_range(freq="1d",
         #                                                  start=tr.index.values[0],
-        #                                                  periods=len(tr) + test_values + 10),
+        #                                                  periods=len(tr) + validation_percentage + 10),
         #                              columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
         #
         #     future = future_df.reset_index()
@@ -804,9 +806,9 @@ class TestGetPredictions:
         param_config = {
             "input_parameters": {},
             "model_parameters": {
-                "test_values": 2,
+                "validation_values": 2,
                 "delta_training_percentage": 100,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "none",
                 "models": "fbprophet,mockup",
                 "main_accuracy_estimator": "mae",
@@ -907,9 +909,9 @@ class TestGetPredictions:
         param_config = {
             "input_parameters": {},
             "model_parameters": {
-                "test_values": 5,
+                "validation_values": 5,
                 "delta_training_percentage": 100,
-                "prediction_lags": 5,
+                "forecast_horizon": 5,
                 "possible_transformations": "log_modified",
                 "models": "fbprophet",
                 "main_accuracy_estimator": "mae",
@@ -942,9 +944,9 @@ class TestGetPredictions:
             },
             "input_parameters": {},
             "model_parameters": {
-                "test_values": 2,
+                "validation_percentage": 2,
                 "delta_training_percentage": 20,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "log_modified,none",
                 "models": "mockup",
                 "main_accuracy_estimator": "mae",
@@ -980,9 +982,9 @@ class TestCreateScenarios:
                 "index_column_name": "date",
             },
             "model_parameters": {
-                "test_values": 5,
+                "validation_values": 5,
                 "delta_training_percentage": 30,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "none",
                 "models": "mockup",
                 "main_accuracy_estimator": "mae",
@@ -1030,7 +1032,7 @@ class TestCreateScenarios:
 
             if historical_predictions:
                 hp = container.historical_prediction['mockup']['series']
-                assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].all() == expected_value
+                assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].eq(expected_value).all()
             else:
                 assert container.historical_prediction is None
 
@@ -1042,9 +1044,9 @@ class TestCreateScenarios:
                 "index_column_name": "date",
             },
             "model_parameters": {
-                "test_values": 5,
+                "validation_values": 5,
                 "delta_training_percentage": 30,
-                "prediction_lags": 10,
+                "forecast_horizon": 10,
                 "possible_transformations": "none",
                 "models": "mockup",
                 "main_accuracy_estimator": "mae",

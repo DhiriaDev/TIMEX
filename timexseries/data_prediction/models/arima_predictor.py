@@ -12,7 +12,7 @@ class ARIMAModel(PredictionModel):
         self.arima = None
         self.len_train_set = 0
 
-    def train(self, input_data: DataFrame, extra_regressor: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressor: DataFrame = None):
         # This is the code needed to check if a SARIMA is needed.
         # However, fitting a SARIMA can take a huge amount of time.
         # s = pd.Series(sm.tsa.acf(input_data, nlags=round(len(input_data) / 2 - 1), fft=True))
@@ -31,13 +31,12 @@ class ARIMAModel(PredictionModel):
         # else:
         self.arima = pm.auto_arima(input_data, error_action='ignore', seasonal=False, suppress_warnings=True)
 
-        self.len_train_set = len(input_data)
+        self.points_to_predict = points_to_predict
 
     def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
-        requested_prediction = len(future_dataframe) - self.len_train_set
         predictions = self.arima.predict_in_sample()
-        predictions = np.concatenate((predictions, self.arima.predict(n_periods=requested_prediction)))
+        predictions = np.concatenate((predictions, self.arima.predict(n_periods=self.points_to_predict)))
 
         future_dataframe.yhat = predictions
 

@@ -19,15 +19,14 @@ class PersistenceModel(PredictionModel):
         self.len_train_set = 0
         self.requested_predictions = 0
 
-    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
         self.last_known_value = input_data.iloc[-1, 0]
-        self.len_train_set = len(input_data)
+        self.points_to_predict = points_to_predict
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
-        requested_prediction = len(future_dataframe) - self.len_train_set
-        future_dataframe.iloc[-requested_prediction:, 0] = self.last_known_value
+        future_dataframe.iloc[-self.points_to_predict:, 0] = self.last_known_value
         return future_dataframe
 
 

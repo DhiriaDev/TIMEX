@@ -38,18 +38,16 @@ class MockUpModel(PredictionModel):
 
         self.extra_regressors_in_training = None
         self.extra_regressors_in_predict = None
-        self.len_train_set = 0
-        self.requested_predictions = 0
+        self.points_to_predict = 0
 
-    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
         self.extra_regressors_in_training = extra_regressors
-        self.len_train_set = len(input_data)
+        self.points_to_predict = points_to_predict
 
     def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
         """Overrides PredictionModel.predict()"""
         self.extra_regressors_in_training = extra_regressors
-        self.requested_predictions = len(future_dataframe) - self.len_train_set
         self.extra_regressors_in_predict = extra_regressors
 
         if self.forced_predictions is not None:
@@ -69,10 +67,10 @@ class MockUpModel(PredictionModel):
             else:
                 v = len(extra_regressors.columns)
 
-            future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat'] = v
+            future_dataframe.loc[future_dataframe.index[-self.points_to_predict]:, 'yhat'] = v
             if self.confidence_intervals:
-                future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat_lower'] = v - 0.5
-                future_dataframe.loc[future_dataframe.index[-self.requested_predictions]:, 'yhat_upper'] = v + 0.5
+                future_dataframe.loc[future_dataframe.index[-self.points_to_predict]:, 'yhat_lower'] = v - 0.5
+                future_dataframe.loc[future_dataframe.index[-self.points_to_predict]:, 'yhat_upper'] = v + 0.5
 
         return future_dataframe.copy()
 

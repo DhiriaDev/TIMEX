@@ -26,9 +26,9 @@ def dash_children(tmp_path):
             "frequency": "D",
         },
         "model_parameters": {
-            "test_values": 3,
+            "validation_values": 3,
             "delta_training_percentage": 30,
-            "prediction_lags": 5,
+            "forecast_horizon": 5,
             "possible_transformations": "none,log_modified",
             "models": "mockup",
             "main_accuracy_estimator": "mae"

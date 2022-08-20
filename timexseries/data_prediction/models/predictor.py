@@ -103,16 +103,17 @@ class PredictionModel:
     model_characteristics : dict
         Dictionary of values containing the main characteristics and parameters of the model. Default {}
     """
+
     def __init__(self, params: dict, name: str, transformation: str = "none") -> None:
         self.name = name
 
         log.info(f"Creating a {self.name} model...")
 
         # Default settings.
+        self.forecast_horizon = 1
         self.validation_percentage = 10
-        self.validation_values = -1  # Will be set by user, if specified a precise value, or by `launch_model()`.
+        self.validation_values = 1  # Will be set by user, if specified a precise value, or by `launch_model()`.
         self.delta_training_percentage = 20
-        self.prediction_lags = 10
         self.main_accuracy_estimator = "mae"
         self.transformation = transformation_factory(transformation)
         self.min_values = None
@@ -123,30 +124,23 @@ class PredictionModel:
             log.debug(f"Loading user model settings...")
             model_parameters = params["model_parameters"]
 
-            try:
-                self.validation_values = model_parameters["validation_values"]
-            except KeyError:
-                try:
-                    self.validation_values = model_parameters["test_values"]
-                    log.info(f"The parameter 'key_values' is deprecated. Use 'validation_values'.")
-                except KeyError:
-                    pass
+            if "test_values" in model_parameters or "test_percentage" in model_parameters:
+                log.info("The parameters 'test_values' and 'test_percentage' are deprecated. Use 'validation_values' or"
+                         "'validation_percentage' instead.")
+
+            if "prediction_lags" in model_parameters:
+                log.info("The parameter 'prediction_lags' is deprecated. Use 'forecast_horizon'.")
 
             try:
-                self.validation_percentage = model_parameters["validation_percentage"]
-                self.validation_values = -1
-            except KeyError:
-                try:
-                    self.validation_percentage = model_parameters["test_percentage"]
-                    log.info(f"The parameter 'test_percentage' is deprecated. Use 'test_values'.")
-                    self.validation_values = -1
-                except KeyError:
-                    pass
-
-            try:
-                self.prediction_lags = model_parameters["prediction_lags"]
+                self.forecast_horizon = model_parameters["forecast_horizon"]
             except KeyError:
                 pass
+
+            if "validation_values" in model_parameters:
+                self.validation_values = model_parameters["validation_values"]
+            elif "validation_percentage" in model_parameters:
+                self.validation_percentage = model_parameters["validation_percentage"]
+                self.validation_values = None
 
             try:
                 self.delta_training_percentage = model_parameters["delta_training_percentage"]
@@ -179,7 +173,7 @@ class PredictionModel:
         self.freq = ""
         log.debug(f"Finished model creation.")
 
-    def train(self, ingested_data: DataFrame, extra_regressor: DataFrame = None):
+    def train(self, ingested_data: DataFrame, points_to_predict: int, extra_regressor: DataFrame = None):
         """
         Train the model on the first column of `ingested_data`. Additional time-series, which will be used to improve
         the training in the case of a multivariate model can be passed in the `extra_regressor` DataFrame, one for each
@@ -194,7 +188,9 @@ class PredictionModel:
         ----------
         ingested_data : DataFrame
             Training set. The entire time-series in the first column of `ingested_data` will be used for training.
-
+        points_to_predict : int
+            Requested forecast horizon, i.e. the length of the forecast in points. Useful because some models require
+            this parameter during training.
         extra_regressor : DataFrame, optional, default None
             Additional time-series to use for better predictions.
 
@@ -215,7 +211,7 @@ class PredictionModel:
 
         Train the model.
 
-        >>> predictor.train(training_dataframe)
+        >>> predictor.train(training_dataframe, 7)
         """
         pass
 
@@ -285,7 +281,8 @@ class PredictionModel:
         """
         pass
 
-    def _compute_trainings(self, train_ts: DataFrame, test_ts: DataFrame, extra_regressors: DataFrame, max_threads: int):
+    def _compute_trainings(self, train_ts: DataFrame, test_ts: DataFrame, extra_regressors: DataFrame,
+                           max_threads: int):
         """
         Compute the training of a model on a set of different training sets, of increasing length.
         `train_ts` is split in `n` different training sets, according to the length of `train_ts` and the value of
@@ -316,15 +313,15 @@ class PredictionModel:
             _results = []
 
             for _i in range(targets[0], targets[1]):
-                tr = train_ts.iloc[-(_i+1) * self.delta_training_values:]
+                tr = train_ts.iloc[-(_i + 1) * self.delta_training_values:]
 
                 log.debug(f"Trying with last {len(tr)} values as training set...")
-
-                self.train(tr.copy(), extra_regressors)
+                self.train(tr.copy(), self.validation_values + self.forecast_horizon, extra_regressors)
 
                 future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                              start=tr.index.values[0],
-                                                             periods=len(tr) + self.validation_values + self.prediction_lags),
+                                                             periods=len(tr) + self.validation_values +
+                                                                     self.forecast_horizon),
                                          columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
                 forecast = self.predict(future_df, extra_regressors)
@@ -339,7 +336,8 @@ class PredictionModel:
 
                 forecast = self.adjust_forecast(train_ts.columns[0], forecast)
 
-                testing_prediction = forecast.iloc[-self.prediction_lags - self.validation_values:-self.prediction_lags]
+                testing_prediction = forecast.iloc[
+                                     -self.forecast_horizon - self.validation_values:-self.forecast_horizon]
 
                 first_used_index = tr.index.values[0]
 
@@ -364,18 +362,18 @@ class PredictionModel:
                 n_threads = max_threads
                 subtraining_dim = train_sets_number // n_threads
                 for i in range(0, n_threads):
-                    distributions.append([i*subtraining_dim, i*subtraining_dim + subtraining_dim])
+                    distributions.append([i * subtraining_dim, i * subtraining_dim + subtraining_dim])
             else:
                 n_threads = min(max_threads, train_sets_number)
                 subtraining_dim = train_sets_number // n_threads
                 for i in range(0, n_threads):
-                    distributions.append([i*subtraining_dim, i*subtraining_dim+subtraining_dim])
+                    distributions.append([i * subtraining_dim, i * subtraining_dim + subtraining_dim])
                 for k in range(0, (train_sets_number % n_threads)):
                     distributions[k][1] += 1
-                    distributions[k+1::] = [[x+1, y+1] for x, y in distributions[k+1::]]
+                    distributions[k + 1::] = [[x + 1, y + 1] for x, y in distributions[k + 1::]]
 
         results = Parallel(n_jobs=n_threads)(delayed(c)(distributions[i]) for i in range(0, n_threads))
-        results = reduce(lambda x, y: x+y, [res for res in results])
+        results = reduce(lambda x, y: x + y, [res for res in results])
         return results
 
     def _compute_best_prediction(self, ingested_data: DataFrame, training_results: [SingleResult],
@@ -403,11 +401,11 @@ class PredictionModel:
 
         training_data.iloc[:, 0] = self.transformation.apply(training_data.iloc[:, 0])
 
-        self.train(training_data.copy(), extra_regressors)
+        self.train(training_data.copy(), self.forecast_horizon, extra_regressors)
 
         future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                      start=training_data.index.values[0],
-                                                     periods=len(training_data) + self.prediction_lags),
+                                                     periods=len(training_data) + self.forecast_horizon),
                                  columns=["yhat"], dtype=training_data.iloc[:, 0].dtype)
 
         forecast = self.predict(future_df, extra_regressors)
@@ -504,7 +502,7 @@ class PredictionModel:
 
         self.delta_training_values = int(round(len(ingested_data) * self.delta_training_percentage / 100))
 
-        if self.validation_values == -1:
+        if self.validation_values is None:
             self.validation_values = int(round(len(ingested_data) * (self.validation_percentage / 100)))
 
         self.freq = pd.infer_freq(ingested_data.index)
@@ -512,11 +510,11 @@ class PredictionModel:
         # We need to pass ingested data both to compute_training and compute_best_prediction, so better use copy()
         # because, otherwise, we may have side effects.
         train_ts = ingested_data.copy().iloc[:-self.validation_values]
-        test_ts = ingested_data.copy().iloc[-self.validation_values:]
+        validation_ts = ingested_data.copy().iloc[-self.validation_values:]
 
         train_ts.iloc[:, 0] = self.transformation.apply(train_ts.iloc[:, 0])
 
-        model_training_results = self._compute_trainings(train_ts, test_ts, extra_regressors, max_threads)
+        model_training_results = self._compute_trainings(train_ts, validation_ts, extra_regressors, max_threads)
 
         best_prediction = self._compute_best_prediction(ingested_data, model_training_results, extra_regressors)
 
@@ -584,6 +582,3 @@ class PredictionModel:
                 df = df.round({"yhat": 0, "yhat_lower": 0, "yhat_upper": 0})
 
         return df
-
-
-

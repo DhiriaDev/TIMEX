@@ -25,7 +25,7 @@ class ExponentialSmoothingModel(PredictionModel):
         self.model = None
         self.len_train_set = 0
 
-    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
 
         def is_time_series_trend_stationary(timeseries, significance=.05):

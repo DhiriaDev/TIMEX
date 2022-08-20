@@ -57,8 +57,9 @@ class LSTMModel(PredictionModel):
         super().__init__(params, name="LSTM", transformation=transformation)
         self.scalers = {}
 
-    def train(self, input_data: DataFrame, extra_regressors: DataFrame = None):
+    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
         """Overrides PredictionModel.train()"""
+        self.points_to_predict = points_to_predict
 
         if torch.cuda.is_available():
             dev = "cuda:0"
@@ -127,17 +128,15 @@ class LSTMModel(PredictionModel):
         else:
             dev = "cpu"
 
-        requested_prediction = len(future_dataframe) - self.len_train_set
-
         if extra_regressors is not None:
-            extra_regressors = extra_regressors.iloc[-requested_prediction:].copy()
+            extra_regressors = extra_regressors.iloc[-self.points_to_predict:].copy()
 
             for col in extra_regressors:
                 self.scalers[col] = MinMaxScaler(feature_range=(-1, 1))
                 extra_regressors[col] = self.scalers[col].fit_transform(extra_regressors[[col]])
 
             tensors_to_append = []
-            for i in range(0, requested_prediction):
+            for i in range(0, self.points_to_predict):
                 val = np.array(extra_regressors.iloc[i, :], dtype=np.float32)
                 tensors_to_append.append(torch.tensor(val))
 
@@ -145,7 +144,7 @@ class LSTMModel(PredictionModel):
         x_input = x_input.to(dev)
         self.model.eval()
 
-        for i in range(requested_prediction):
+        for i in range(self.points_to_predict):
             seq = x_input[i:]
             with torch.no_grad():
                 self.model.hidden = (torch.zeros(1, 1, self.model.hidden_layer_size),
@@ -155,11 +154,11 @@ class LSTMModel(PredictionModel):
                     result = torch.cat((result, tensors_to_append[i].to(dev)))
                 x_input = torch.cat((x_input, result.view(1, -1)))
 
-        results = x_input[-requested_prediction:]
+        results = x_input[-self.points_to_predict:]
         results = results.to("cpu")
         results = [x[0] for x in results]
         actual_predictions = self.scalers['y'].inverse_transform(np.array(results).reshape(-1, 1))
-        future_dataframe.iloc[-requested_prediction:, 0] = np.array(actual_predictions).flatten()
+        future_dataframe.iloc[-self.points_to_predict:, 0] = np.array(actual_predictions).flatten()
 
         return future_dataframe
 
