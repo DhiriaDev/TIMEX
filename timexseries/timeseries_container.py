@@ -18,7 +18,8 @@ class TimeSeriesContainer:
         The historical prediction, i.e. the predictions computed on a rolling window on the historical data.
         This is useful to verify the performances of each model not only on the very last data, but throughout the
         history of the time-series, in a cross-validation fashion. This dictionary contains one entry for each model
-        tested.
+        tested, and each of this entry contains two keys: 'series', i.e., the actual historical prediction, and
+        'metrics', i.e. validation performances of the historical predictions on real data.
     """
     def __init__(self, timeseries_data: DataFrame, models: dict, xcorr: dict, historical_prediction: dict = None):
         self.timeseries_data = timeseries_data
