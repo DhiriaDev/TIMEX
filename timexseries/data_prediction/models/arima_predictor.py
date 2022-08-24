@@ -1,8 +1,10 @@
 from pandas import DataFrame
-import numpy as np
 
+from statsforecast import StatsForecast
 from timexseries.data_prediction import PredictionModel
-import pmdarima as pm
+from statsforecast.models import AutoARIMA
+
+from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
 
 
 class ARIMAModel(PredictionModel):
@@ -12,11 +14,22 @@ class ARIMAModel(PredictionModel):
 
     def predict(self, train_data: DataFrame, points_to_predict: int,
                 future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
-        """Overrides PredictionModel.predict()"""
-        arima = pm.auto_arima(train_data, error_action='ignore', seasonal=False, suppress_warnings=True)
-        predictions = arima.predict_in_sample()
-        predictions = np.concatenate((predictions, arima.predict(n_periods=points_to_predict)))
+        freq = train_data.index.freq
 
-        future_dataframe.yhat = predictions
+        seasonality = estimate_seasonality(train_data)
+
+        train_data.reset_index(inplace=True)
+        train_data.columns = ['ds', 'y']
+        train_data.loc[:, 'unique_id'] = 0
+
+        model = StatsForecast(
+            df=train_data,
+            models=[AutoARIMA(season_length=seasonality, seasonal=seasonality != 1)],
+            freq=freq
+        )
+
+        y_hat_df = model.forecast(points_to_predict).set_index("ds")
+
+        future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'AutoARIMA']
 
         return future_dataframe

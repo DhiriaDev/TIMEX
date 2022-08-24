@@ -29,7 +29,6 @@ sklearn = "^0.0"
 statsmodels = "^0.13.1"
 networkx = "^2.6.3"
 prophet = "^1.0.1"
-pmdarima = "^1.8.4"
 dash-bootstrap-components = "^1.0.3"
 FLAML = {extras = ["ts_forecast"], version = "^1.0.10"}
 statsforecast = "^1.0.0"

@@ -1,16 +1,15 @@
 import logging
-import math
 import os
 
 import dateparser
-import pandas
 import pytest
-from prophet import Prophet
 
 from pandas import Series, DataFrame
 import pandas as pd
 import numpy as np
 from scipy.stats import yeojohnson
+
+from prophet import Prophet
 
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
@@ -28,7 +27,7 @@ from timexseries.data_ingestion import add_freq
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
     create_timeseries_containers
-from timexseries.data_prediction.models.prophet_predictor import FBProphetModel, suppress_stdout_stderr
+from timexseries.data_prediction.models.prophet_predictor import suppress_stdout_stderr, FBProphetModel
 from timexseries.data_prediction.transformation import transformation_factory, Identity
 from timexseries.timeseries_container import TimeSeriesContainer
 
@@ -492,11 +491,11 @@ class Test_Models_Specific:
         #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
         [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
          (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
-        # [(FLAMLModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
-        df = pd.DataFrame(np.arange(1, 101), index=dates, columns=["value"])
+        # df = pd.DataFrame(np.arange(1, 101), index=dates, columns=["value"])
+        df = pd.DataFrame(np.random.rand(100), index=dates, columns=["value"])
         future_df = pd.DataFrame(index=pd.date_range(freq="1d",
                                                      start=df.index.values[0],
                                                      periods=110),
@@ -553,7 +552,7 @@ class TestGetPredictions:
     def test_get_best_univariate_and_multivariate_predictions(self):
         # Check that results are in the correct form.
 
-        ing_data = DataFrame({"a": pandas.date_range('1/1/2000', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('1/1/2000', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -622,7 +621,7 @@ class TestGetPredictions:
     def test_compute_predictions(self, tmp_path):
         # Check results are in the correct form and test the function to save historic predictions to file.
         # Delta will be 1, by default.
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -665,12 +664,12 @@ class TestGetPredictions:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]
                 assert len(hist_prediction) == 2
-                assert hist_prediction['series'].index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
-                assert hist_prediction['series'].index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction['series'].index[0] == pd.to_datetime('2000-01-29', format="%Y-%m-%d")
+                assert hist_prediction['series'].index[1] == pd.to_datetime('2000-01-30', format="%Y-%m-%d")
 
         # Simulate a 1-step ahead in time, so we have collected a new point.
         # Note that past values are changed as well, so we will check that TIMEX does not change the old predictions.
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=31),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=31),
                               "b": np.arange(20, 51), "c": np.arange(35, 66)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -682,9 +681,9 @@ class TestGetPredictions:
             for model in s.historical_prediction:
                 hist_prediction = s.historical_prediction[model]['series']
                 assert len(hist_prediction) == 3
-                assert hist_prediction.index[0] == pandas.to_datetime('2000-01-29', format="%Y-%m-%d")
-                assert hist_prediction.index[1] == pandas.to_datetime('2000-01-30', format="%Y-%m-%d")
-                assert hist_prediction.index[2] == pandas.to_datetime('2000-01-31', format="%Y-%m-%d")
+                assert hist_prediction.index[0] == pd.to_datetime('2000-01-29', format="%Y-%m-%d")
+                assert hist_prediction.index[1] == pd.to_datetime('2000-01-30', format="%Y-%m-%d")
+                assert hist_prediction.index[2] == pd.to_datetime('2000-01-31', format="%Y-%m-%d")
 
         # Check that past predictions have not been touched.
         assert b_old_hist['fbprophet']['series'].iloc[0, 0] == timeseries_containers[0].historical_prediction['fbprophet']['series'].iloc[
@@ -793,7 +792,7 @@ class TestGetPredictions:
         # Test with an historical predictions delta > 1
         # This means that historical predictions are not computed starting from initial index 1-step ahead at time,
         # but they are computed every $delta time points.
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -830,11 +829,11 @@ class TestGetPredictions:
                 hist_prediction = s.historical_prediction[model]['series']
                 assert len(hist_prediction) == 10
                 id = 0
-                for i in pandas.date_range('2000-01-21', periods=10):
+                for i in pd.date_range('2000-01-21', periods=10):
                     assert hist_prediction.index[id] == i
                     id += 1
 
-            for endpoint in [*pandas.date_range('2000-01-20', periods=4, freq="3d")]:
+            for endpoint in [*pd.date_range('2000-01-20', periods=4, freq="3d")]:
                 tr = ing_data.copy()
                 fb_tr = tr.loc[:endpoint]
                 fb_tr = fb_tr[[scen_name]]
@@ -846,7 +845,7 @@ class TestGetPredictions:
                     fbmodel.fit(fb_tr)
 
                 future_df = pd.DataFrame(index=pd.date_range(freq="1d",
-                                                             start=endpoint + pandas.Timedelta(days=1),
+                                                             start=endpoint + pd.Timedelta(days=1),
                                                              periods=3),
                                          columns=["yhat"])
                 future = future_df.reset_index()
@@ -860,7 +859,7 @@ class TestGetPredictions:
                     expected_hist_pred = expected_hist_pred.iloc[0:1]
 
                 computed_hist_pred = s.historical_prediction['fbprophet']['series'].loc[
-                                     endpoint + pandas.Timedelta(days=1):endpoint + pandas.Timedelta(days=3), scen_name]
+                                     endpoint + pd.Timedelta(days=1):endpoint + pd.Timedelta(days=3), scen_name]
 
                 assert expected_hist_pred.equals(computed_hist_pred)
 
@@ -925,7 +924,7 @@ class TestGetPredictions:
 
     def test_no_additional_regressors_found(self):
         # Check that no multivariate predictions are used if no additional regressors are available.
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.random.randint(60, 90, 30)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -1008,7 +1007,7 @@ class TestCreateScenarios:
 
         # Having values like 30 -> 60 or 60 -> 90 will make multivariate Mockup model always win on the univariate one
         # because it will return the number of used extra-regressors (the more the lower MAE).
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -1027,7 +1026,7 @@ class TestCreateScenarios:
 
             if historical_predictions:
                 hp = container.historical_prediction['mockup']['series']
-                assert hp.loc[pandas.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].eq(expected_value).all()
+                assert hp.loc[pd.to_datetime('2000-01-15', format="%Y-%m-%d"):, name].eq(expected_value).all()
             else:
                 assert container.historical_prediction is None
 
@@ -1051,7 +1050,7 @@ class TestCreateScenarios:
             }
         }
 
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
@@ -1082,7 +1081,7 @@ class TestCreateScenarios:
                 "xcorr_mode_target": "pearson"
             }
 
-        ing_data = DataFrame({"a": pandas.date_range('2000-01-01', periods=30),
+        ing_data = DataFrame({"a": pd.date_range('2000-01-01', periods=30),
                               "b": np.arange(30, 60), "c": np.arange(60, 90)})
         ing_data.set_index("a", inplace=True)
         ing_data = add_freq(ing_data, "D")
