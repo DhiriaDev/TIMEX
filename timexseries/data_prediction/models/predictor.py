@@ -173,49 +173,8 @@ class PredictionModel:
         self.freq = ""
         log.debug(f"Finished model creation.")
 
-    def train(self, ingested_data: DataFrame, points_to_predict: int, extra_regressor: DataFrame = None):
-        """
-        Train the model on the first column of `ingested_data`. Additional time-series, which will be used to improve
-        the training in the case of a multivariate model can be passed in the `extra_regressor` DataFrame, one for each
-        column.
-
-        The predictor, after launching `train`, is ready to make predictions for the future.
-
-        Note that this and `predict` do not split anything in training data/validation data; this is done with other
-        functions, like `launch_model`.
-
-        Parameters
-        ----------
-        ingested_data : DataFrame
-            Training set. The entire time-series in the first column of `ingested_data` will be used for training.
-        points_to_predict : int
-            Requested forecast horizon, i.e. the length of the forecast in points. Useful because some models require
-            this parameter during training.
-        extra_regressor : DataFrame, optional, default None
-            Additional time-series to use for better predictions.
-
-        Examples
-        --------
-        We will use as example the `timexseries.data_prediction.models.prophet_predictor.FBProphetModel`, an instance of
-        `Predictor`.
-
-        >>> param_config = {}  # This will make the predictor use default values...
-        >>> predictor = FBProphetModel(params=param_config)
-
-        Create some training data.
-
-        >>> dates = pd.date_range('2000-01-01', periods=30)  # Last index is 2000-01-30
-        >>> ds = pd.DatetimeIndex(dates, freq="D")
-        >>> a = np.arange(30, 60)
-        >>> training_dataframe = DataFrame(data={"a": a}, index=ds)
-
-        Train the model.
-
-        >>> predictor.train(training_dataframe, 7)
-        """
-        pass
-
-    def predict(self, future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
+    def predict(self, train_data: DataFrame, points_to_predict: int, future_dataframe: DataFrame,
+                extra_regressor: DataFrame = None) -> DataFrame:
         """
         Return a DataFrame with the shape of `future_dataframe`, filled with predicted values.
 
@@ -227,6 +186,13 @@ class PredictionModel:
 
         Parameters
         ----------
+        train_data : DataFrame
+            Training set. The entire time-series in the first column of `train_data` will be used for training.
+
+        points_to_predict : int
+            Requested forecast horizon, i.e. the length of the forecast in points. Useful because some models require
+            this parameter during training.
+
         future_dataframe : DataFrame
             DataFrame which will be filled with prediction values. This DataFrame should have the same index of the data
             used for training (plus the number of predicted values), and a column named `yhat`, which corresponds to the
@@ -243,41 +209,42 @@ class PredictionModel:
             DataFrame which contains the prediction computed by the model, in the column `yhat`. `forecast` may contain
             additional columns, e.g. `yhat_lower`, `yhat_upper` etc.
 
-        Examples
-        --------
-        We will use as example the `timexseries.data_prediction.models.prophet_predictor.FBProphetModel`, an instance of
-        `Predictor`.
-        If the model has been trained, as shown in `predict` example, we can create a forecast.
-
-        First, create the future dataframe which will be filled:
-
-        >>> future_dates = pd.date_range('2000-01-31', periods=7)
-        >>> future_ds = pd.DatetimeIndex(future_dates, freq="D")
-        >>> future_df = DataFrame(columns=["yhat"], index=future_ds)
-        >>> future_df
-                   yhat
-        ds
-        2000-01-31  NaN
-        2000-02-01  NaN
-        2000-02-02  NaN
-        2000-02-03  NaN
-        2000-02-04  NaN
-        2000-02-05  NaN
-        2000-02-06  NaN
-
-        Now we can create the forecast:
-
-        >>> predictions = predictor.predict(future_dataframe=future_df)
-        >>> predictions
-        ds
-        2000-01-31    59.992592
-        2000-02-01    60.992592
-        2000-02-02    61.992592
-        2000-02-03    62.992592
-        2000-02-04    63.992592
-        2000-02-05    64.992592
-        2000-02-06    65.992592
-        Name: yhat, dtype: float64
+        # TODO: rewrite
+        # Examples
+        # --------
+        # We will use as example the `timexseries.data_prediction.models.prophet_predictor.FBProphetModel`, an instance of
+        # `Predictor`.
+        # If the model has been trained, as shown in `predict` example, we can create a forecast.
+        #
+        # First, create the future dataframe which will be filled:
+        #
+        # >>> future_dates = pd.date_range('2000-01-31', periods=7)
+        # >>> future_ds = pd.DatetimeIndex(future_dates, freq="D")
+        # >>> future_df = DataFrame(columns=["yhat"], index=future_ds)
+        # >>> future_df
+        #            yhat
+        # ds
+        # 2000-01-31  NaN
+        # 2000-02-01  NaN
+        # 2000-02-02  NaN
+        # 2000-02-03  NaN
+        # 2000-02-04  NaN
+        # 2000-02-05  NaN
+        # 2000-02-06  NaN
+        #
+        # Now we can create the forecast:
+        #
+        # >>> predictions = predictor.predict(future_dataframe=future_df)
+        # >>> predictions
+        # ds
+        # 2000-01-31    59.992592
+        # 2000-02-01    60.992592
+        # 2000-02-02    61.992592
+        # 2000-02-03    62.992592
+        # 2000-02-04    63.992592
+        # 2000-02-05    64.992592
+        # 2000-02-06    65.992592
+        # Name: yhat, dtype: float64
         """
         pass
 
@@ -316,15 +283,14 @@ class PredictionModel:
                 tr = train_ts.iloc[-(_i + 1) * self.delta_training_values:]
 
                 log.debug(f"Trying with last {len(tr)} values as training set...")
-                self.train(tr.copy(), self.validation_values + self.forecast_horizon, extra_regressors)
-
                 future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                              start=tr.index.values[0],
                                                              periods=len(tr) + self.validation_values +
                                                                      self.forecast_horizon),
                                          columns=["yhat"], dtype=tr.iloc[:, 0].dtype)
 
-                forecast = self.predict(future_df, extra_regressors)
+                forecast = self.predict(tr.copy(), self.validation_values + self.forecast_horizon,
+                                        future_df, extra_regressors)
 
                 forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
 
@@ -346,11 +312,6 @@ class PredictionModel:
                 _results.append(SingleResult(forecast, tp))
 
             return _results
-
-        # if self.name == 'NeuralProphet':
-        #     log.info(f"NeuralProphet model. Cant use multiprocessing.")
-        #     distributions = [[0, train_sets_number]]
-        #     return c(distributions[0])
 
         if max_threads == 1:
             distributions = [[0, train_sets_number]]
@@ -400,15 +361,12 @@ class PredictionModel:
         training_data = ingested_data.copy().loc[best_starting_index:]
 
         training_data.iloc[:, 0] = self.transformation.apply(training_data.iloc[:, 0])
-
-        self.train(training_data.copy(), self.forecast_horizon, extra_regressors)
-
         future_df = pd.DataFrame(index=pd.date_range(freq=self.freq,
                                                      start=training_data.index.values[0],
                                                      periods=len(training_data) + self.forecast_horizon),
                                  columns=["yhat"], dtype=training_data.iloc[:, 0].dtype)
 
-        forecast = self.predict(future_df, extra_regressors)
+        forecast = self.predict(training_data.copy(), self.forecast_horizon, future_df, extra_regressors)
         forecast.loc[:, 'yhat'] = self.transformation.inverse(forecast['yhat'])
 
         try:

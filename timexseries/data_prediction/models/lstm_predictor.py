@@ -55,52 +55,52 @@ class LSTMModel(PredictionModel):
     """LSTM prediction model."""
     def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="LSTM", transformation=transformation)
-        self.scalers = {}
 
-    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
-        """Overrides PredictionModel.train()"""
-        self.points_to_predict = points_to_predict
-
+    def predict(self, train_data: DataFrame, points_to_predict: int,
+                future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
+        """Overrides PredictionModel.predict()"""
         if torch.cuda.is_available():
             dev = "cuda:0"
         else:
             dev = "cpu"
 
+        scalers = {}
+
         if extra_regressors is not None:
             # We could apply self.transformation also on the extra regressors.
             # From tests, it looks like it doesn't change much/it worsens the forecasts.
-            input_data = input_data.join(extra_regressors)
+            train_data = train_data.join(extra_regressors)
             n_features = 1 + len(extra_regressors.columns)
             for col in extra_regressors.columns:
-                self.scalers[col] = MinMaxScaler(feature_range=(-1, 1))
-                extra_regressors[col] = self.scalers[col].fit_transform(extra_regressors[[col]])
+                scalers[col] = MinMaxScaler(feature_range=(-1, 1))
+                extra_regressors[col] = scalers[col].fit_transform(extra_regressors[[col]])
         else:
             n_features = 1
 
-        input_data.reset_index(inplace=True)
+        train_data.reset_index(inplace=True)
         column_indices = [0, 1]
         new_names = ['ds', 'y']
-        old_names = input_data.columns[column_indices]
-        input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
-        input_data.set_index('ds', inplace=True)
+        old_names = train_data.columns[column_indices]
+        train_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+        train_data.set_index('ds', inplace=True)
 
-        self.scalers['y'] = MinMaxScaler(feature_range=(-1, 1))
-        input_data['y'] = self.scalers['y'].fit_transform(input_data[['y']])
+        scalers['y'] = MinMaxScaler(feature_range=(-1, 1))
+        train_data['y'] = scalers['y'].fit_transform(train_data[['y']])
 
-        n_steps_in, n_steps_out = round(len(input_data)/4), 1
+        n_steps_in, n_steps_out = round(len(train_data)/4), 1
 
-        train_inout_seq = split_sequences(input_data, n_steps_in, n_steps_out, n_features=n_features)
+        train_inout_seq = split_sequences(train_data, n_steps_in, n_steps_out, n_features=n_features)
 
         for i in range(0, len(train_inout_seq)):
             x = np.array(train_inout_seq[i][0], dtype=np.float32)
             y = np.array(train_inout_seq[i][1], dtype=np.float32)
             train_inout_seq[i] = (torch.from_numpy(x), torch.tensor(y))
 
-        self.model = LSTM(input_size=n_features)
-        self.model.to(dev)
+        model = LSTM(input_size=n_features)
+        model.to(dev)
 
         loss_function = nn.L1Loss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
         epochs = 10
 
@@ -109,56 +109,49 @@ class LSTMModel(PredictionModel):
                 seq = seq.to(dev)
                 labels = labels.to(dev)
                 optimizer.zero_grad()
-                self.model.hidden_cell = (torch.zeros(1, 1, self.model.hidden_layer_size).to(dev),
-                                          torch.zeros(1, 1, self.model.hidden_layer_size).to(dev))
+                model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size).to(dev),
+                                          torch.zeros(1, 1, model.hidden_layer_size).to(dev))
 
-                y_pred = self.model(seq)
+                y_pred = model(seq)
 
                 single_loss = loss_function(y_pred, labels)
                 single_loss.backward()
                 optimizer.step()
 
-        self.values_for_prediction = train_inout_seq[-1][0]
-        self.len_train_set = len(input_data)
-
-    def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
-        """Overrides PredictionModel.predict()"""
-        if torch.cuda.is_available():
-            dev = "cuda:0"
-        else:
-            dev = "cpu"
+        values_for_prediction = train_inout_seq[-1][0]
+        # self.len_train_set = len(train_data)
 
         if extra_regressors is not None:
-            extra_regressors = extra_regressors.iloc[-self.points_to_predict:].copy()
+            extra_regressors = extra_regressors.iloc[-points_to_predict:].copy()
 
             for col in extra_regressors:
-                self.scalers[col] = MinMaxScaler(feature_range=(-1, 1))
-                extra_regressors[col] = self.scalers[col].fit_transform(extra_regressors[[col]])
+                scalers[col] = MinMaxScaler(feature_range=(-1, 1))
+                extra_regressors[col] = scalers[col].fit_transform(extra_regressors[[col]])
 
             tensors_to_append = []
-            for i in range(0, self.points_to_predict):
+            for i in range(0, points_to_predict):
                 val = np.array(extra_regressors.iloc[i, :], dtype=np.float32)
                 tensors_to_append.append(torch.tensor(val))
 
-        x_input = self.values_for_prediction
+        x_input = values_for_prediction
         x_input = x_input.to(dev)
-        self.model.eval()
+        model.eval()
 
-        for i in range(self.points_to_predict):
+        for i in range(points_to_predict):
             seq = x_input[i:]
             with torch.no_grad():
-                self.model.hidden = (torch.zeros(1, 1, self.model.hidden_layer_size),
-                                     torch.zeros(1, 1, self.model.hidden_layer_size))
-                result = self.model(seq)
+                model.hidden = (torch.zeros(1, 1, model.hidden_layer_size),
+                                     torch.zeros(1, 1, model.hidden_layer_size))
+                result = model(seq)
                 if extra_regressors is not None:
                     result = torch.cat((result, tensors_to_append[i].to(dev)))
                 x_input = torch.cat((x_input, result.view(1, -1)))
 
-        results = x_input[-self.points_to_predict:]
+        results = x_input[-points_to_predict:]
         results = results.to("cpu")
         results = [x[0] for x in results]
-        actual_predictions = self.scalers['y'].inverse_transform(np.array(results).reshape(-1, 1))
-        future_dataframe.iloc[-self.points_to_predict:, 0] = np.array(actual_predictions).flatten()
+        actual_predictions = scalers['y'].inverse_transform(np.array(results).reshape(-1, 1))
+        future_dataframe.iloc[-points_to_predict:, 0] = np.array(actual_predictions).flatten()
 
         return future_dataframe
 

@@ -1,14 +1,10 @@
 import logging
-import warnings
 
 from pandas import DataFrame
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 from statsforecast import StatsForecast
 from statsforecast.models import ETS
-from statsmodels.tsa.stattools import adfuller
 
 from timexseries.data_prediction import PredictionModel
-import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
@@ -23,62 +19,69 @@ class ExponentialSmoothingModel(PredictionModel):
 
     def __init__(self, params: dict, transformation: str = "none"):
         super().__init__(params, name="ExponentialSmoothing", transformation=transformation)
-        self.model = None
-        self.len_train_set = 0
-        self._forecast_horizon = 0
 
-    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
-        """Overrides PredictionModel.train()"""
-        self._forecast_horizon = points_to_predict
-        freq = input_data.index.freq
-
-        s = pd.Series(sm.tsa.acf(input_data, nlags=round(len(input_data) / 2 - 1), fft=True))
-        s[0] = 0
-        s[1] = 0
-
-        z99 = 2.5758293035489004
-        lenSeries = len(input_data)
-        threshold99 = z99 / np.sqrt(lenSeries)
-
-        s = s[lambda x: x > threshold99].sort_values(ascending=False)
-        if len(s) > 0:
-            seasonality = s.index[0]
-            model = "ZAZ"
-        else:
-            seasonality = 1
-            model = "ZNZ"
-
-        input_data.reset_index(inplace=True)
-        input_data.columns = ['ds', 'y']
-        input_data.loc[:, 'unique_id'] = 0
+    def predict(self, train_data: DataFrame, points_to_predict: int, 
+                future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
+        """Overrides PredictionModel.predict()"""
+        freq = train_data.index.freq
 
         try:
-            models = [
-                ETS(season_length=seasonality, model=model)
-            ]
+            s, confidence_intervals = sm.tsa.pacf(train_data.diff(1)[1:], method='ywm', nlags=int(len(train_data) / 2)-5,
+                                                  alpha=0.01)
+            s, confidence_intervals = pd.Series(abs(s)), pd.Series([abs(x[0]) for x in confidence_intervals])
+            s[0] = 0
+            s[1] = 0
 
-            self.model = StatsForecast(
-                df=input_data,
-                models=models,
-                freq=freq
-            )
+            s = s[s > confidence_intervals].sort_values(ascending=False)
+            if len(s) > 0:
+                seasonality = s.index[0]
+            else:
+                seasonality = 0
+        except:  # LinAlgError
+            seasonality = 0
 
-            self.Y_hat_df = self.model.forecast(self._forecast_horizon).set_index("ds")
-        except:
+        train_data.reset_index(inplace=True)
+        train_data.columns = ['ds', 'y']
+        train_data.loc[:, 'unique_id'] = 0
+
+        if seasonality == 0:
             models = [
                 ETS(season_length=1, model='ZNZ')
             ]
 
-            self.model = StatsForecast(
-                df=input_data,
+            model = StatsForecast(
+                df=train_data,
                 models=models,
                 freq=freq
             )
 
-            self.Y_hat_df = self.model.forecast(self._forecast_horizon).set_index("ds")
+            y_hat_df = model.forecast(points_to_predict).set_index("ds")
+        else:
+            try:
+                models = [
+                    ETS(season_length=seasonality, model='ZZZ')
+                ]
 
-    def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
-        """Overrides PredictionModel.predict()"""
-        future_dataframe.loc[-self._forecast_horizon:, 'yhat'] = self.Y_hat_df.loc[:, 'ETS']
+                model = StatsForecast(
+                    df=train_data,
+                    models=models,
+                    freq=freq
+                )
+
+                y_hat_df = model.forecast(points_to_predict).set_index("ds")
+            except:
+                models = [
+                    ETS(season_length=1, model='ZNZ')
+                ]
+
+                model = StatsForecast(
+                    df=train_data,
+                    models=models,
+                    freq=freq
+                )
+
+                y_hat_df = model.forecast(points_to_predict).set_index("ds")
+
+        future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'ETS']
 
         return future_dataframe

@@ -11,7 +11,7 @@ from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction import PredictionModel, ValidationPerformance
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
+# from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -635,7 +635,6 @@ def compute_historical_predictions(ingested_data, param_config):
     for s in timeseries_containers:
         timeseries_name = s.timeseries_data.columns[0]
         timeseries_historical_predictions = {}
-        timeseries_historical_predictions = {}
         for model in historical_prediction:
             metrics = ValidationPerformance()
             metrics.set_testing_stats(s.timeseries_data.iloc[-len(historical_prediction[model]):, 0],
@@ -783,7 +782,7 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return PersistenceModel(param_config, transformation)
     if model_class == "exponentialsmoothing":
         return ExponentialSmoothingModel(param_config, transformation)
-    if model_class == "flaml":
-        return FLAMLModel(param_config, transformation)
+    # if model_class == "flaml":
+    #     return FLAMLModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)

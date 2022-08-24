@@ -14,7 +14,7 @@ from scipy.stats import yeojohnson
 
 from timexseries.data_prediction.models.arima_predictor import ARIMAModel
 from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
+# from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 from timexseries.data_prediction.models.lstm_predictor import LSTMModel
 from timexseries.data_prediction.models.mockup_predictor import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
@@ -397,9 +397,6 @@ class Test_Models_General:
             assert predictor.main_accuracy_estimator == "mae"
             assert len(model_result.results) == 5
 
-            assert predictor.extra_regressors_in_predict is extra_regressor
-            assert predictor.extra_regressors_in_training is extra_regressor
-
             for r in model_result.results:
                 prediction = r.prediction
                 testing_performances = r.testing_performances
@@ -515,8 +512,7 @@ class Test_Models_Specific:
         model = model_class({})
         model.freq = "1d"
 
-        model.train(df.copy(), 10)
-        result = model.predict(future_df.copy())
+        result = model.predict(df.copy(), 10, future_df.copy())
 
         for i in range(100, 110):
             assert not np.isnan(result.iloc[i]['yhat'])
@@ -525,8 +521,7 @@ class Test_Models_Specific:
             model = model_class({})
             model.freq = "1d"
 
-            model.train(df.copy(), 10, extra_regressors.copy())
-            result_with_extra_regressors = model.predict(future_df.copy(), extra_regressors.copy())
+            result_with_extra_regressors = model.predict(df.copy(), 10, future_df.copy(), extra_regressors.copy())
 
             assert not result.equals(result_with_extra_regressors)
 

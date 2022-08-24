@@ -19,14 +19,15 @@ class FBProphetModel(PredictionModel):
 
         # Stuff needed to make Prophet shut up during training.
         self.suppress_stdout_stderr = suppress_stdout_stderr
-        self.fbmodel = Prophet()
+        fbmodel = Prophet()
         try:
             self.fbprophet_parameters = params["model_parameters"]["fbprophet_parameters"]
         except KeyError:
             self.fbprophet_parameters = None
 
-    def train(self, input_data: DataFrame, points_to_predict: int, extra_regressors: DataFrame = None):
-        """Overrides PredictionModel.train()"""
+    def predict(self, input_data: DataFrame, points_to_predict: int, future_dataframe: DataFrame, 
+                extra_regressors: DataFrame = None):
+        """Overrides PredictionModel.predict()"""
 
         if self.fbprophet_parameters is not None:
             try:
@@ -34,20 +35,20 @@ class FBProphetModel(PredictionModel):
                 date_format = self.fbprophet_parameters["holidays_dataframes"]["date_format"]
                 holidays = pd.read_csv(self.fbprophet_parameters["holidays_dataframes"][timeseries_name])
                 holidays.loc[:, "ds"].apply(lambda x: pd.to_datetime(x, format=date_format))
-                self.fbmodel = Prophet(holidays=holidays)
+                fbmodel = Prophet(holidays=holidays)
                 log.debug(f"Using a dataframe for holidays...")
             except KeyError:
-                self.fbmodel = Prophet()
+                fbmodel = Prophet()
 
             try:
                 holiday_country = self.fbprophet_parameters["holiday_country"]
-                self.fbmodel.add_country_holidays(country_name=holiday_country)
+                fbmodel.add_country_holidays(country_name=holiday_country)
                 log.debug(f"Set {holiday_country} as country for holiday calendar...")
             except KeyError:
                 pass
 
         else:
-            self.fbmodel = Prophet()
+            fbmodel = Prophet()
 
         if extra_regressors is not None:
             # We could apply self.transformation also on the extra regressors.
@@ -58,65 +59,15 @@ class FBProphetModel(PredictionModel):
             new_names = ['ds', 'y']
             old_names = input_data.columns[column_indices]
             input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
-            [self.fbmodel.add_regressor(col) for col in extra_regressors.columns]
+            [fbmodel.add_regressor(col) for col in extra_regressors.columns]
 
         else:
             input_data.reset_index(inplace=True)
             input_data.columns = ['ds', 'y']
 
         with self.suppress_stdout_stderr():
-            self.fbmodel.fit(input_data)
+            fbmodel.fit(input_data)
 
-        #######################
-        # param_grid = {
-        #     'changepoint_prior_scale': [0.001, 0.01, 0.1, 0.5],
-        #     'seasonality_prior_scale': [0.01, 0.1, 1.0, 10.0],
-        # }
-        # param_grid = {
-        #     'changepoint_prior_scale': [0.001, 0.01],
-        #     'seasonality_prior_scale': [0.01, 0.1],
-        # }
-        #
-        # if extra_regressors is not None:
-        #     input_data = input_data.join(extra_regressors)
-        #     input_data.reset_index(inplace=True)
-        #     column_indices = [0, 1]
-        #     new_names = ['ds', 'y']
-        #     old_names = input_data.columns[column_indices]
-        #     input_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
-        #
-        # else:
-        #     input_data.reset_index(inplace=True)
-        #     input_data.columns = ['ds', 'y']
-        #
-        # # Generate all combinations of parameters
-        # all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
-        # rmses = []  # Store the RMSEs for each params here
-        #
-        # # Use cross validation to evaluate all parameters
-        # for params in all_params:
-        #     m = Prophet(**params)
-        #     [m.add_regressor(col) for col in extra_regressors.columns] if extra_regressors is not None else None
-        #     with self.suppress_stdout_stderr():
-        #         m.fit(input_data)  # Fit model with given params
-        #         df_cv = cross_validation(m, horizon=self.prediction_lags, parallel="processes")
-        #         df_p = performance_metrics(df_cv, rolling_window=1)
-        #         rmses.append(df_p['rmse'].values[0])
-        #
-        # # Find the best parameters
-        # tuning_results = pd.DataFrame(all_params)
-        # tuning_results['rmse'] = rmses
-        #
-        # best_params = all_params[np.argmin(rmses)]
-        # print(best_params)
-        #
-        # self.fbmodel = Prophet(**best_params)
-        # [self.fbmodel.add_regressor(col) for col in extra_regressors.columns] if extra_regressors is not None else None
-        # with self.suppress_stdout_stderr():
-        #     self.fbmodel.fit(input_data)
-
-    def predict(self, future_dataframe: DataFrame, extra_regressors: DataFrame = None) -> DataFrame:
-        """Overrides PredictionModel.predict()"""
         future = future_dataframe.reset_index()
         future.rename(columns={'index': 'ds'}, inplace=True)
 
@@ -125,12 +76,11 @@ class FBProphetModel(PredictionModel):
             future = future.join(extra_regressors.copy())
             future.reset_index(inplace=True)
 
-        forecast = self.fbmodel.predict(future)
-
+        forecast = fbmodel.predict(future)
 
         forecast.set_index('ds', inplace=True)
 
-        return forecast
+        return forecast     
 
 
 class suppress_stdout_stderr(object):
