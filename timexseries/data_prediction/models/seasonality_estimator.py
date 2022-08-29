@@ -3,6 +3,10 @@ import statsmodels.api as sm
 
 
 def estimate_seasonality(series: pd.DataFrame):
+    """
+    Estimate seasonality in a time-series.
+    Returns seasonality period. Returns 1 if no seasonality is found.
+    """
     try:
         s, confidence_intervals = sm.tsa.pacf(series.diff(1)[1:], method='ywm', nlags=int(len(series) / 2) - 5,
                                               alpha=0.01)

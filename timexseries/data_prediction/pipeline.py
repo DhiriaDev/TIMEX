@@ -9,14 +9,14 @@ from pandas import DataFrame
 
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction import PredictionModel, ValidationPerformance
-from timexseries.data_prediction.models.arima_predictor import ARIMAModel
-from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from timexseries.data_prediction.models.arima import ARIMAModel
+from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
-from timexseries.data_prediction.models.lstm_predictor import LSTMModel
-from timexseries.data_prediction.models.mockup_predictor import MockUpModel
+from timexseries.data_prediction.models.lstm import LSTMModel
+from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from timexseries.data_prediction.models.persistence_predictor import PersistenceModel
-from timexseries.data_prediction.models.prophet_predictor import FBProphetModel
+from timexseries.data_prediction.models.persistence import PersistenceModel
+from timexseries.data_prediction.models.prophet import FBProphetModel
 from timexseries.data_prediction.xcorr import calc_all_xcorr
 from timexseries.timeseries_container import TimeSeriesContainer
 
@@ -774,13 +774,13 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return FBProphetModel(params=param_config, transformation=transformation)
     if model_class == "lstm":
         return LSTMModel(param_config, transformation)
-    # if model_class == "neuralprophet":
-    #     return NeuralProphetModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
     if model_class == "persistence" or model_class == "naive":
         return PersistenceModel(param_config, transformation)
-    if model_class == "exponentialsmoothing":
+    if model_class == "seasonal_persistence" or model_class == "seasonal_naive":
+        return PersistenceModel(param_config, transformation)
+    if model_class == "exponentialsmoothing" or model_class == "exponential_smoothing" or model_class == "ets":
         return ExponentialSmoothingModel(param_config, transformation)
     # if model_class == "flaml":
     #     return FLAMLModel(param_config, transformation)

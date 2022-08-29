@@ -11,13 +11,14 @@ from scipy.stats import yeojohnson
 
 from prophet import Prophet
 
-from timexseries.data_prediction.models.arima_predictor import ARIMAModel
-from timexseries.data_prediction.models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from timexseries.data_prediction.models.arima import ARIMAModel
+from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
-from timexseries.data_prediction.models.lstm_predictor import LSTMModel
-from timexseries.data_prediction.models.mockup_predictor import MockUpModel
+from timexseries.data_prediction.models.lstm import LSTMModel
+from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from timexseries.data_prediction.models.persistence_predictor import PersistenceModel
+from timexseries.data_prediction.models.persistence import PersistenceModel
+from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.models.predictor import ModelResult
 from timexseries.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
 
@@ -27,7 +28,7 @@ from timexseries.data_ingestion import add_freq
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
     create_timeseries_containers
-from timexseries.data_prediction.models.prophet_predictor import suppress_stdout_stderr, FBProphetModel
+from timexseries.data_prediction.models.prophet import suppress_stdout_stderr, FBProphetModel
 from timexseries.data_prediction.transformation import transformation_factory, Identity
 from timexseries.timeseries_container import TimeSeriesContainer
 
@@ -490,7 +491,9 @@ class Test_Models_Specific:
         # [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False), (NeuralProphetModel, True),
         #  (MockUpModel, True), (ExponentialSmoothingModel, False)]
         [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
-         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False)]
+         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
+         (SeasonalPersistenceModel, False)]
+        # [(SeasonalPersistenceModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
