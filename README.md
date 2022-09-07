@@ -37,7 +37,23 @@ Notice: when building the image for the prediction server, it is better to use a
 `systemd-run --scope -p MemoryLimit=<desired_ram_usage_limit> ./building_command.sh`
 ## **Docker Containers Run**
 Example of running the containers. The ports and the host network are needed.
-
+0. **redpanda-docker** :\
+    - Install docker and run the command: 
+    ```
+    docker run -d --pull=always --name=redpanda-1\
+    -p 9092:9092 \
+    -p 9644:9644 \
+    docker.redpanda.com/vectorized/redpanda:latest \
+    redpanda start \
+    --overprovisioned \
+    --smp 1  \
+    --memory 1G \
+    --reserve-memory 0M \
+    --node-id 0 \
+    --check=false
+    ``` 
+    in order to run your red-panda broker instance.
+    - Open a shell inside the red-panda container and run the command `rpk topic create prova` in order to create the channel on which our producer/consumer will communicate. This must be done just the first time. In fact, the following times one can restart the same container with all the configurations saved.
 1. **timex_app** :\
     `docker run -p 5000:5000 -d --network="host" timex_app` \
     it is important to specify the network in order to leverage the localhost for making requests. \
