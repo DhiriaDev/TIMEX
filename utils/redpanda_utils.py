@@ -4,6 +4,17 @@ import enum
 class MessageType(enum.Enum):
     control_message = 0
 
+def parse_msg(msg):
+    decoded_msg = {}
+    # msg header is a list of the type [[header_name, header_value], ...]
+    for header in msg.headers():
+        decoded_msg[header[0]] = header[1].decode()
+
+    decoded_msg["data"] = msg.value()
+
+    return decoded_msg
+
+
 def create_topics(admin_client: AdminClient, broker_ids : list, topics : list, broker_offset):
     topics_list = []
     broker_ids.sort()
