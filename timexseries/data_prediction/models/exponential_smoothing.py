@@ -26,14 +26,16 @@ class ExponentialSmoothingModel(PredictionModel):
 
         seasonality = estimate_seasonality(train_data)
 
+        seasonality = min(24, seasonality)
+
         train_data.reset_index(inplace=True)
         train_data.columns = ['ds', 'y']
         train_data.loc[:, 'unique_id'] = 0
 
         if seasonality == 1:
-            model = 'ZNZ'
+            model = 'ZZN'
         else:
-            model = 'ZZZ'
+            model = 'ZZA'
 
         model = StatsForecast(
             df=train_data,
