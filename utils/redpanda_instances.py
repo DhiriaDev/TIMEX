@@ -1,9 +1,16 @@
 from confluent_kafka.admin import *
+from confluent_kafka import Producer, Consumer
+
+from multiprocessing import *
+
 from redpanda_utils import *
 from File import *
 
-import json, hashlib
-import os, sys, time
+import json
+import hashlib
+import os
+import sys
+import time
 sys.path.append(".")
 
 
@@ -17,17 +24,17 @@ class Watcher(RedPandaObject):
     def __init__(self, config_dict: dict, works_to_do: list):
         self.config = config_dict
         self.consumer = Consumer(self.config)
-        self.to_do = works_to_do
+        self.works_to_do = works_to_do
 
-    def listen_on_control(control_topic: str):
+    def listen_on_control(self, control_topic: str):
 
         try:
-            consumer.subscribe([control_topic])
+            self.consumer.subscribe([control_topic])
             running = True
             worker_id = 0
 
             while running:
-                msg = consumer.poll(timeout=1)
+                msg = self.consumer.poll(timeout=1)
                 if msg is None:
                     continue
 
@@ -48,7 +55,7 @@ class Watcher(RedPandaObject):
                         # ---- SPAWNING THE WORKER FOR THE JOB -----
                         # ------------------------------------------
                         conf = {
-                            "bootstrap.servers": kafka_address,
+                            "bootstrap.servers": self.kafka_address,
                             "client.id": str(worker_id),
                             "group.id": 'cons' + str(worker_id),
                             "max.in.flight.requests.per.connection": 1,
@@ -60,41 +67,40 @@ class Watcher(RedPandaObject):
 
                         # TO_DO: check if the cons_id can be substituted by the job_name
                         worker = Worker(config_dict=conf,
-                                        works_to_do=works_to_do,
-                                        param_config = param_config)
+                                        works_to_do=self.works_to_do,
+                                        param_config=param_config)
 
-
-                        Process(target=worker.work ).start()
+                        Process(target=worker.work).start()
 
                     cons_id += 1
         finally:
-            consumer.close()
+            self.consumer.close()
 
 
 class Worker(RedPandaObject):
 
-    def __init__(self, config_dict: dict, works_to_do: list, param_config : dict):
+    def __init__(self, config_dict: dict, works_to_do: list, param_config: dict):
         self.config = config_dict
         self.consumer = Consumer(self.config)
-        
+
         self.param_config = param_config
         self.to_do = works_to_do
 
     def work(self):
         for job in self.works_to_do:
-            job(param_config)
+            job(self.param_config)
 
 
 class JobProducer(object):
     def __init__(self, prod_id, kafka_address):
-        self.prod_id = 0
+        self.prod_id = prod_id
         self.kafka_address = kafka_address
         self.admin_client = AdminClient(
             {"bootstrap.servers": self.kafka_address,
              "client.id": 'prod' + str(self.prod_id)}
         )
-    
-    def start_job(self, param_config : dict, file_path : str, chunk_size = 999500):
+
+    def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
 
         if file_path is None:
             print('Please insert a valid file_path for the file to send')
@@ -102,18 +108,17 @@ class JobProducer(object):
 
         broker_ids = list(self.admin_client.list_topics().brokers.keys())
 
-        # JOB NAME 
+        # JOB NAME
         param_config['activity_title'] = hashlib.md5(
-            string=(file_path+str(prod_id)).encode('utf-8')).hexdigest()
+            string=(file_path+str(self.prod_id)).encode('utf-8')).hexdigest()
 
-        self.notify_watcher(broker_ids = broker_ids, param_config = param_config)
+        self.notify_watcher(broker_ids=broker_ids, param_config=param_config)
 
-        fts = File(path = file_path, chunk_size=chunk_size)
+        fts = File(path=file_path, chunk_size=chunk_size)
 
-        self.send_file(file_to_send = fts, topic = param_config['activity_title'])
+        self.send_file(file_to_send=fts, topic=param_config['activity_title'])
 
-
-    def notify_watcher(self, broker_ids: list, param_config : dict, control_topic) -> str:
+    def notify_watcher(self, broker_ids: list, param_config: dict, control_topic) -> str:
 
         job_name = param_config['activity_title']
 
@@ -139,7 +144,6 @@ class JobProducer(object):
                          value=json.dumps(data).encode('utf-8'),
                          headers=headers)
         producer.flush()
-
 
     def send_file(self, file_to_send: File, topic: str):
 
