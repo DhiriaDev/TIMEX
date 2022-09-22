@@ -27,10 +27,3 @@ class File():
 
     def get_file_size(self) -> int :
         return self.file_size
-
-    @staticmethod
-    def read_in_chunks(file_object, CHUNK_SIZE):
-        data = file_object.read(CHUNK_SIZE)
-        if not data:
-            return None
-        return data

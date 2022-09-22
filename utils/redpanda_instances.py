@@ -1,25 +1,15 @@
-from confluent_kafka.admin import *
-from confluent_kafka import Producer, Consumer
-
+from .File import *
+from .redpanda_utils import *
 from multiprocessing import *
-
-from redpanda_utils import *
-from File import *
-
+from confluent_kafka import Producer, Consumer
+from confluent_kafka.admin import *
 import json
 import hashlib
-import os
 import sys
-import time
 sys.path.append(".")
 
 
-class RedPandaObject(Object):
-    def __init__(self, config_dict: dict):
-        self.config = config_dict
-
-
-class Watcher(RedPandaObject):
+class Watcher(object):
 
     def __init__(self, config_dict: dict, works_to_do: list):
         self.config = config_dict
@@ -54,51 +44,65 @@ class Watcher(RedPandaObject):
                         # ------------------------------------------
                         # ---- SPAWNING THE WORKER FOR THE JOB -----
                         # ------------------------------------------
-                        conf = {
-                            "bootstrap.servers": self.kafka_address,
+
+                        kafka_address = self.config['bootstrap.servers']
+                        consumer_conf = {
+                            "bootstrap.servers": kafka_address,
                             "client.id": str(worker_id),
                             "group.id": 'cons' + str(worker_id),
                             "max.in.flight.requests.per.connection": 1,
                             "auto.offset.reset": 'earliest'
                         }
 
+                        producer_conf = {
+                            "bootstrap.servers": kafka_address,
+                            "client.id": str(worker_id),
+                            "acks": 1,
+                            "retries": 3,
+                            "batch.size": 1,
+                            "max.in.flight.requests.per.connection": 1
+                        }
+
                         param_config = json.loads(
                             parsed_msg['data'].decode('utf-8'))['param_config']
 
                         # TO_DO: check if the cons_id can be substituted by the job_name
-                        worker = Worker(config_dict=conf,
+                        worker = Worker(consumer_config=consumer_conf,
+                                        producer_config=producer_conf,
                                         works_to_do=self.works_to_do,
                                         param_config=param_config)
 
-                        Process(target=worker.work).start()
+                        # Process(target=worker.work).start()
+                        worker.work()
 
-                    cons_id += 1
+                        worker_id += 1
+
         finally:
             self.consumer.close()
 
 
-class Worker(RedPandaObject):
+class Worker(object):
 
-    def __init__(self, config_dict: dict, works_to_do: list, param_config: dict):
-        self.config = config_dict
-        self.consumer = Consumer(self.config)
+    def __init__(self, consumer_config: dict, producer_config: dict, works_to_do: list, param_config: dict):
+
+        self.consumer_config = consumer_config
+        self.producer_config = producer_config
+
+        self.consumer = Consumer(consumer_config)
+        self.producer = Producer(producer_config)
 
         self.param_config = param_config
-        self.to_do = works_to_do
+        self.works_to_do = works_to_do
 
     def work(self):
         for job in self.works_to_do:
-            job(self.param_config)
+            job(self)
 
 
 class JobProducer(object):
     def __init__(self, prod_id, kafka_address):
         self.prod_id = prod_id
         self.kafka_address = kafka_address
-        self.admin_client = AdminClient(
-            {"bootstrap.servers": self.kafka_address,
-             "client.id": 'prod' + str(self.prod_id)}
-        )
 
     def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
 
@@ -106,23 +110,22 @@ class JobProducer(object):
             print('Please insert a valid file_path for the file to send')
             exit(1)
 
-        broker_ids = list(self.admin_client.list_topics().brokers.keys())
-
         # JOB NAME
         param_config['activity_title'] = hashlib.md5(
             string=(file_path+str(self.prod_id)).encode('utf-8')).hexdigest()
 
-        self.notify_watcher(broker_ids=broker_ids, param_config=param_config)
+        self.notify_watcher(param_config=param_config,
+                            control_topic='control_topic')
 
         fts = File(path=file_path, chunk_size=chunk_size)
 
-        self.send_file(file_to_send=fts, topic=param_config['activity_title'])
+        data_topic = 'data_ingestion_' + param_config['activity_title']
+        create_topics(kafka_address=self.kafka_address,
+                      prod_id=self.prod_id, topics=[data_topic], broker_offset=1)
 
-    def notify_watcher(self, broker_ids: list, param_config: dict, control_topic) -> str:
+        self.send_file(file_to_send=fts, topic=data_topic)
 
-        job_name = param_config['activity_title']
-
-        create_topics(self.admin_client, broker_ids, [job_name], 0)
+    def notify_watcher(self, param_config: dict, control_topic) -> str:
 
         conf = {
             "bootstrap.servers": self.kafka_address,
@@ -170,6 +173,7 @@ class JobProducer(object):
 
                 batch.append({"headers": headers, "data": data})
 
+        
         conf = {
             "bootstrap.servers": self.kafka_address,
             "client.id": str(self.prod_id),
@@ -178,11 +182,5 @@ class JobProducer(object):
             "batch.size": 1,
             "max.in.flight.requests.per.connection": 1
         }
-
         producer = Producer(conf)
-
-        for i in range(0, len(batch)):
-            producer.produce(topic=topic, value=(batch[i])[
-                             'data'], headers=batch[i]['headers'])
-        producer.flush()
-        print("File successfully sent")
+        send_data(topic = topic, chunks = batch, producer = producer)
