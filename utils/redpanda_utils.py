@@ -1,7 +1,14 @@
 from confluent_kafka.admin import *
 from confluent_kafka import *
+
 import sys
 import enum
+from math import ceil
+from .File import *
+
+import logging
+log = logging.getLogger(__name__)
+
 
 # ----------- TOPICS UTILITY -----------
 
@@ -17,22 +24,16 @@ def create_topics(kafka_address, prod_id, topics: list, broker_offset):
     broker_ids = list(admin_client.list_topics().brokers.keys())
     broker_ids.sort()
 
-    print(broker_ids)
     for t in range(0, len(topics)):
-        nt = NewTopic(topic=topics[t], num_partitions=1, replication_factor=-1,
-                        replica_assignment=[[broker_ids[((t+broker_offset) % len(broker_ids))]]])
-        # nt = NewTopic(topic = topics[t], num_partitions = 1, replication_factor = 1)
-        # nt = NewTopic(name=topics[t], num_partitions = 3, replication_factor = 1)
-        topics_list.append(nt)
-        admin_client.create_topics([nt])
-        # list(futures.values())[0].result()
-        print('topic ' + topics[t] + ' successfully created')
-        found_leader = False
-        while not (found_leader):
-            try:
-                if topics[t] not in admin_client.list_topics().topics:
-                    continue
-                else:
+        if topics[t] not in admin_client.list_topics().topics:
+            nt = NewTopic(topic=topics[t], num_partitions=1, replication_factor=-1,
+                            replica_assignment=[[broker_ids[((t+broker_offset) % len(broker_ids))]]])
+            topics_list.append(nt)
+            admin_client.create_topics([nt])
+            print('topic ' + topics[t] + ' successfully created')
+            found_leader = False
+            while not (found_leader):
+                try:
                     leader = admin_client.list_topics(
                     ).topics[topics[t]].partitions[0].leader
                     if leader != -1:
@@ -40,8 +41,10 @@ def create_topics(kafka_address, prod_id, topics: list, broker_offset):
                         print('leader found: %s' % (leader))
                     else:
                         print('leader not found')
-            except KeyError:
-                continue
+                except KeyError:
+                    continue
+        else:
+            print('topic', topics[t], 'already exists')
 
 
 def delete_topics(admin_client: AdminClient, topics: list):
@@ -56,14 +59,41 @@ def delete_topics(admin_client: AdminClient, topics: list):
 
 # ---------- DATA UTILITY -------------
 
-def read_in_chunks(file_object, CHUNK_SIZE):
-    data = file_object.read(CHUNK_SIZE)
-    if not data:
-        return None
-    return data
+def read_in_chunks(file_to_read : File, CHUNK_SIZE):
+    '''
+    this utility is used to read in chunks from a file written on disk
+    '''
+    chunks = []
+    chunks_number = file_to_read.get_chunks_number()
+    path = file_to_read.get_path()
+
+    with open(path, 'rb') as fp:
+            for _ in range(0, chunks_number):
+                data = fp.read(CHUNK_SIZE)
+                if data is None:
+                    raise Exception("Cannot read data")
+                else:
+                    chunks.append(data)
+
+    return chunks
 
 
-def receive_data(topic: str, consumer):
+
+def prepare_chunks(data, CHUNK_SIZE):
+    '''
+    This utility is used to divide a given data structure (base64Encoded) in chunks 
+    '''
+    data_size = len(data)
+    chunks_number =ceil(float(data_size) / float(CHUNK_SIZE))
+    chunks = []
+    for i in range(0, chunks_number, CHUNK_SIZE):
+        chunks.append(data[i * CHUNK_SIZE : (i+1) *CHUNK_SIZE])
+    
+    assert(len(chunks) != 0)
+    return chunks
+
+
+def receive_data(topic: str, consumer, kafka_address, cons_id):
     running = True
     record_list = None
 
@@ -111,8 +141,7 @@ def receive_data(topic: str, consumer):
             )
 
     except KafkaException() as e:
-        print(e)
-        raise
+        log.error(e)
     finally:
         # Close down consumer to commit final offsets.
         consumer.close()
@@ -121,10 +150,16 @@ def receive_data(topic: str, consumer):
     return data
 
 
-def send_data(topic: str, chunks: list, producer: Producer):
-    for i in range(0,len(chunks)):
-        producer.produce(topic=topic, value=(chunks[i])[
-                             'data'], headers=chunks[i]['headers'])
+def send_data(topic: str, chunks: list, file_name :str, prod_id , producer: Producer):
+    chunks_number = len(chunks)
+    for i in range(0,chunks_number):
+        msg_header = {"prod_id": str(prod_id),
+                    "chunk_id": str(i),
+                    "chunks_number": str(chunks_number),
+                    "file_name": file_name}
+
+        producer.produce(topic=topic, value=chunks[i], headers=msg_header)
+
     producer.flush()
     print("File successfully sent")
 

@@ -1,12 +1,15 @@
 from .File import *
 from .redpanda_utils import *
-from multiprocessing import *
+
 from confluent_kafka import Producer, Consumer
 from confluent_kafka.admin import *
-import json
-import hashlib
-import sys
-sys.path.append(".")
+
+import json, hashlib
+from multiprocessing import *
+
+import logging
+log = logging.getLogger(__name__)
+
 
 
 class Watcher(object):
@@ -17,9 +20,9 @@ class Watcher(object):
         self.works_to_do = works_to_do
 
     def listen_on_control(self, control_topic: str):
-
         try:
             self.consumer.subscribe([control_topic])
+            logging.info('listening on control topic')
             running = True
             worker_id = 0
 
@@ -40,6 +43,7 @@ class Watcher(object):
                     msg_type = MessageType(int(parsed_msg['type'])).name
 
                     if msg_type == 'control_message':
+                        log.info('Control message arrived')
 
                         # ------------------------------------------
                         # ---- SPAWNING THE WORKER FOR THE JOB -----
@@ -72,7 +76,7 @@ class Watcher(object):
                                         works_to_do=self.works_to_do,
                                         param_config=param_config)
 
-                        # Process(target=worker.work).start()
+                        #Process(target=worker.work).start()
                         worker.work()
 
                         worker_id += 1
@@ -150,30 +154,7 @@ class JobProducer(object):
 
     def send_file(self, file_to_send: File, topic: str):
 
-        batch = []
-        chunk_id = 0
-        chunk_size = file_to_send.get_chunk_size()
-        file_size = file_to_send.get_file_size()
-        chunks_number = file_to_send.get_chunks_number()
-        path = file_to_send.get_path()
-
-        with open(path, 'rb') as fp:
-
-            for chunk_id in range(0, chunks_number):
-
-                data = read_in_chunks(fp, chunk_size)
-
-                if data is None:
-                    raise Exception("cannot read data")
-
-                headers = {"prod_id": str(self.prod_id),
-                           "chunk_id": str(chunk_id),
-                           "chunks_number": str(chunks_number),
-                           "file_name": file_to_send.get_name()}
-
-                batch.append({"headers": headers, "data": data})
-
-        
+        chunks = read_in_chunks(file_to_read=file_to_send, CHUNK_SIZE= file_to_send.get_chunk_size())        
         conf = {
             "bootstrap.servers": self.kafka_address,
             "client.id": str(self.prod_id),
@@ -183,4 +164,7 @@ class JobProducer(object):
             "max.in.flight.requests.per.connection": 1
         }
         producer = Producer(conf)
-        send_data(topic = topic, chunks = batch, producer = producer)
+
+        send_data(topic = topic, chunks = chunks, 
+                  file_name=file_to_send.get_name(), 
+                  prod_id=str(self.prod_id), producer = producer)

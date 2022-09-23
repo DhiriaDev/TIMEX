@@ -12,11 +12,11 @@ from utils import TimeSeriesContainer
 from utils.add_regressor import ingest_additional_regressors
 from utils.xcorr import calc_all_xcorr
 
-from models.arima_predictor import ARIMAModel
-from models.exponentialsmoothing_predictor import ExponentialSmoothingModel
-from models.lstm_predictor import LSTMModel
-from models.mockup_predictor import MockUpModel
-from models.prophet_predictor import FBProphetModel
+from .models.arima_predictor import ARIMAModel
+from .models.exponentialsmoothing_predictor import ExponentialSmoothingModel
+from .models.lstm_predictor import LSTMModel
+from .models.mockup_predictor import MockUpModel
+from .models.prophet_predictor import FBProphetModel
 
 log = logging.getLogger(__name__)
 
