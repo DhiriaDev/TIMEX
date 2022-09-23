@@ -4,6 +4,9 @@ import pickle, base64
 import logging
 log = logging.getLogger(__name__)
 
+import sys
+sys.path.append('/home/fpuoti/GIT/TimexDocker/')
+
 from utils import *
 
 from prediction_server.pipeline import create_timeseries_containers

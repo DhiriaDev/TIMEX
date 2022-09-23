@@ -24,6 +24,13 @@ param_config = {
         "models": "fbprophet",
         "main_accuracy_estimator": "rmse"
     },
+    "historical_prediction_parameters": {  
+        # Historical predictions iterate the prediction phase in order to check the accuracy on a 
+        # longer period. The best predictions for day x are computed using data available only at
+        # day x-1. More on this later...
+        "initial_index": "2021-02-01",  # Start the historical predictions from this day
+        "save_path": "historical_predictions/historical_predictions_bitcoin.pkl"  # Save the historical predictions in this file
+    },
     "visualization_parameters": {
         "xcorr_graph_threshold": 0.8,
         "box_plot_frequency": "1W"
@@ -33,11 +40,12 @@ param_config = {
 if __name__ == '__main__':
 
 
-    subprocess.Popen(["python /home/fpuoti/GIT/TimexDocker/ingestion_test.py"], shell=True)
-    subprocess.Popen(["python /home/fpuoti/GIT/TimexDocker/prediction_test.py"], shell = True)
+    subprocess.Popen(["python /home/fpuoti/GIT/TimexDocker/tests/ingestion_test.py"], shell=True)
+    subprocess.Popen(["python /home/fpuoti/GIT/TimexDocker/tests/prediction_test.py"], shell = True)
+    subprocess.Popen(["python /home/fpuoti/GIT/TimexDocker/tests/validation_test.py"], shell = True)
 
     # ---- the following two lines of code simulate the behavior of a new incoming request for a job
     job_producer = JobProducer(prod_id=0, kafka_address=kafka_address)
-    job_producer.start_job(param_config, './data_to_send/BitcoinPrice.csv')
+    job_producer.start_job(param_config, './dataset_examples/BitCoin/BitcoinPrice.csv')
 
 

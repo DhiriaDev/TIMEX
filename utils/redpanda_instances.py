@@ -8,6 +8,7 @@ import json, hashlib
 from multiprocessing import *
 
 import logging
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
 
 

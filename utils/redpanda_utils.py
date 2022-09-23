@@ -1,3 +1,4 @@
+import time
 from confluent_kafka.admin import *
 from confluent_kafka import *
 
@@ -7,6 +8,7 @@ from math import ceil
 from .File import *
 
 import logging
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
 
 
@@ -86,8 +88,8 @@ def prepare_chunks(data, CHUNK_SIZE):
     data_size = len(data)
     chunks_number =ceil(float(data_size) / float(CHUNK_SIZE))
     chunks = []
-    for i in range(0, chunks_number, CHUNK_SIZE):
-        chunks.append(data[i * CHUNK_SIZE : (i+1) *CHUNK_SIZE])
+    for i in range(0, chunks_number):
+        chunks.append(data[i * CHUNK_SIZE : min(data_size, (i+1) *CHUNK_SIZE)])
     
     assert(len(chunks) != 0)
     return chunks
@@ -97,7 +99,15 @@ def receive_data(topic: str, consumer, kafka_address, cons_id):
     running = True
     record_list = None
 
+    admin_client = AdminClient(
+        {"bootstrap.servers": kafka_address,
+            "client.id": str(cons_id)}
+    )
     try:
+        while topic not in admin_client.list_topics().topics :
+            log.info('the topic', topic, 'does not exist: waiting..')
+            time.sleep(2)
+
         consumer.subscribe([topic])
 
         while running:
@@ -141,7 +151,7 @@ def receive_data(topic: str, consumer, kafka_address, cons_id):
             )
 
     except KafkaException() as e:
-        log.error(e)
+        log.error(e) 
     finally:
         # Close down consumer to commit final offsets.
         consumer.close()

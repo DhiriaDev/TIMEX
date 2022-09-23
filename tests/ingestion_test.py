@@ -3,9 +3,14 @@ import pickle, base64
 import logging
 log = logging.getLogger(__name__)
 
+import sys
+sys.path.append('/home/fpuoti/GIT/TimexDocker/')
+
 from utils import *
 
-from data_ingestion_server.data_ingestion import *
+from data_ingestion_server.data_ingestion import ingest_timeseries
+
+
 
 
 kafka_address = '0.0.0.0:9092'
