@@ -1,4 +1,4 @@
-from timexseries.data_prediction.models.predictor import PredictionModel
-from .validation_performances import ValidationPerformance
+from .. import ValidationPerformance
+from .models.predictor import PredictionModel
 from .pipeline import create_timeseries_containers
 

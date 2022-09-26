@@ -3,6 +3,7 @@ import logging
 from pandas import DataFrame
 
 from timexseries.data_prediction import PredictionModel
+
 log = logging.getLogger(__name__)
 
 

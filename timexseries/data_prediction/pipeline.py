@@ -8,7 +8,6 @@ import dateparser
 from pandas import DataFrame
 
 from timexseries.data_ingestion import ingest_additional_regressors
-from timexseries.data_prediction import PredictionModel, ValidationPerformance
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
@@ -19,7 +18,8 @@ from timexseries.data_prediction.models.persistence import PersistenceModel
 from timexseries.data_prediction.models.prophet import FBProphetModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.xcorr import calc_all_xcorr
-from timexseries.timeseries_container import TimeSeriesContainer
+from timexseries import TimeSeriesContainer, ValidationPerformance
+from timexseries.data_prediction import PredictionModel
 
 log = logging.getLogger(__name__)
 

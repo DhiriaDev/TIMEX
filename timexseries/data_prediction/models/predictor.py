@@ -1,58 +1,16 @@
-import logging
 import math
 from functools import reduce
-from joblib import Parallel, delayed
+import logging
 
-import pandas as pd
-from pandas import DataFrame
 import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from pandas import DataFrame
 
+from timexseries import ValidationPerformance, SingleResult, ModelResult
 from timexseries.data_prediction.transformation import transformation_factory
-from timexseries.data_prediction.validation_performances import ValidationPerformance
 
 log = logging.getLogger(__name__)
-
-
-class SingleResult:
-    """
-    Class for the result of a model, trained on a specific training set.
-
-    Parameters
-    ----------
-    prediction : DataFrame
-        Estimated prediction, using this training set
-    testing_performances : ValidationPerformance
-        Testing performance (`timexseries.data_prediction.validation_performances.ValidationPerformance`), on the validation
-        set, obtained using this training set to train the model.
-    """
-
-    def __init__(self, prediction: DataFrame, testing_performances: ValidationPerformance):
-        self.prediction = prediction
-        self.testing_performances = testing_performances
-
-
-class ModelResult:
-    """
-    Class for to collect the global results of a model trained on a time-series.
-
-    Parameters
-    ----------
-    results : [SingleResult]
-        List of all the results obtained using all the possible training set for this model, on the time series.
-        This is useful to create plots which show how the performance vary changing the training data (e.g.
-        `timexseries.data_visualization.functions.performance_plot`).
-    characteristics : dict
-        Model parameters. This dictionary collects human-readable characteristics of the model, e.g. the used number of
-        validation points used, the length of the sliding training window, etc.
-    best_prediction : DataFrame
-        Prediction obtained using the best training window and _all_ the available points in the time-series. This is
-        the prediction that users are most likely to want.
-    """
-
-    def __init__(self, results: [SingleResult], characteristics: dict, best_prediction: DataFrame):
-        self.results = results
-        self.characteristics = characteristics
-        self.best_prediction = best_prediction
 
 
 class PredictionModel:
@@ -395,7 +353,7 @@ class PredictionModel:
 
         Returns
         -------
-        model_result : ModelResult
+        model_result : timexseries.ModelResult
             `ModelResult` containing the results of the model, trained on ingested_data.
 
         Examples
@@ -483,7 +441,7 @@ class PredictionModel:
         model_characteristics["delta_training_percentage"] = self.delta_training_percentage
         model_characteristics["delta_training_values"] = self.delta_training_values
         model_characteristics["validation_values"] = self.validation_values
-        model_characteristics["transformation"] = self.transformation
+        model_characteristics["transformation"] = str(self.transformation)
 
         return ModelResult(results=model_training_results, characteristics=model_characteristics,
                            best_prediction=best_prediction)

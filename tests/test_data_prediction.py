@@ -11,6 +11,7 @@ from scipy.stats import yeojohnson
 
 from prophet import Prophet
 
+from timexseries import TimeSeriesContainer
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
@@ -30,7 +31,6 @@ from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_be
     create_timeseries_containers
 from timexseries.data_prediction.models.prophet import suppress_stdout_stderr, FBProphetModel
 from timexseries.data_prediction.transformation import transformation_factory, Identity
-from timexseries.timeseries_container import TimeSeriesContainer
 
 xcorr_modes = ['pearson', 'kendall', 'spearman', 'matlab_normalized']
 
