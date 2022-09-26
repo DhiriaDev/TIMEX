@@ -7,19 +7,19 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 
-from timexseries.data_ingestion import ingest_additional_regressors
-from timexseries.data_prediction.models.arima import ARIMAModel
-from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
-# from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
-from timexseries.data_prediction.models.lstm import LSTMModel
-from timexseries.data_prediction.models.mockup import MockUpModel
-# from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
-from timexseries.data_prediction.models.persistence import PersistenceModel
-from timexseries.data_prediction.models.prophet import FBProphetModel
-from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
-from timexseries.data_prediction.xcorr import calc_all_xcorr
-from timexseries import TimeSeriesContainer, ValidationPerformance
-from timexseries.data_prediction import PredictionModel
+from ..data_ingestion import ingest_additional_regressors
+from .models.arima import ARIMAModel
+from .models.exponential_smoothing import ExponentialSmoothingModel
+# from .models.flaml_predictor import FLAMLModel
+from .models.lstm import LSTMModel
+from .models.mockup import MockUpModel
+# from .models.neuralprophet_predictor import NeuralProphetModel
+from .models.persistence import PersistenceModel
+from .models.prophet import FBProphetModel
+from .models.seasonal_persistence import SeasonalPersistenceModel
+from .xcorr import calc_all_xcorr
+from  .. import TimeSeriesContainer, ValidationPerformance
+from . import PredictionModel
 
 log = logging.getLogger(__name__)
 

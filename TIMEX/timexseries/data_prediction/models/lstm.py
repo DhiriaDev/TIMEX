@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
 
-from timexseries.data_prediction import PredictionModel
+from .. import PredictionModel
 
 log = logging.getLogger(__name__)
 

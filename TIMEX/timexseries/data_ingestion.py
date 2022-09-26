@@ -3,11 +3,12 @@ import logging
 import dateparser
 import pandas as pd
 from pandas import DataFrame
+from io import StringIO
 
 log = logging.getLogger(__name__)
 
 
-def ingest_timeseries(param_config: dict):
+def ingest_timeseries(param_config: dict, dataset):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
     This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
@@ -75,16 +76,16 @@ def ingest_timeseries(param_config: dict):
     log.info('Starting the data ingestion phase.')
     input_parameters = param_config["input_parameters"]
 
-    source_data_url = input_parameters['source_data_url']
+    #source_data_url = input_parameters['source_data_url']
 
     try:
         columns_to_load_from_url = input_parameters["columns_to_load_from_url"]
         columns_to_read = list(columns_to_load_from_url.split(','))
         # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
-        df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
+        df_ingestion = pd.read_csv(StringIO(dataset.decode()), usecols=columns_to_read)[columns_to_read]
 
     except (KeyError, ValueError):
-        df_ingestion = pd.read_csv(source_data_url)
+        df_ingestion = pd.read_csv(StringIO(dataset.decode()))
 
     try:
         index_column_name = input_parameters["index_column_name"]
