@@ -1,4 +1,4 @@
 import sys
-sys.path.append('./TIMEX/timexseries/')
+sys.path.append('./')
 
-from timexseries import *
+from TIMEX.timexseries import *

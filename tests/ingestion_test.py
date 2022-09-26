@@ -1,16 +1,11 @@
-import pickle, base64
-
+import sys
 import logging
+sys.path.append('./')
 log = logging.getLogger(__name__)
 
-import sys
-sys.path.append('/home/fpuoti/GIT/TimexDocker/')
-
-from utils import *
-
-from data_ingestion_server.data_ingestion import ingest_timeseries
-
-
+import pickle, base64
+from redpanda_modules import *
+from TIMEX.timexseries.data_ingestion import ingest_timeseries
 
 
 kafka_address = '0.0.0.0:9092'

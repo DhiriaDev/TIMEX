@@ -28,6 +28,7 @@ prophet = "^1.0.1"
 ipykernel = "^6.9.2"
 confluent-kafka = "^1.9.2"
 autopep8 = "^1.7.0"
+statsforecast = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 

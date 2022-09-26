@@ -1,5 +1,5 @@
 
-from utils import TimeSeriesContainer, ValidationPerformance
+from TIMEX.timexseries import TimeSeriesContainer, ValidationPerformance
 import logging
 
 logger = logging.getLogger(__name__)

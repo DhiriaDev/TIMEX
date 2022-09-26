@@ -1,14 +1,11 @@
-import pickle, base64
-
+import sys
 import logging
-from unittest import result
+sys.path.append('./')
 log = logging.getLogger(__name__)
 
-import sys
-sys.path.append('/home/fpuoti/GIT/TimexDocker/')
+import pickle, base64
 
-from utils import *
-
+from redpanda_modules import *
 from validation_server.validation_functions import *
 
 

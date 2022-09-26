@@ -1,9 +1,10 @@
-import subprocess
-
-from utils import *
-
+import sys
 import logging
+sys.path.append('./')
 log = logging.getLogger(__name__)
+
+import subprocess
+from redpanda_modules import *
 
 kafka_address = '0.0.0.0:9092'
 
@@ -21,7 +22,7 @@ param_config = {
         "delta_training_percentage": 15,
         "prediction_lags": 10,
         "possible_transformations": "none,log_modified",
-        "models": "fbprophet,arima",
+        "models": "fbprophet",
         "main_accuracy_estimator": "rmse"
     },
     "historical_prediction_parameters": {  
