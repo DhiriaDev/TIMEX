@@ -76,8 +76,7 @@ class Watcher(object):
                                         works_to_do=self.works_to_do,
                                         param_config=param_config)
 
-                        #Process(target=worker.work).start()
-                        worker.work()
+                        Process(target=worker.work).start()
 
                         worker_id += 1
 
