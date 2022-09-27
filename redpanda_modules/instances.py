@@ -69,15 +69,17 @@ class Watcher(object):
 
                         param_config = json.loads(
                             parsed_msg['data'].decode('utf-8'))['param_config']
+                        
 
                         # TO_DO: check if the cons_id can be substituted by the job_name
                         worker = Worker(consumer_config=consumer_conf,
                                         producer_config=producer_conf,
                                         works_to_do=self.works_to_do,
                                         param_config=param_config)
-
+                        
+                        activity_title = param_config['activity_title']
+                        log.info(f'Spawning the worker n° {worker_id} for the job {activity_title}.')
                         Process(target=worker.work).start()
-
                         worker_id += 1
 
         finally:
