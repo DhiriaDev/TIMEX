@@ -6,6 +6,8 @@ log = logging.getLogger(__name__)
 
 import pickle, base64
 
+from confluent_kafka import *
+
 from redpanda_modules import *
 
 from  timexseries.data_prediction import create_timeseries_containers
@@ -25,11 +27,12 @@ def prediction_work(self):
     kafka_address = self.producer_config['bootstrap.servers']
     client_id = self.producer_config['client.id']
 
+    consumer = Consumer(self.consumer_config)
     # The dataset after the ingestion process will come pickle encoded
     # to not loose all the attributes and information of a pandas data frame
     dataset = pickle.loads(
         base64.b64decode(
-            receive_data(topic=prediction_topic, kafka_address=kafka_address, cons_id=client_id, consumer=self.consumer)
+            receive_data(topic=prediction_topic, kafka_address=kafka_address, cons_id=client_id, consumer=consumer)
         )
     )
 
@@ -58,10 +61,11 @@ def prediction_work(self):
                   topics=[validation_topic], broker_offset=1)
 
     chunks = prepare_chunks(timeseries_containers, chunk_size)
-
+    
+    producer = Producer(self.producer_config)
     send_data(topic=validation_topic, chunks=chunks,
               file_name='prediction_' + self.param_config['activity_title'], 
-              prod_id=client_id, producer=self.producer)
+              prod_id=client_id, producer=producer)
 
 
 prediction_watcher_conf = {

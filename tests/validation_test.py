@@ -7,7 +7,7 @@ import pickle, base64
 
 from redpanda_modules import *
 from validation_server.validation_functions import *
-
+from confluent_kafka import *
 
 kafka_address = '0.0.0.0:9092'
 chunk_size = 999500  # in bytes
@@ -22,10 +22,11 @@ def validation_work(self):
 
     kafka_address = self.producer_config['bootstrap.servers']
     client_id = self.consumer_config['client.id']
-    
+
+    consumer = Consumer(self.consumer_config)
     timeseries_containers = pickle.loads(
         base64.b64decode(
-            receive_data(topic=validation_topic, kafka_address=kafka_address, cons_id=client_id, consumer=self.consumer)
+            receive_data(topic=validation_topic, kafka_address=kafka_address, cons_id=client_id, consumer=consumer)
         )
     )
 
@@ -53,9 +54,10 @@ def validation_work(self):
 
     chunks = prepare_chunks(best_model, chunk_size)
 
+    producer = Producer(self.producer_config)
     send_data(topic = result_topic, chunks = chunks, 
               file_name='best_model' + self.param_config['activity_title'],
-              prod_id = client_id, producer = self.producer)
+              prod_id = client_id, producer = producer)
 
 
 validation_watcher_conf = {

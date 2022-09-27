@@ -3,6 +3,8 @@ import logging
 sys.path.append('./')
 log = logging.getLogger(__name__)
 
+
+from confluent_kafka import *
 import pickle, base64
 from redpanda_modules import *
 from timexseries.data_ingestion import ingest_timeseries
@@ -22,8 +24,9 @@ def ingestion_work(self):
     kafka_address = self.producer_config['bootstrap.servers']
     client_id = self.consumer_config['client.id']
 
+    consumer = Consumer(self.consumer_config)
     dataset = receive_data(
-        topic=data_ingestion_topic, kafka_address = kafka_address, cons_id = client_id, consumer=self.consumer)
+        topic=data_ingestion_topic, kafka_address = kafka_address, cons_id = client_id, consumer=consumer)
 
     
     log.info('Data received. Starting the job')
@@ -38,9 +41,10 @@ def ingestion_work(self):
     dataset = (base64.b64encode(dataset)).decode('utf-8')
     chunks = prepare_chunks(dataset, chunk_size)
 
+    producer = Producer(self.producer_config)
     send_data(topic = prediction_topic, chunks = chunks, 
               file_name='dataset_' + self.param_config['activity_title'],
-              prod_id = client_id, producer = self.producer)
+              prod_id = client_id, producer = producer)
 
 
 ingestion_watcher_conf = {
