@@ -13,6 +13,7 @@ param_config = {
     "verbose": "INFO",
     "input_parameters": {
         "columns_to_load_from_url": "Date,Close",
+        "source_data_url" : "",
         "datetime_column_name": "Date",
         "index_column_name": "Date",
         "frequency": "D"

@@ -1,10 +1,10 @@
 from pandas import DataFrame
 
 from statsforecast import StatsForecast
-from .. import PredictionModel
+from timexseries.data_prediction import PredictionModel
 from statsforecast.models import AutoARIMA, SeasonalNaive
 
-from .seasonality_estimator import estimate_seasonality
+from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
 
 
 class SeasonalPersistenceModel(PredictionModel):

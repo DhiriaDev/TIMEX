@@ -464,6 +464,20 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "gunicorn"
+version = "20.1.0"
+description = "WSGI HTTP Server for UNIX"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.extras]
+eventlet = ["eventlet (>=0.24.1)"]
+gevent = ["gevent (>=1.4.0)"]
+setproctitle = ["setproctitle"]
+tornado = ["tornado (>=0.2)"]
+
+[[package]]
 name = "hijri-converter"
 version = "2.2.4"
 description = "Accurate Hijri-Gregorian dates converter based on the Umm al-Qura calendar"
@@ -796,7 +810,10 @@ optional = false
 python-versions = ">=3.8"
 
 [package.dependencies]
-numpy = {version = ">=1.20.3", markers = "python_version < \"3.10\""}
+numpy = [
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
+    {version = ">=1.20.3", markers = "python_version < \"3.10\""},
+]
 python-dateutil = ">=2.8.1"
 pytz = ">=2020.1"
 
@@ -1232,6 +1249,33 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "timexseries"
+version = "1.2.3"
+description = "TIMEX is a framework for time-series-forecasting-as-a-service."
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.11"
+develop = false
+
+[package.dependencies]
+colorhash = "^1.0.4"
+dash = "^2.0.0"
+dash-bootstrap-components = "^1.0.3"
+dateparser = "^1.1.0"
+gunicorn = "^20.1.0"
+networkx = "^2.6.3"
+prophet = "^1.0.1"
+scipy = "^1.7.3"
+sklearn = "^0.0"
+statsforecast = "^1.0.0"
+statsmodels = "^0.13.1"
+torch = "^1.10.1"
+
+[package.source]
+type = "directory"
+url = "TIMEX"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -1304,7 +1348,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "tzdata"
-version = "2022.3"
+version = "2022.4"
 description = "Provider of IANA time zone data"
 category = "main"
 optional = false
@@ -1395,8 +1439,8 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 
 [metadata]
 lock-version = "1.1"
-python-versions = "3.9.*"
-content-hash = "2e31f9093f09caf6621403050a7244d42b7fe89c484f9bb4a9318536319cc624"
+python-versions = ">=3.9,<3.11"
+content-hash = "209737745348236f6c8cebbfb6d200b9a97d03767f8ce6242489fcad9e3476ea"
 
 [metadata.files]
 aiohttp = []
@@ -1608,6 +1652,7 @@ flask-restful = [
 ]
 fonttools = []
 frozenlist = []
+gunicorn = []
 hijri-converter = []
 holidays = []
 idna = []
@@ -1966,6 +2011,7 @@ threadpoolctl = [
     {file = "threadpoolctl-3.1.0-py3-none-any.whl", hash = "sha256:8b99adda265feb6773280df41eece7b2e6561b772d21ffd52e372f999024907b"},
     {file = "threadpoolctl-3.1.0.tar.gz", hash = "sha256:a335baacfaa4400ae1f0d8e3a58d6674d2f8828e3716bb2802c44955ad391380"},
 ]
+timexseries = []
 toml = []
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},

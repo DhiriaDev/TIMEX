@@ -4,8 +4,8 @@ from pandas import DataFrame
 from statsforecast import StatsForecast
 from statsforecast.models import ETS
 
-from .. import PredictionModel
-from .seasonality_estimator import estimate_seasonality
+from timexseries.data_prediction import PredictionModel
+from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
 
 log = logging.getLogger(__name__)
 

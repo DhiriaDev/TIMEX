@@ -7,8 +7,8 @@ import pandas as pd
 from joblib import Parallel, delayed
 from pandas import DataFrame
 
-from ... import ValidationPerformance, SingleResult, ModelResult
-from ..transformation import transformation_factory
+from timexseries import ValidationPerformance, SingleResult, ModelResult
+from timexseries.data_prediction.transformation import transformation_factory
 
 log = logging.getLogger(__name__)
 

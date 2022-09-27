@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 
 import pickle, base64
 from redpanda_modules import *
-from TIMEX.timexseries.data_ingestion import ingest_timeseries
+from timexseries.data_ingestion import ingest_timeseries
 
 
 kafka_address = '0.0.0.0:9092'

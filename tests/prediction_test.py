@@ -8,7 +8,7 @@ import pickle, base64
 
 from redpanda_modules import *
 
-from  TIMEX.timexseries.data_prediction import create_timeseries_containers
+from  timexseries.data_prediction import create_timeseries_containers
 
 
 kafka_address = '0.0.0.0:9092'

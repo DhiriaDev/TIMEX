@@ -53,7 +53,7 @@ def delete_topics(admin_client: AdminClient, topics: list):
     try:
         admin_client.delete_topics(topics=topics)
         print("Topics Deleted Successfully")
-    except UnknownTopicOrPartitionError as e:
+    except UnknownTopicOrPartition as e:
         print("A Topic Doesn't Exist")
     except Exception as e:
         print(e)
