@@ -12,20 +12,21 @@ def validate (timeseries_containers : list[TimeSeriesContainer], param_config : 
     Since the prediction request are asynchronous for each requested model, now we have to merge the results of
     all the models for the requested timeseries in a single container
     '''
-    timeseries_container = TimeSeriesContainer.merge_for_each_timeseries(timeseries_containers)
 
-    models = timeseries_container.models
-    models_best = {}
+    for timeseries_container in timeseries_containers:
 
-    for model in models:
-        models[model].results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
-        models_best[model] = getattr(models[model].results[0].testing_performances, main_accuracy_estimator.upper())
+        models = timeseries_container.models
+        models_best = {}
 
-    best_model_name = max(models_best, key = models_best.get)
+        for model in models:
+            models[model].results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+            models_best[model] = getattr(models[model].results[0].testing_performances, main_accuracy_estimator.upper())
 
-    timeseries_container.models = { best_model_name : timeseries_container.models[best_model_name] }
+        best_model_name = max(models_best, key = models_best.get)
 
-    logger.info ('Validation finished: best model = %s', best_model_name)
-
+        timeseries_container.models = { best_model_name : timeseries_container.models[best_model_name] }
     
-    return timeseries_container
+
+    logger.info ('Validation finished.')
+    
+    return timeseries_containers
