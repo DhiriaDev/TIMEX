@@ -16,18 +16,19 @@ class Watcher(object):
 
     def __init__(self, config_dict: dict, works_to_do: list):
         self.config = config_dict
-        self.consumer = Consumer(self.config)
         self.works_to_do = works_to_do
 
     def listen_on_control(self, control_topic: str):
         try:
-            self.consumer.subscribe([control_topic])
-            logging.info('listening on control topic')
+            consumer = Consumer(self.config)
+            consumer.subscribe([control_topic])
+
+            log.info('Listening on control topic')
             running = True
             worker_id = 0
 
             while running:
-                msg = self.consumer.poll(timeout=1)
+                msg = consumer.poll(timeout=1)
                 if msg is None:
                     continue
 
@@ -83,7 +84,7 @@ class Watcher(object):
                         worker_id += 1
 
         finally:
-            self.consumer.close()
+            consumer.close()
 
 
 class Worker(object):
@@ -92,9 +93,6 @@ class Worker(object):
 
         self.consumer_config = consumer_config
         self.producer_config = producer_config
-
-        # self.consumer = Consumer(consumer_config)
-        # self.producer = Producer(producer_config)
 
         self.param_config = param_config
         self.works_to_do = works_to_do
@@ -106,8 +104,14 @@ class Worker(object):
 
 class JobProducer(object):
     def __init__(self, prod_id, kafka_address):
-        self.prod_id = prod_id
-        self.kafka_address = kafka_address
+        self.producer_config = {
+            "bootstrap.servers": kafka_address,
+            "client.id": str(prod_id),
+            "acks": 1,
+            "retries": 3,
+            "batch.size": 1,
+            "max.in.flight.requests.per.connection": 1
+        } 
 
     def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
 
@@ -132,25 +136,19 @@ class JobProducer(object):
         fts = File(path=file_path, chunk_size=chunk_size)
 
         data_topic = 'data_ingestion_' + param_config['activity_title']
-        create_topics(kafka_address=self.kafka_address,
-                      prod_id=self.prod_id, topics=[data_topic], broker_offset=1)
+        create_topics(topics=[data_topic], client_config = self.producer_config, broker_offset=1)
 
-        self.send_file(file_to_send=fts, topic=data_topic)
+        chunks = read_in_chunks(file_to_read=fts, CHUNK_SIZE= fts.get_chunk_size())        
+
+        send_data(topic = data_topic, chunks = chunks, 
+                  file_name=fts.get_name(), producer_config=self.producer_config)
+
 
     def notify_watcher(self, param_config: dict, control_topic) -> str:
 
-        conf = {
-            "bootstrap.servers": self.kafka_address,
-            "client.id": str(self.prod_id),
-            "acks": 1,
-            "retries": 3,
-            "batch.size": 1,
-            "max.in.flight.requests.per.connection": 1
-        }
+        producer = Producer(self.producer_config)
 
-        producer = Producer(conf)
-
-        headers = {'prod_id': str(self.prod_id),
+        headers = {'prod_id': self.producer_config['client.id'],
                    'type': str(MessageType.control_message.value)}
 
         data = {'param_config': param_config}
@@ -160,19 +158,3 @@ class JobProducer(object):
                          headers=headers)
         producer.flush()
 
-    def send_file(self, file_to_send: File, topic: str):
-
-        chunks = read_in_chunks(file_to_read=file_to_send, CHUNK_SIZE= file_to_send.get_chunk_size())        
-        conf = {
-            "bootstrap.servers": self.kafka_address,
-            "client.id": str(self.prod_id),
-            "acks": 1,
-            "retries": 3,
-            "batch.size": 1,
-            "max.in.flight.requests.per.connection": 1
-        }
-        producer = Producer(conf)
-
-        send_data(topic = topic, chunks = chunks, 
-                  file_name=file_to_send.get_name(), 
-                  prod_id=str(self.prod_id), producer = producer)

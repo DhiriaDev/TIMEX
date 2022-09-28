@@ -3,7 +3,6 @@ import logging
 sys.path.append('./')
 log = logging.getLogger(__name__)
 
-import subprocess
 from redpanda_modules import *
 
 kafka_address = '0.0.0.0:9092'
@@ -24,7 +23,7 @@ param_config = {
         "forecast_horizon": 10,
         "possible_transformations": "none,log_modified",
         "models": "fbprophet",
-        "main_accuracy_estimator": "rmse"
+        "main_accuracy_estimator": "mse"
     },
     "historical_prediction_parameters": {  
         # Historical predictions iterate the prediction phase in order to check the accuracy on a 
@@ -36,11 +35,6 @@ param_config = {
 }
 
 if __name__ == '__main__':
-
-
-    subprocess.Popen(["python tests/ingestion_test.py"], shell=True)
-    subprocess.Popen(["python tests/prediction_test.py"], shell = True)
-    subprocess.Popen(["python tests/validation_test.py"], shell = True)
 
     # ---- the following two lines of code simulate the behavior of a new incoming request for a job
     job_producer = JobProducer(prod_id=0, kafka_address=kafka_address)
