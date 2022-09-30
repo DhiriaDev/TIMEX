@@ -5,8 +5,8 @@ log = logging.getLogger(__name__)
 
 import pickle, base64
 from confluent_kafka import *
+import argparse
 
-from constants import *
 from redpanda_modules import *
 from validation_server.validation_functions import *
 
@@ -54,8 +54,20 @@ def validation_work(self):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('kakfa_address', 
+                        type = str,
+                        help='single address (or list of addresses) of the form IP:port[,IP:port]')
+
+
+    args = parser.parse_args()
+    if args.kafka_address is None:
+        log.error('a kafka address has been not specified')
+        exit(1)
+
     validation_watcher_conf = {
-        "bootstrap.servers": kafka_address,
+        "bootstrap.servers": parser.kafka_address,
         "client.id": 'watcher_validation',
         "group.id": 'watcher_validation',
         "max.in.flight.requests.per.connection": 1,

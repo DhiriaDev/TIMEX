@@ -91,12 +91,12 @@ def receive_data(topic: str, consumer_config : dict):
     try:
         while topic not in admin_client.list_topics().topics :
             log.debug(f'the topic {topic} does not exist: waiting..')
-            time.sleep(2)
+            time.sleep(5)
 
         consumer.subscribe([topic])
 
         while running:
-            msg = consumer.poll(timeout=1.0)
+            msg = consumer.poll()
             if msg is None:
                 continue
 
@@ -121,7 +121,8 @@ def receive_data(topic: str, consumer_config : dict):
                 if record_list is None:
                     record_list = [{} for i in range(chunks_number)]
 
-                record_list[chunk_id] = decoded_msg
+                # message ordering is guaranteed even if they do not arrive in order
+                record_list[chunk_id] = decoded_msg 
 
                 # el is a dictionary and to check if it is empty it suffices to check if its len == 0
                 still_to_receive_chunks = True in (
@@ -129,6 +130,8 @@ def receive_data(topic: str, consumer_config : dict):
 
                 if not still_to_receive_chunks:
                     running = False
+            
+                consumer.store_offsets(msg)
 
         if len(record_list) != chunks_number:
             raise RuntimeError(

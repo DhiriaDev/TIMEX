@@ -28,7 +28,7 @@ class Watcher(object):
             worker_id = 0
 
             while running:
-                msg = consumer.poll(timeout=1)
+                msg = consumer.poll()
                 if msg is None:
                     continue
 
@@ -82,6 +82,8 @@ class Watcher(object):
                         log.info(f'Spawning the worker n° {worker_id} for the job {activity_title}.')
                         Process(target=worker.work).start()
                         worker_id += 1
+                        
+                    consumer.store_offsets(msg)
 
         finally:
             consumer.close()

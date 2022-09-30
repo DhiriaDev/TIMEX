@@ -3,13 +3,17 @@ sys.path.append('./')
 
 import base64, pickle
 from confluent_kafka import *
+import argparse
 
 from redpanda_modules import *
 from timexseries.data_ingestion import ingest_timeseries
-from constants import *
+
 
 import logging
 log = logging.getLogger(__name__)
+
+ 
+
 
 def ingestion_work(self):
 
@@ -40,8 +44,20 @@ def ingestion_work(self):
 
 if __name__ == '__main__':
 
+    # Initialize parser
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('kakfa_address', 
+                        type = str,
+                        help='single address (or list of addresses) of the form IP:port[,IP:port]')
+
+    args = parser.parse_args()
+    if args.kafka_address is None:
+        log.error('a kafka address has been not specified')
+        exit(1)
+
     ingestion_watcher_conf = {
-        "bootstrap.servers": kafka_address,
+        "bootstrap.servers": args.kafka_address,
         "client.id": 'watcher_ingestion',
         "group.id": 'watcher_ingestion',
         "max.in.flight.requests.per.connection": 1,

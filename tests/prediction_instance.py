@@ -5,10 +5,10 @@ log = logging.getLogger(__name__)
 
 from confluent_kafka import *
 import pickle, base64
+import argparse
 
-from constants import *
 from redpanda_modules import *
-from  timexseries.data_prediction import create_timeseries_containers
+from timexseries.data_prediction import create_timeseries_containers
 
 
 
@@ -59,8 +59,20 @@ def prediction_work(self):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('kakfa_address', 
+                        type = str,
+                        help='single address (or list of addresses) of the form IP:port[,IP:port]')
+
+
+    args = parser.parse_args()
+    if args.kafka_address is None:
+        log.error('a kafka address has been not specified')
+        exit(1)
+
     prediction_watcher_conf = {
-        "bootstrap.servers": kafka_address,
+        "bootstrap.servers": args.kafka_address,
         "client.id": 'watcher_prediction',
         "group.id": 'watcher_prediction',
         "max.in.flight.requests.per.connection": 1,
