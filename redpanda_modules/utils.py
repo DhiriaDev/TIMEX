@@ -16,12 +16,10 @@ log = logging.getLogger(__name__)
 
 def create_topics(topics: list, client_config:dict, broker_offset : int):
 
-    admin_client = AdminClient(
-            {   
-                "bootstrap.servers": client_config['bootstrap.servers'],
-                "client.id": client_config['client.id']
-            }
-        )
+    admin_config = base_config.copy()
+    admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
+    admin_config['client.id'] = client_config['client.id']
+    admin_client = AdminClient(admin_config)
 
     broker_ids = list(admin_client.list_topics().brokers.keys())
     broker_ids.sort()
@@ -66,10 +64,8 @@ def delete_topics(client_config : dict, topics: list):
         )
         admin_client.delete_topics(topics=topics)
         print("Topics Deleted Successfully")
-    except UnknownTopicOrPartition as e:
-        print("A Topic Doesn't Exist")
     except Exception as e:
-        print(e)
+        log.error(e)
 
 
 # ---------- DATA UTILITY -------------
