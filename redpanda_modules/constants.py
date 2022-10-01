@@ -1,7 +1,13 @@
+import enum
+
+class MessageType(enum.Enum):
+    control_message = 0
+    data_message = 1
+
+
 # TODO: for the time being the chunk size is hard-coded, but
 # in the future we will have to parametrize it
 chunk_size = 999500
-
 
 
 '''
@@ -12,7 +18,7 @@ max.in.flight.requests.per.connection:
     Type: integer
 '''
 base_config = {
-    "bootstrap.servers" : "",
+    'bootstrap.servers' : "",
     "client.id" : "",
     "max.in.flight.requests.per.connection": 5, #(this is the max we can afford. See enable.idempotence in producer config)
 } 
@@ -20,6 +26,14 @@ base_config = {
 #########################################################################
 
 '''
+session.timeout.ms :
+    Client group session and failure detection timeout. The consumer sends periodic heartbeats (heartbeat.interval.ms)
+    to indicate its liveness to the broker. If no hearts are received by the broker for a group member within
+    the session timeout, the broker will remove the consumer from the group and trigger a rebalance.
+    The allowed range is configured with the broker configuration properties 
+    group.min.session.timeout.ms and group.max.session.timeout.ms. Also see max.poll.interval.ms.
+    Type: integer
+
 max.poll.interval.ms :
     Maximum allowed time between calls to consume messages (e.g., rd_kafka_consumer_poll()) for high-level consumers.
     If this interval is exceeded the consumer is considered failed and the group will rebalance in order to reassign 
@@ -47,15 +61,17 @@ auto.offset.reset:
     Type: enum value
 '''
 
-default_consumer_config = base_config.copy().update(
+default_consumer_config = base_config.copy()
+default_consumer_config.update(
     {
         "group.id" : "",
-        "max.poll.interval.ms" : 10000,
+        "session.timeout.ms" : 30000,
+        "max.poll.interval.ms" : 30000,
         "enable.auto.offset.store" : False,
         "enable.auto.commit" : True,
         # "enable.partition.eof" : True, #TODO check if it is a valid option
         # "allow.auto.create.topics" : True, #TODO check if it is a valid option
-        "auto.offset.reset": 'earliest',
+        "auto.offset.reset": 'earliest'
 
     }
 ) 
@@ -69,7 +85,7 @@ enable.idempotence:
     (if not modified by the user) when idempotence is enabled: 
         max.in.flight.requests.per.connection=5 (must be less than or equal to 5), 
         retries=INT32_MAX (must be greater than 0), 
-        acks=all, 
+        request.required.acks=all, 
         queuing.strategy=fifo. 
     Producer instantation will fail if user-supplied configuration is incompatible.
     Type: boolean
@@ -94,15 +110,13 @@ request.required.acks:
     Type: integer
 '''
 
-default_producer_config = base_config.copy().update(
+default_producer_config = base_config.copy()
+default_producer_config.update(
     {
         "enable.idempotence" : True,
         # "queue.buffering.backpressure.threshold" : int , #TODO check if it is a valid option
         # "compression.codec" : enum , #TODO check if it is a valid option
         "batch.num.messages" : 10000, # (== default value)
-        "batch.size" : 1000000, #(== default value)
-        "request.required.acks" : 1,
-
-        
+        "batch.size" : 1000000 #(== default value)
     }
 ) 

@@ -4,7 +4,9 @@ sys.path.append('./')
 log = logging.getLogger(__name__)
 
 from redpanda_modules import JobProducer
-from redpanda_modules.constants import kafka_address
+
+kafka_address = '0.0.0.0:9092'
+
 
 param_config = {
     "activity_title": "Bitcoin price forecasting",

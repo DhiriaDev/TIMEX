@@ -22,7 +22,7 @@ def ingestion_work(self):
     data_ingestion_topic = 'data_ingestion_' + \
         self.param_config['activity_title']
 
-    dataset = receive_data(topic=data_ingestion_topic,
+    dataset = receive_msg(topic=data_ingestion_topic,
                            consumer_config=self.consumer_config)
 
     log.info('Data received. Starting the job')
@@ -37,7 +37,7 @@ def ingestion_work(self):
     dataset = (base64.b64encode(dataset)).decode('utf-8')
     chunks = prepare_chunks(dataset, chunk_size)
 
-    send_data(topic=prediction_topic, chunks=chunks,
+    send_data_msg(topic=prediction_topic, chunks=chunks,
               file_name='dataset_' + self.param_config['activity_title'],
               producer_config=self.producer_config)
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # Initialize parser
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('kakfa_address', 
+    parser.add_argument('kafka_address', 
                         type = str,
                         help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
@@ -56,13 +56,10 @@ if __name__ == '__main__':
         log.error('a kafka address has been not specified')
         exit(1)
 
-    ingestion_watcher_conf = {
-        "bootstrap.servers": args.kafka_address,
-        "client.id": 'watcher_ingestion',
-        "group.id": 'watcher_ingestion',
-        "max.in.flight.requests.per.connection": 1,
-        "auto.offset.reset": 'earliest'
-    }
+    ingestion_watcher_conf = default_consumer_config.copy()
+    ingestion_watcher_conf['bootstrap.servers'] = args.kafka_address
+    ingestion_watcher_conf['client.id'] = 'watcher_ingestion'
+    ingestion_watcher_conf['group.id'] = 'watcher_ingestion'
 
     ingestion_watcher = Watcher(
         config_dict=ingestion_watcher_conf, works_to_do=[ingestion_work])

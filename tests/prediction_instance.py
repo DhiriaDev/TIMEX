@@ -22,7 +22,7 @@ def prediction_work(self):
     # to not loose all the attributes and information of a pandas data frame
     dataset = pickle.loads(
         base64.b64decode(
-            receive_data(topic=prediction_topic, consumer_config=self.consumer_config)
+            receive_msg(topic=prediction_topic, consumer_config=self.consumer_config)
         )
     )
 
@@ -51,7 +51,7 @@ def prediction_work(self):
 
     chunks = prepare_chunks(timeseries_containers, chunk_size)
 
-    send_data(topic=validation_topic, chunks=chunks,
+    send_data_msg(topic=validation_topic, chunks=chunks,
               file_name='prediction_' + self.param_config['activity_title'], 
               producer_config=self.producer_config)
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('kakfa_address', 
+    parser.add_argument('kafka_address', 
                         type = str,
                         help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
@@ -71,13 +71,10 @@ if __name__ == '__main__':
         log.error('a kafka address has been not specified')
         exit(1)
 
-    prediction_watcher_conf = {
-        "bootstrap.servers": args.kafka_address,
-        "client.id": 'watcher_prediction',
-        "group.id": 'watcher_prediction',
-        "max.in.flight.requests.per.connection": 1,
-        "auto.offset.reset": 'earliest'
-    }
+    prediction_watcher_conf = default_consumer_config.copy()
+    prediction_watcher_conf['bootstrap.servers'] = args.kafka_address
+    prediction_watcher_conf['client.id'] = 'watcher_prediction'
+    prediction_watcher_conf['group.id'] = 'watcher_prediction'
 
     prediction_watcher = Watcher(
         config_dict=prediction_watcher_conf, works_to_do=[prediction_work])

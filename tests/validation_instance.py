@@ -20,7 +20,7 @@ def validation_work(self):
 
     timeseries_containers = pickle.loads(
         base64.b64decode(
-            receive_data(topic=validation_topic, consumer_config=self.consumer_config)
+            receive_msg(topic=validation_topic, consumer_config=self.consumer_config)
         )
     )
 
@@ -46,7 +46,7 @@ def validation_work(self):
     chunks = prepare_chunks(best_model, chunk_size)
 
 
-    send_data(topic = result_topic, chunks = chunks, 
+    send_data_msg(topic = result_topic, chunks = chunks, 
               file_name='best_model' + self.param_config['activity_title'],
               producer_config=self.producer_config)
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('kakfa_address', 
+    parser.add_argument('kafka_address', 
                         type = str,
                         help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
@@ -66,13 +66,11 @@ if __name__ == '__main__':
         log.error('a kafka address has been not specified')
         exit(1)
 
-    validation_watcher_conf = {
-        "bootstrap.servers": parser.kafka_address,
-        "client.id": 'watcher_validation',
-        "group.id": 'watcher_validation',
-        "max.in.flight.requests.per.connection": 1,
-        "auto.offset.reset": 'earliest'
-    }
+    validation_watcher_conf = default_consumer_config.copy()
+    validation_watcher_conf['bootstrap.servers'] = args.kafka_address
+    validation_watcher_conf['client.id'] = 'watcher_validation'
+    validation_watcher_conf['group.id'] = 'watcher_validation'
+
 
     validation_watcher = Watcher(
         config_dict=validation_watcher_conf, works_to_do=[validation_work])

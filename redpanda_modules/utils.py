@@ -1,11 +1,11 @@
 from confluent_kafka.admin import *
 from confluent_kafka import *
+from multiprocessing import *
 
-import os
-import sys
-import enum
-import time
+import os, sys
 from math import ceil
+
+from .constants import *
 
 import logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 # ----------- TOPICS UTILITY -----------
-
 
 def create_topics(topics: list, client_config:dict, broker_offset : int):
 
@@ -74,95 +73,6 @@ def delete_topics(client_config : dict, topics: list):
 
 
 # ---------- DATA UTILITY -------------
-
-
-def receive_data(topic: str, consumer_config : dict):
-    running = True
-    record_list = None
-    
-    admin_client = AdminClient(
-        {   
-            "bootstrap.servers": consumer_config['bootstrap.servers'],
-            "client.id": consumer_config['client.id']
-        }
-    )
-
-    consumer = Consumer(consumer_config)
-    try:
-        while topic not in admin_client.list_topics().topics :
-            log.debug(f'the topic {topic} does not exist: waiting..')
-            time.sleep(5)
-
-        consumer.subscribe([topic])
-
-        while running:
-            msg = consumer.poll()
-            if msg is None:
-                continue
-
-            if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    # End of partition event
-                    sys.stderr.write(
-                        "%% %s [%d] reached end at offset %d\n"
-                        % (msg.topic(), msg.partition(), msg.offset())
-                    )
-                elif msg.error():
-                    print(msg.error())
-
-            else:
-                decoded_msg = parse_msg(msg)
-                chunk_id = int(decoded_msg["chunk_id"])
-                chunks_number = int(decoded_msg["chunks_number"])
-
-                if chunk_id + 1 > chunks_number:
-                    sys.stderr.write("Unexpected msg chunk id")
-
-                if record_list is None:
-                    record_list = [{} for i in range(chunks_number)]
-
-                # message ordering is guaranteed even if they do not arrive in order
-                record_list[chunk_id] = decoded_msg 
-
-                # el is a dictionary and to check if it is empty it suffices to check if its len == 0
-                still_to_receive_chunks = True in (
-                    len(el) == 0 for el in record_list)
-
-                if not still_to_receive_chunks:
-                    running = False
-            
-                consumer.store_offsets(msg)
-
-        if len(record_list) != chunks_number:
-            raise RuntimeError(
-                f"length is different {len(record_list)}, expected: {chunks_number}"
-            )
-
-    except KafkaException() as e:
-        log.error(e) 
-    finally:
-        # Close down consumer to commit final offsets.
-        consumer.close()
-
-    data = b"".join([item["data"] for item in record_list])
-    return data
-
-
-def send_data(topic: str, chunks: list, file_name :str, producer_config : dict):
-    chunks_number = len(chunks)
-    producer = Producer(producer_config)
-    for i in range(0,chunks_number):
-        msg_header = {
-            "prod_id": producer_config['client.id'],
-            "chunk_id": str(i),
-            "chunks_number": str(chunks_number),
-            "file_name": file_name}
-
-        producer.produce(topic=topic, value=chunks[i], headers=msg_header)
-
-    producer.flush()
-    print("File successfully sent")
-
 
 class File():
     def __init__(self, path : str, chunk_size: int):
@@ -225,10 +135,6 @@ def prepare_chunks(data, CHUNK_SIZE):
     return chunks
 
 
-# ---------- MESSAGES UTILITY -------------
-class MessageType(enum.Enum):
-    control_message = 0
-
 def parse_msg(msg):
     decoded_msg = {}
     # msg header is a list of the type [[header_name, header_value], ...]
@@ -237,4 +143,5 @@ def parse_msg(msg):
 
     decoded_msg["data"] = msg.value()
 
-    return decoded_msg
+    return decoded_msg 
+    
