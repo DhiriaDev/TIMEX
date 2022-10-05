@@ -26,11 +26,18 @@ RUN poetry self update
 WORKDIR /timexdocker
 ADD TIMEX ./TIMEX
 ADD redpanda_modules ./redpanda_modules
-ADD tests/ingestion_instance.py ./
+ADD tests/prediction_instance.py ./
 
 ADD pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
-    && poetry update 
+    && poetry update
 
-ENTRYPOINT [ "python", "./ingestion_instance.py"]
+WORKDIR /timexdocker/TIMEX 
+
+RUN poetry config virtualenvs.create false \
+    && poetry install --with data_prediction
+
+WORKDIR /timexdocker
+
+ENTRYPOINT [ "python", "./prediction_instance.py"]
 CMD [""]

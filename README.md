@@ -22,11 +22,20 @@ The general dependencies poetry configuration files have been created. In order 
   in order to run your red-panda broker instance.
 - Open a shell inside the red-panda container and run the command `rpk topic create control_topic` in order to create the first needed channel to start the workflow
 
+## Modules Containers Build and Run
+
+1. Ingestion container:
+   * build with `DOCKER_BUILDKIT=1 docker build  -t ingestion_container --file ./docker/ingestion_dockerfile ./`
+   * run with `docker run --network host ingestion_container "0.0.0.0:9092"`
+2. Prediction containers:
+   * build with `DOCKER_BUILDKIT=1 docker build  -t prediction_container --file ./docker/prediction_dockerfile ./`
+   * run with `docker run --network host prediction_container "0.0.0.0:9092"`
+
 ## **Docker configuration for NVIDIA GPU Accelerated Containers**
 
-Starting from Docker version 19.03, NVIDIA GPUs are natively supported as Docker devices. 
-[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) is the recommended way of running containers that leverage NVIDIA GPUs. 
-Once installed Nvidia-container-toolkit, let's run the container adding the argument `--gpus <how_many_gpus>`. 
+Starting from Docker version 19.03, NVIDIA GPUs are natively supported as Docker devices.
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) is the recommended way of running containers that leverage NVIDIA GPUs.
+Once installed Nvidia-container-toolkit, let's run the container adding the argument `--gpus <how_many_gpus>`.
 For more information [visit here](https://wiki.archlinux.org/titleDocker#Run_GPU_accelerated_Docker_containers_with_NVIDIA_GPUs).
 
 ## **Minikube**
@@ -37,10 +46,10 @@ NOTE: it's needed to configure minikube to use the kvm2 driver for virtualizatio
 
 We have basically two main methods:
 
-1. After having built the images, we upload them to minikube 
+1. After having built the images, we upload them to minikube
    `minikube image load <image_name>`
    Set the imagePullPolicy to Never, otherwise Kubernetes will try to download the image.
-2. we can directly build the image inside minikube: 
+2. we can directly build the image inside minikube:
    As the [README](https://github.com/kubernetes/minikube/blob/0c616a6b42b28a1aab8397f5a9061f8ebbd9f3d9/README.md#reusing-the-docker-daemon) describes, you can reuse the Docker daemon from Minikube with eval $(minikube docker-env). So to use an image without uploading it, you can follow these steps:
 
 - Set the environment variables with `eval $(minikube docker-env)`
