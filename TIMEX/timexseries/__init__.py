@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 from pandas import DataFrame, Series
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 class TimeSeriesContainer:
@@ -101,8 +100,9 @@ class ValidationPerformance:
         >>> print(perf.MSE)
         4.0
         """
-        self.MSE = mean_squared_error(actual, predicted)
-        self.MAE = mean_absolute_error(actual, predicted)
+        self.MSE = np.square(np.subtract(actual,predicted)).mean()
+        self.MAE = np.abs(np.subtract(actual, predicted)).mean()
+
         self.RMSE = sqrt(self.MSE)
         self.AM = sum([y - yhat for y, yhat in zip(actual, predicted)]) / len(actual)
         self.SD = (actual - predicted).std(ddof=0)
