@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion-deployment
+  namespace: timex
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: data-ingestion
+  template:
+    metadata:
+      labels:
+        app: data-ingestion
+    spec:
+      containers:
+      - name: data-ingestion
+        image: ingestion_container
+        imagePullPolicy: Never
+        args: ["redpanda:9093"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validation-deployment
+  namespace: timex
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: validation
+  template:
+    metadata:
+      labels:
+        app: validation
+    spec:
+      containers:
+      - name: validation
+        image: validation_container
+        imagePullPolicy: Never
+        args: ["redpanda:9093"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prediction-deployment
+  namespace: timex
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: prediction
+  template:
+    metadata:
+      labels:
+        app: prediction
+    spec:
+      containers:
+      - name: prediction
+        image: prediction_container
+        imagePullPolicy: Never
+        args: ["redpanda:9093"]
