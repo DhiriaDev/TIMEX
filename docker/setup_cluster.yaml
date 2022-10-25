@@ -15,9 +15,9 @@ spec:
     spec:
       containers:
       - name: data-ingestion
-        image: ingestion_container
-        imagePullPolicy: Never
-        args: ["redpanda:9093"]
+        image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:ingestion_container
+        imagePullPolicy: IfNotPresent
+        args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -36,9 +36,9 @@ spec:
     spec:
       containers:
       - name: validation
-        image: validation_container
-        imagePullPolicy: Never
-        args: ["redpanda:9093"]
+        image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:validation_container
+        imagePullPolicy: IfNotPresent
+        args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,6 +57,6 @@ spec:
     spec:
       containers:
       - name: prediction
-        image: prediction_container
-        imagePullPolicy: Never
-        args: ["redpanda:9093"]
+        image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:prediction_container
+        imagePullPolicy: IfNotPresent
+        args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]

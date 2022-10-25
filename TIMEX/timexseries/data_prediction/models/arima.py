@@ -1,3 +1,5 @@
+import warnings
+
 from pandas import DataFrame
 
 from statsforecast import StatsForecast
@@ -24,11 +26,14 @@ class ARIMAModel(PredictionModel):
 
         model = StatsForecast(
             df=train_data,
-            models=[AutoARIMA(season_length=seasonality, seasonal=seasonality != 1)],
+            models=[AutoARIMA(approximation=True, season_length=seasonality,
+                              seasonal=seasonality != 1, truncate=3*seasonality if seasonality != 1 else None)],
             freq=freq
         )
 
-        y_hat_df = model.forecast(points_to_predict).set_index("ds")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            y_hat_df = model.forecast(points_to_predict).set_index("ds")
 
         future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'AutoARIMA']
 
