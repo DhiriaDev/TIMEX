@@ -22,12 +22,9 @@ base_config = {
     "client.id" : "",
     "max.in.flight.requests.per.connection": 5, #(this is the max we can afford. See enable.idempotence in producer config)
     'receive.message.max.bytes' : 2000000000,
-    # 'security.protocol' : 'ssl',
-    # 'ssl.truststore.location' : '/var/private/ssl/kafka.client.truststore.jks',
-    # 'ssl.truststore.password' : 'test1234',
-    # 'ssl.keystore.location' : '/var/private/ssl/kafka.client.keystore.jks',
-    # 'ssl.keystore.password' : 'test1234',
-    # 'ssl.key.password' : 'test1234',
+    'security.protocol' : 'ssl',
+    # CA certificate file for verifying the broker's certificate.
+    'ssl.ca.location' : './redpanda-ca.crt'
 } 
 
 #########################################################################
