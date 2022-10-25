@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 
 from redpanda_modules import JobProducer
 
-kafka_address = 'zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk3.dhiria.com:9092'
+kafka_address = 'zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com'
 
 
 param_config = {
