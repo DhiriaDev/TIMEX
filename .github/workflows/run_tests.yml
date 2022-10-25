@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.9, 3.10]
         poetry-version: [1.2.2]
         os: [ubuntu-latest]
 
@@ -30,7 +30,7 @@ jobs:
 
     - name: Install dependencies
       shell: bash
-      run: python -m poetry install --with data_prediction data_visualization
+      run: python -m poetry install --with data_prediction,data_visualization
 
     - name: Test with pytest
       run: |
