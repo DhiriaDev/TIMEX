@@ -16,7 +16,7 @@ spec:
       containers:
       - name: data-ingestion
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:ingestion_container
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]
 ---
 apiVersion: apps/v1
@@ -37,7 +37,7 @@ spec:
       containers:
       - name: validation
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:validation_container
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]
 ---
 apiVersion: apps/v1
@@ -58,5 +58,5 @@ spec:
       containers:
       - name: prediction
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:prediction_container
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: ["zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com:9092"]

@@ -74,7 +74,7 @@ On Archlinux:
 * minikube config set driver kvm2
 * sudo systemctl start libvirtd.service virtlogd.service
 * minikube start
-* yay -S helm
+* yay -S helm (needed just if you want to configure redpanda)
 
 ### **Configuring the cluster**
 * kubectl create name space timex
@@ -84,7 +84,7 @@ On Archlinux:
     helm install redpanda redpanda/redpanda --namespace timex
   ```
 * kubectl -n timex exec -ti redpanda-0 -c redpanda -- rpk --brokers=redpanda-0.redpanda.timex.svc.cluster.local.:9093 create control_topic
-* kubectl apply -f docker/setup_minikube_cluster.yaml
+* kubectl apply -f docker/setup_cluster.yaml
 
 Now the system is up.
 

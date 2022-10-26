@@ -31,9 +31,8 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
                                 replica_assignment=[[broker_ids[((t+broker_offset) % len(broker_ids))]]])
 
                 admin_client.create_topics([nt])
-                log.info(f'topic {topics[t]}  successfully created')
 
-                log.debug(f'waiting for a leader to be assigned')
+                log.info(f'waiting for a leader to be assigned')
                 found_leader = False
                 while not (found_leader):
                     try:
@@ -46,6 +45,7 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
                             log.debug(f'leader not found')
                     except KeyError:
                         continue
+                log.info(f'topic {topics[t]}  successfully created')
 
             except Exception as e:
                 log.error(e)
