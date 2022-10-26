@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # checking if the docker daemon is active
-ps auxw | grep -P '\bdocker(?!-)\b' > /dev/null
+ps auxw | grep -P 'docker' > /dev/null
 if [ $? != 0 ]; then
     echo "The docker daemon is not active. Please, insert your password to activate it."
     read -p "Password:" -s pswd
