@@ -3,35 +3,31 @@ import logging
 sys.path.append('./')
 log = logging.getLogger(__name__)
 
-from redpanda_modules import *
+from redpanda_modules import JobProducer
 
 kafka_address = 'zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com'
 
 
-param_config = {
-    "activity_title": "Bitcoin price forecasting",
+param_config ={
+    "activity_title": "Electricity Load 2011-2014",
     "verbose": "INFO",
     "input_parameters": {
-        "columns_to_load_from_url": "Date,Close",
-        "source_data_url" : "",
-        "datetime_column_name": "Date",
-        "index_column_name": "Date",
-        "frequency": "D"
+        "source_data_url": "https://drive.google.com/file/d/1LQY4bvdLVtOZ1vpko6USMgclKjuqaN8F/view?usp=sharing",
+        "frequency": "15T",
+        "columns_to_load_from_url": "Date,MT_001",
+        "datetime_column_name": "Date"
     },
     "model_parameters": {
-        "validation_values": 15,
-        "delta_training_percentage": 100,
+        "validation_values": 10,
+        "delta_training_percentage": 30,
         "forecast_horizon": 10,
         "possible_transformations": "none,log_modified",
         "models": "fbprophet",
-        "main_accuracy_estimator": "mse"
+        "main_accuracy_estimator": "rmse"
     },
-    "historical_prediction_parameters": {  
-        # Historical predictions iterate the prediction phase in order to check the accuracy on a 
-        # longer period. The best predictions for day x are computed using data available only at
-        # day x-1. More on this later...
-        "initial_index": "2021-02-19",  # Start the historical predictions from this day
-        "save_path": "historical_predictions/"  # Save the historical predictions in this file
+    "visualization_parameters": {
+        "xcorr_graph_threshold": 0.8,
+        "box_plot_frequency": "1W"
     }
 }
 
@@ -39,7 +35,7 @@ if __name__ == '__main__':
 
     # ---- the following two lines of code simulate the behavior of a new incoming request for a job
     job_producer = JobProducer(prod_id=0, kafka_address=kafka_address)
-    result_topic = job_producer.start_job(param_config, './dataset_examples/BitCoin/BitcoinPrice.csv')
+    result_topic = job_producer.start_job(param_config, '/home/eks-timex/shared/dhiria-shared/redpanda-tests/data_to_send/ElectricityLoad.csv')
     job_producer.end_job(result_topic)
 
 
