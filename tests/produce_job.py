@@ -3,7 +3,7 @@ import logging
 sys.path.append('./')
 log = logging.getLogger(__name__)
 
-from redpanda_modules import JobProducer
+from redpanda_modules import *
 
 kafka_address = 'zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com'
 
@@ -39,7 +39,11 @@ if __name__ == '__main__':
 
     # ---- the following two lines of code simulate the behavior of a new incoming request for a job
     job_producer = JobProducer(prod_id=0, kafka_address=kafka_address)
-    job_producer.start_job(param_config, './dataset_examples/BitCoin/BitcoinPrice.csv')
+    result_topic = job_producer.start_job(param_config, './dataset_examples/BitCoin/BitcoinPrice.csv')
+    job_producer.end_job(result_topic)
+
+
+
 
 
 
