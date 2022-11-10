@@ -12,7 +12,7 @@ param_config ={
     "activity_title": "Electricity Load 2011-2014",
     "verbose": "INFO",
     "input_parameters": {
-        "source_data_url": "https://drive.google.com/file/d/1LQY4bvdLVtOZ1vpko6USMgclKjuqaN8F/view?usp=sharing",
+        "source_data_url": "",
         "frequency": "15T",
         "columns_to_load_from_url": "Date,MT_001",
         "datetime_column_name": "Date"
@@ -35,9 +35,9 @@ if __name__ == '__main__':
 
     # ---- the following two lines of code simulate the behavior of a new incoming request for a job
     job_producer = JobProducer(prod_id=0, kafka_address=kafka_address)
-    result_topic = job_producer.start_job(param_config, '/home/eks-timex/shared/dhiria-shared/redpanda-tests/data_to_send/ElectricityLoad.csv')
-    job_receiver = JobReceiver(cons_id=1000000, kafka_address=kafka_address)
-    job_receiver.end_job(result_topic)
+    job_producer.start_job(param_config, '/home/eks-timex/shared/dhiria-shared/redpanda-tests/data_to_send/ElectricityLoad.csv')
+    # job_receiver = JobReceiver(cons_id=1000000, kafka_address=kafka_address)
+    # job_receiver.end_job(result_topic)
 
 
 

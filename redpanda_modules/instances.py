@@ -39,16 +39,6 @@ class Worker(object):
             job(self)
 
 
-class JobReceiver(object):
-    def __init__(self, cons_id, kafka_address):
-        self.consumer_config = default_consumer_config.copy()
-        self.consumer_config['bootstrap.servers'] = kafka_address
-        self.consumer_config['client.id'] = str(cons_id)
-        self.consumer_config['group.id'] = 'end_job'
-
-    def end_job(self, result_topic):
-        receive_msg(result_topic, self.consumer_config)
-
 class JobProducer(object):
     def __init__(self, prod_id, kafka_address):
 
@@ -78,19 +68,13 @@ class JobProducer(object):
 
         fts = File(path=file_path, chunk_size=chunk_size)
 
-        # TODO: decidere se creare già da qui il result topic
         data_topic = 'data_ingestion_' + param_config['activity_title']
-        result_topic = 'result_' + param_config['activity_title']
         create_topics(topics=[data_topic], client_config=self.producer_config, broker_offset=1)
-        create_topics(topics=[result_topic], client_config=self.producer_config, broker_offset=1)
 
         chunks = read_in_chunks(file_to_read=fts, CHUNK_SIZE=fts.get_chunk_size())
 
         send_data_msg(topic=data_topic, chunks=chunks,
                       file_name=fts.get_name(), producer_config=self.producer_config)
-
-        return result_topic
-
 
 
 def send_control_msg(producer_config: dict, param_config: dict, control_topic):
