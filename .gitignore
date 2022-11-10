@@ -142,5 +142,6 @@ dataset_examples/ElectricityLoad/ElectricityLoad2011_14.csv
 utilScript.py
 possibleNewTechnologies.md
 
+.idea
 .idea/
 .idea/*
