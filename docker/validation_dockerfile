@@ -24,11 +24,11 @@ RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry self update
 
 WORKDIR /timexdocker
-ADD TIMEX ./TIMEX
 ADD pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
     && poetry update 
 
+ADD TIMEX ./TIMEX
 ADD redpanda_modules ./redpanda_modules
 ADD tests/validation_instance.py ./
 ADD validation_server ./validation_server
