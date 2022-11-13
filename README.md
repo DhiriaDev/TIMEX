@@ -12,6 +12,8 @@
 1. **The [TIMEX](https://github.com/AlexMV12/TIMEX)** library on which the various modules are based on
 2. **The [confluent kafka](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#)** library to communicate with the redpanda APIs
 
+To add Timex as subtree: `git subtree pull --prefix=./TIMEX/ https://github.com/AlexMV12/TIMEX.git main`
+
 The general dependencies poetry configuration files have been created. In order to install it, it is recommend to limit the RAM usage. The command is:
 `systemd-run --scope -p MemoryLimit=<desired_ram_usage_limit> ./dependencies-update_command.sh`
 
