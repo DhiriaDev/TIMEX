@@ -1,4 +1,3 @@
-from ast import ExceptHandler
 from confluent_kafka.admin import *
 from confluent_kafka import *
 from multiprocessing import *

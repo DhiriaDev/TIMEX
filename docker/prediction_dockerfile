@@ -35,9 +35,9 @@ RUN poetry config virtualenvs.create false \
     && poetry install --with data_prediction
 
 WORKDIR /timexdocker
-ADD redpanda_modules ./redpanda_modules
-ADD tests/prediction_instance.py ./
+ADD Redpanda ./Redpanda
+ADD modules/prediction_module.py ./
 ADD redpanda-ca.crt ./
 
-ENTRYPOINT [ "python", "./prediction_instance.py"]
+ENTRYPOINT [ "python", "./prediction_module.py"]
 CMD [""]
