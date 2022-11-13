@@ -7,7 +7,7 @@ from confluent_kafka import *
 import pickle, base64
 import argparse
 
-from redpanda_modules import *
+from Redpanda import *
 from timexseries.data_prediction import create_timeseries_containers
 
 

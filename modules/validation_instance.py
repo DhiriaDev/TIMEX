@@ -7,7 +7,7 @@ import pickle, base64
 from confluent_kafka import *
 import argparse
 
-from redpanda_modules import *
+from Redpanda import *
 from validation_server.validation_functions import *
 
 

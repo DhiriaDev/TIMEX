@@ -3,7 +3,7 @@ import logging
 sys.path.append('./')
 log = logging.getLogger(__name__)
 
-from redpanda_modules import JobProducer, JobReceiver
+from Redpanda import JobProducer, JobReceiver
 
 kafka_address = 'zk1.dhiria.com:9092,zk2.dhiria.com:9092,zk4.dhiria.com'
 

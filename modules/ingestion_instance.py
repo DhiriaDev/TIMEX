@@ -5,7 +5,7 @@ import base64, pickle
 from confluent_kafka import *
 import argparse
 
-from redpanda_modules import *
+from Redpanda import *
 from timexseries.data_ingestion import ingest_timeseries
 
 
