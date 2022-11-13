@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1
 
-FROM python:3.10-slim-buster
+FROM python:3.9-slim-buster
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -24,12 +24,12 @@ RUN curl -sSL https://install.python-poetry.org | python -
 RUN poetry self update
 
 WORKDIR /timexdocker
+ADD TIMEX ./TIMEX
 
 ADD pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
     && poetry update
 
-ADD TIMEX ./TIMEX
 WORKDIR /timexdocker/TIMEX 
 RUN poetry config virtualenvs.create false \
     && poetry install --with data_prediction
