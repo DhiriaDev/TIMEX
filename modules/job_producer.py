@@ -49,15 +49,20 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    if args.kafka_address is None:
+    kafka_address = args.kafka_address
+    file_path = args.file_path
+
+    if kafka_address is None:
         log.error('a kafka address has been not specified')
         exit(1)
-    if args.file_path is None:
+    if file_path is None:
         log.error('a file path has been not specified')
         exit(1)
 
-    job_producer = JobProducer(prod_id=0, kafka_address=args.kafka_address)
-    job_producer.start_job(param_config, args.file_path)
+    job_producer = JobProducer(client_id = 0, kafka_address=kafka_address)
+    job_producer.start_job(param_config, file_path)
+    results = job_producer.end_job()
+    print(results)
 
 
 

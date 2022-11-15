@@ -39,11 +39,19 @@ class Worker(object):
 
 
 class JobProducer(object):
-    def __init__(self, prod_id, kafka_address):
+    def __init__(self, client_id, kafka_address):
 
         self.producer_config = default_producer_config.copy()
         self.producer_config['bootstrap.servers'] = kafka_address
-        self.producer_config['client.id'] = str(prod_id)
+        self.producer_config['client.id'] = str(client_id)
+
+        self.consumer_config = default_consumer_config.copy()
+        self.consumer_config['bootstrap.servers'] = kafka_address
+        self.consumer_config['client.id'] = str(client_id)
+        self.consumer_config['group.id'] = 'end_job'
+
+        self.result_topic = ''
+
 
     def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
 
@@ -55,6 +63,8 @@ class JobProducer(object):
         job_uuid = hashlib.md5(
             string=(file_path + param_config['activity_title']).encode('utf-8')
         ).hexdigest()
+
+        self.result_topic = 'result_' + job_uuid
 
         param_config['activity_title'] = job_uuid
 
@@ -74,6 +84,10 @@ class JobProducer(object):
 
         send_data_msg(topic=data_topic, chunks=chunks,
                       file_name=fts.get_name(), producer_config=self.producer_config)
+
+    def end_job(self):
+        return receive_msg(self.result_topic, self.consumer_config)
+
 
 
 def send_control_msg(producer_config: dict, param_config: dict, control_topic):
@@ -134,7 +148,7 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
     try:
         while topic not in admin_client.list_topics().topics:
             log.debug(f'the topic {topic} does not exist: waiting..')
-            time.sleep(5)
+            time.sleep(0.5)
 
         consumer.subscribe([topic])
         log.info(f'Listening on topic: {topic}')
