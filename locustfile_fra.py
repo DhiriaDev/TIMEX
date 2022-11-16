@@ -30,7 +30,7 @@ def _(parser):
 
 
 class RepandaClient(User):
-    wait_time = between(10.0, 20.0)
+    wait_time = between(0.0, 1.0)
     
 
     def __init__(self, environment):
