@@ -10,13 +10,6 @@ import json
 from Redpanda import JobProducer
 
 
-def produce_test(kafka_address, param_config, file_path):
-    job_producer = JobProducer(client_id=0, kafka_address=kafka_address)
-    job_producer.start_job(param_config, file_path)
-    results = job_producer.end_job()
-    return results
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -60,4 +53,8 @@ if __name__ == '__main__':
     json_file = open(param_config_path, 'r')
     param_config = json.load(json_file)
     json_file.close()
-    produce_test(kafka_address, param_config, file_path)
+
+    job_producer = JobProducer(client_id=0, kafka_address=kafka_address)
+    job_producer.start_job(param_config, file_path)
+    results = job_producer.end_job()
+    print('RESULT RECEIVED')

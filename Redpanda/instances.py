@@ -50,7 +50,7 @@ class JobProducer(object):
         self.consumer_config['client.id'] = str(client_id)
         self.consumer_config['group.id'] = 'end_job'
 
-        self.result_topic = ''
+        self.job_uuid = ''
 
 
     def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
@@ -60,17 +60,16 @@ class JobProducer(object):
             exit(1)
 
         # JOB NAME
-        job_uuid = hashlib.md5(
+        self.job_uuid = hashlib.md5(
             string=(file_path + param_config['activity_title']).encode('utf-8')
         ).hexdigest()
 
-        self.result_topic = 'result_' + job_uuid
 
-        param_config['activity_title'] = job_uuid
+        param_config['activity_title'] = self.job_uuid
 
         if "historical_prediction_parameters" in param_config:
             param_config['historical_prediction_parameters']['save_path'] = 'historical_predictions/' + str(
-                job_uuid) + '.pkl'
+                self.job_uuid) + '.pkl'
 
         # Notify all the watchers subscribed to the control topic
         send_control_msg(self.producer_config, param_config, control_topic='control_topic')
@@ -86,7 +85,8 @@ class JobProducer(object):
                       file_name=fts.get_name(), producer_config=self.producer_config)
 
     def end_job(self):
-        return receive_msg(self.result_topic, self.consumer_config)
+        result_topic = 'result_' + self.job_uuid
+        return receive_msg(result_topic, self.consumer_config)
 
 
 

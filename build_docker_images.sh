@@ -31,7 +31,7 @@ echo "\n\nCONTAINERS SUCCESSFULLY BUILT!"
 
 
 read -p "\nDo you want to push the images on the dhiria_repo [Y / n]?" choice
-if [ choice == 'n']; then
+if (($choice == "n")); then
     exit 0
 else
     printf "\n\n--------- PUSHING IMAGES ---------\n"
