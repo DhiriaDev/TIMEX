@@ -20,7 +20,18 @@ The general dependencies poetry configuration files have been created. In order 
 ## **Redpanda Container Run**
 
 - Install docker and run the command:
-  ```docker run -d --pull=always --name=redpanda-1\ -p 9092:9092 \ -p 9644:9644 \ docker.redpanda.com/vectorized/redpanda:latest \ redpanda start \ --overprovisioned \ --smp 1  \ --memory 1G \ --reserve-memory 0M \ --node-id 0 \ --check=false```
+```
+docker run -d --pull=always --name=redpanda-1 --rm \
+-p 9092:9092 \
+-p 9644:9644 \
+docker.redpanda.com/vectorized/redpanda:latest \
+redpanda start \
+--overprovisioned \
+--smp 1  \
+--memory 1G \
+--reserve-memory 0M \
+--check=false
+```
   in order to run your red-panda broker instance.
 - Open a shell inside the red-panda container and run the command `rpk topic create control_topic` in order to create the first needed channel to start the workflow
 

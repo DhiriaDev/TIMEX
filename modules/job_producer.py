@@ -4,33 +4,9 @@ sys.path.append('./')
 log = logging.getLogger(__name__)
 
 import argparse
+import json
 
 from Redpanda import JobProducer
-
-
-param_config ={
-    "activity_title": "Electricity Load 2011-2014",
-    "verbose": "INFO",
-    "input_parameters": {
-        "source_data_url": "",
-        "frequency": "15T",
-        "columns_to_load_from_url": "Date,MT_001",
-        "datetime_column_name": "Date"
-    },
-    "model_parameters": {
-        "validation_values": 10,
-        "delta_training_percentage": 30,
-        "forecast_horizon": 10,
-        "possible_transformations": "none,log_modified",
-        "models": "fbprophet",
-        "main_accuracy_estimator": "rmse"
-    },
-    "visualization_parameters": {
-        "xcorr_graph_threshold": 0.8,
-        "box_plot_frequency": "1W"
-    }
-}
-
 
 
 if __name__ == '__main__':
@@ -41,7 +17,14 @@ if __name__ == '__main__':
         'kafka_address', 
         type = str,
         help='single address (or list of addresses) of the form IP:port[,IP:port]'
-    )                   
+    )
+
+    parser.add_argument(
+        'param_config',
+        type = str,
+        help='Path to the json file from which to load the param config of the job'
+    ) 
+
     parser.add_argument(
         'file_path',
         type = str,
@@ -50,14 +33,26 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     kafka_address = args.kafka_address
+    param_config_path = args.param_config
     file_path = args.file_path
 
     if kafka_address is None:
         log.error('a kafka address has been not specified')
         exit(1)
+
+    if param_config_path is None:
+        log.error('a path to a param_config has been not specified')
+        exit(1)
+
     if file_path is None:
         log.error('a file path has been not specified')
         exit(1)
+
+
+    # Opening JSON file
+    json_file = open(param_config_path, 'r')
+    param_config = json.load(json_file)
+    json_file.close()
 
     job_producer = JobProducer(client_id = 0, kafka_address=kafka_address)
     job_producer.start_job(param_config, file_path)
