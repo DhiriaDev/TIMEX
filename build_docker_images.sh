@@ -18,20 +18,39 @@ fi
 
 echo "--------- BUILDING DOCKER IMAGES ---------\n"
 
+echo "Building baseImage.."
+DOCKER_BUILDKIT=1 docker build -t baseimage --file ./docker/baseImage_dockerfile ./
+if [ $? != 0 ]; then
+    echo "baseImage failed"
+    exit 1
+fi
+
 echo "Building validation docker image.."
 DOCKER_BUILDKIT=1 docker build -t validation_container --file ./docker/validation_dockerfile ./
+if [ $? != 0 ]; then
+    echo "validation failed"
+    exit 1
+fi
 
 echo "\n\nBuilding ingestion docker image.."
 DOCKER_BUILDKIT=1 docker build -t ingestion_container --file ./docker/ingestion_dockerfile ./
+if [ $? != 0 ]; then
+    echo "ingestion failed"
+    exit 1
+fi
 
 echo "\n\nBuilding prediction docker image.."
 DOCKER_BUILDKIT=1 docker build -t prediction_container --file ./docker/prediction_dockerfile ./
+if [ $? != 0 ]; then
+    echo "prediction failed"
+    exit 1
+fi
 
 echo "\n\nCONTAINERS SUCCESSFULLY BUILT!"
 
 
 read -p "\nDo you want to push the images on the dhiria_repo [Y / n]?" choice
-if (($choice == "n")); then
+if [$choice = "n"]; then
     exit 0
 else
     printf "\n\n--------- PUSHING IMAGES ---------\n"
