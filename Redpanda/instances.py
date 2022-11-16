@@ -175,8 +175,13 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
                     print(msg.error())
 
             else:
-                parsed_msg = parse_msg(msg)
-                msg_type = MessageType(int(parsed_msg['type'])).name
+                try:
+                    parsed_msg = parse_msg(msg)                
+                    msg_type = MessageType(int(parsed_msg['type'])).name
+                except Exception as e:
+                    log.error('error while parsing this message' + e + '\nWaiting for the next message')
+                    continue
+
 
                 if msg_type == 'control_message':
 
