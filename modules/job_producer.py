@@ -14,6 +14,7 @@ def produce_test(kafka_address, param_config, file_path):
     job_producer = JobProducer(client_id=0, kafka_address=kafka_address)
     job_producer.start_job(param_config, file_path)
     results = job_producer.end_job()
+    return results
 
 
 if __name__ == '__main__':

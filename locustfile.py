@@ -25,7 +25,7 @@ def _(parser):
     )
 
 class LocustUser(User):
-    wait_time = between(0.1, 5)
+    wait_time = between(30, 40)
 
     @task
     def make_test(self):
@@ -35,4 +35,5 @@ class LocustUser(User):
         param_config = json.load(json_file)
         json_file.close()
         param_config["activity_title"] = param_config["activity_title"] + str(res)
-        produce_test(self.environment.parsed_options.kafka_address, param_config, self.environment.parsed_options.file_path)
+        result = produce_test(self.environment.parsed_options.kafka_address, param_config, self.environment.parsed_options.file_path)
+        print("test terminated")

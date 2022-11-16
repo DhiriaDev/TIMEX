@@ -80,7 +80,6 @@ default_consumer_config.update(
         # "allow.auto.create.topics" : True, #TODO check if it is a valid option
         "auto.offset.reset": 'earliest',
         'fetch.message.max.bytes' : 1000000000,
-        'debug' : 'all'
     }
 ) 
 
