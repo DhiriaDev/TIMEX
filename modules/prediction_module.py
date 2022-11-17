@@ -1,19 +1,15 @@
-import sys
-import logging
-sys.path.append('./')
-log = logging.getLogger(__name__)
-
-from confluent_kafka import *
 import pickle, base64
 import argparse
+import psutil
 
 from Redpanda import *
 from timexseries.data_prediction import create_timeseries_containers
 
+sys.path.append('./')
+log = logging.getLogger(__name__)
 
 
 def prediction_work(self):
-
     log.info('Prediction worker spawned, waiting for data')
 
     prediction_topic = 'prediction_' + self.param_config['activity_title']
@@ -52,19 +48,23 @@ def prediction_work(self):
     chunks = prepare_chunks(timeseries_containers, chunk_size)
 
     send_data_msg(topic=validation_topic, chunks=chunks,
-              file_name='prediction_' + self.param_config['activity_title'], 
-              producer_config=self.producer_config)
+                  file_name='prediction_' + self.param_config['activity_title'],
+                  producer_config=self.producer_config)
 
+    current_proc = psutil.Process()
+    subproc = set([p.pid for p in current_proc.children(recursive=True)])
+    for subproc in subproc:
+        log.info('Killing process with pid {}'.format(subproc))
+        psutil.Process(subproc).terminate()
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('kafka_address', 
-                        type = str,
-                        help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
+    parser.add_argument('kafka_address',
+                        type=str,
+                        help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
     args = parser.parse_args()
     if args.kafka_address is None:
@@ -79,8 +79,4 @@ if __name__ == '__main__':
     prediction_watcher = Watcher(
         config_dict=prediction_watcher_conf, works_to_do=[prediction_work])
 
-
     prediction_watcher.listen_on_control(control_topic='control_topic')
-
-
-
