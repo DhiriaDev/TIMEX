@@ -4,9 +4,11 @@ FROM baseimage:latest
 
 WORKDIR /timexdocker
 
-ADD Redpanda ./Redpanda
-ADD modules/ingestion.py ./
-ADD redpanda-ca.crt ./
+COPY TIMEX ./TIMEX
+COPY entrypoints/go/watcher ./
+COPY Redpanda ./Redpanda
+COPY modules/ingestion.py ./
+COPY redpanda-ca.crt ./
 
 ENTRYPOINT [ "./watcher"]
 CMD [""]

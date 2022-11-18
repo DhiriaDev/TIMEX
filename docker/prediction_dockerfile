@@ -2,14 +2,17 @@
 
 FROM baseimage:latest
 
-WORKDIR /timexdocker/TIMEX 
+WORKDIR /timexdocker/TIMEX
 RUN poetry config virtualenvs.create false \
     && poetry install --with data_prediction
 
+
 WORKDIR /timexdocker
-ADD Redpanda ./Redpanda
-ADD modules/prediction.py ./
-ADD redpanda-ca.crt ./
+COPY TIMEX ./TIMEX
+COPY Redpanda ./Redpanda
+COPY modules/prediction.py ./
+COPY redpanda-ca.crt ./
+
 
 ENTRYPOINT [ "./watcher"]
 CMD [""]

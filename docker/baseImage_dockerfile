@@ -5,23 +5,21 @@ FROM archlinux:base-20221113.0.102112
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    POETRY_HOME="/opt/poetry" \
     POETRY_NO_INTERACTION=1
 
-# prepend poetry and venv to path
-ENV PATH="$POETRY_HOME/bin:$PATH"
-
 RUN pacman -Syy
-RUN pacman -Syu --noconfirm python base-devel
+RUN pacman -Syu --noconfirm python python-pip
 
-RUN python -m ensurepip
-RUN python -m pip install --no-cache-dir poetry
-RUN poetry self update
+RUN pip install --no-cache-dir poetry==1.2.2
 
 WORKDIR /timexdocker
-ADD TIMEX ./TIMEX
-ADD entrypoints/go/watcher ./
 
-ADD pyproject.toml poetry.lock ./
+RUN mkdir TIMEX
+RUN mkdir TIMEX/timexseries
+RUN touch TIMEX/timexseries/__init__.py
+RUN touch TIMEX/README.md
+COPY TIMEX/pyproject.toml TIMEX/poetry.lock ./TIMEX
+
+COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
-    && poetry update 
+    && poetry install --no-root
