@@ -39,6 +39,13 @@ func main() {
         "bootstrap.servers": boostrapServers,
 		"group.id":          role,
 		"auto.offset.reset": "earliest",
+		"max.in.flight.requests.per.connection": 5,
+        "receive.message.max.bytes" : 2000000000,
+        "security.protocol" : "sasl_ssl",
+        "ssl.ca.location" : "./redpanda-ca.crt",
+        "sasl.username" : "dhiria",
+        "sasl.password" : "piic9xplo8fc",
+        "sasl.mechanisms" : "SCRAM-SHA-256",
 	})
 
 	if err != nil {

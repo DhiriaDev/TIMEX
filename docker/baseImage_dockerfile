@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1
 
-FROM python:3.10-slim-buster
+FROM archlinux:base-20221113.0.102112
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -11,24 +11,16 @@ ENV PYTHONUNBUFFERED=1 \
 # prepend poetry and venv to path
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
-    # deps for installing poetry
-    curl \
-    #for monitoring
-    htop \
-    procps \
-    # deps for building python deps
-    build-essential && \
-    python -m ensurepip --upgrade
+RUN pacman -Syy
+RUN pacman -Syu --noconfirm python base-devel
 
-WORKDIR $POETRY_HOME 
-RUN curl -sSL https://install.python-poetry.org | python -
+RUN python -m ensurepip
+RUN python -m pip install --no-cache-dir poetry
 RUN poetry self update
 
 WORKDIR /timexdocker
 ADD TIMEX ./TIMEX
-ADD modules/watcher ./
+ADD entrypoints/go/watcher ./
 
 ADD pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
