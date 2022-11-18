@@ -5,7 +5,7 @@ FROM baseimage:latest
 WORKDIR /timexdocker
 
 ADD Redpanda ./Redpanda
-ADD modules/ingestion_module.py ./
+ADD modules/ingestion.py ./
 ADD redpanda-ca.crt ./
 
 ENTRYPOINT [ "./watcher"]

@@ -5,7 +5,7 @@ FROM baseimage:latest
 WORKDIR /timexdocker
 
 ADD Redpanda ./Redpanda
-ADD modules/validation_module.py ./
+ADD modules/validation.py ./
 ADD validation_server ./validation_server
 ADD redpanda-ca.crt ./
 

@@ -8,7 +8,7 @@ RUN poetry config virtualenvs.create false \
 
 WORKDIR /timexdocker
 ADD Redpanda ./Redpanda
-ADD modules/prediction_module.py ./
+ADD modules/prediction.py ./
 ADD redpanda-ca.crt ./
 
 ENTRYPOINT [ "./watcher"]
