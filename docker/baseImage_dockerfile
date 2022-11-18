@@ -10,16 +10,16 @@ ENV PYTHONUNBUFFERED=1 \
 RUN pacman -Syy
 RUN pacman -Syu --noconfirm python python-pip
 
-RUN pip install --no-cache-dir poetry==1.2.2
+RUN pip install poetry==1.2.2
 
 WORKDIR /timexdocker
-
 RUN mkdir TIMEX
 RUN mkdir TIMEX/timexseries
 RUN touch TIMEX/timexseries/__init__.py
 RUN touch TIMEX/README.md
 COPY TIMEX/pyproject.toml TIMEX/poetry.lock ./TIMEX
-
 COPY pyproject.toml poetry.lock ./
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-root
+RUN poetry config virtualenvs.create false && poetry install --no-root
+
+WORKDIR /timexdocker/TIMEX
+RUN poetry install --no-root

@@ -3,12 +3,17 @@
 FROM baseimage:latest
 
 WORKDIR /timexdocker
+RUN poetry install
 
 COPY TIMEX ./TIMEX
-COPY entrypoints/go/watcher ./
+WORKDIR /timexdocker/TIMEX
+RUN poetry install
+
+WORKDIR /timexdocker
 COPY Redpanda ./Redpanda
 COPY modules/ingestion.py ./
 COPY redpanda-ca.crt ./
+COPY entrypoints/go/watcher ./
 
 ENTRYPOINT [ "./watcher"]
 CMD [""]

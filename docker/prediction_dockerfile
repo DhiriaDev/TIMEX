@@ -3,16 +3,20 @@
 FROM baseimage:latest
 
 WORKDIR /timexdocker/TIMEX
-RUN poetry config virtualenvs.create false \
-    && poetry install --with data_prediction
-
+RUN poetry install --with data_prediction --no-root
 
 WORKDIR /timexdocker
 COPY TIMEX ./TIMEX
+WORKDIR /timexdocker/TIMEX
+RUN poetry install --with data_prediction
+
+WORKDIR /timexdocker
 COPY Redpanda ./Redpanda
 COPY modules/prediction.py ./
 COPY redpanda-ca.crt ./
+COPY entrypoints/go/watcher ./
 
 
-ENTRYPOINT [ "./watcher"]
+#ENTRYPOINT [ "./watcher"]
+ENTRYPOINT [ "python", "./prediction_module.py"]
 CMD [""]

@@ -5,6 +5,8 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
     "os"
     "os/exec"
+    "time"
+    // "syscall"
 )
 
 type Data struct {
@@ -12,7 +14,7 @@ type Data struct {
     error  error
 }
 
-func runCommand(ch chan<- Data, message string) {
+func runCommand(message string) {
     boostrapServers := os.Args[1]
     role := os.Args[2]
 
@@ -23,17 +25,15 @@ func runCommand(ch chan<- Data, message string) {
 	if err != nil {
         fmt.Printf("Err: %s", err)
 	}
-
-    ch <- Data{
-        error:  err,
-        output: data,
-    }
+    // syscall.Syscall(syscall.SYS_EXIT, 0, 0, 0)
 }
 
 func main() {
 
     boostrapServers := os.Args[1]
     role := os.Args[2]
+
+    fmt.Printf("Hello, I am the watcher for %s.\n", role)
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
         "bootstrap.servers": boostrapServers,
@@ -57,15 +57,15 @@ func main() {
 	for {
 		msg, err := c.ReadMessage(-1)
 		if err == nil {
-            c := make(chan Data)
+            // c := make(chan Data)
 
             // This will work in background
-            go runCommand(c, string(msg.Value))
+            go runCommand(string(msg.Value))
 
 		} else {
 			// The client will automatically try to recover from all errors.
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
-            c.Close()
+            time.Sleep(1 * time.Second)
 		}
 	}
 }
