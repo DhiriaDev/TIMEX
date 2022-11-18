@@ -11,5 +11,5 @@ ADD Redpanda ./Redpanda
 ADD modules/prediction_module.py ./
 ADD redpanda-ca.crt ./
 
-ENTRYPOINT [ "python", "./prediction_module.py"]
+ENTRYPOINT [ "./watcher"]
 CMD [""]

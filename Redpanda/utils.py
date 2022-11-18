@@ -1,22 +1,39 @@
+import json
+
 from confluent_kafka.admin import *
 from confluent_kafka import *
 from multiprocessing import *
 
-import os, sys
+import os, sys, enum
 from math import ceil
 
-from .constants import *
+# from .constants import *
 
 import logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
 
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+base_config_path = os.path.join(__location__, "client_configs.json")
+
+
+class MessageType(enum.Enum):
+    control_message = 0
+    data_message = 1
+
+
+# TODO: for the time being the chunk size is hard-coded, but
+# in the future we will have to parametrize it
+chunk_size = 999500
+
 
 # ----------- TOPICS UTILITY -----------
 
 def create_topics(topics: list, client_config:dict, broker_offset : int):
+    with open(base_config_path, "r") as f:
+        config = json.load(f)
 
-    admin_config = base_config.copy()
+    admin_config = config["base"].copy()
     admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
     admin_config['client.id'] = client_config['client.id']
     admin_client = AdminClient(admin_config)
@@ -28,7 +45,7 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
         if topics[t] not in admin_client.list_topics().topics:
             try:
                 nt = NewTopic(topic=topics[t], num_partitions=1, replication_factor=-1,
-                                replica_assignment=[[broker_ids[((t+broker_offset) % len(broker_ids))]]])
+                              replica_assignment=[[broker_ids[((t+broker_offset) % len(broker_ids))]]])
 
                 admin_client.create_topics([nt])
 
@@ -53,7 +70,7 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
         else:
             log.info(f'topic {topics[t]} already exists')
 
-
+# TODO: check before using! it's missing the config.
 def delete_topics(client_config : dict, topics: list):
     try:
         admin_client = AdminClient(
@@ -70,7 +87,7 @@ def delete_topics(client_config : dict, topics: list):
 
 # ---------- DATA UTILITY -------------
 
-class File():
+class File:
     def __init__(self, path : str, chunk_size: int):
         self.path = path
         self.name = path.split('/')[-1]
@@ -88,9 +105,6 @@ class File():
     def get_path(self) -> str :
         return self.path
     
-    def get_chunks_number(self) -> int:
-        return self.chunks_number
-    
     def get_chunk_size(self) -> int:
         return self.chunk_size
 
@@ -99,9 +113,9 @@ class File():
 
 
 def read_in_chunks(file_to_read : File, CHUNK_SIZE):
-    '''
+    """
     this utility is used to read in chunks from a file written on disk
-    '''
+    """
     chunks = []
     chunks_number = file_to_read.get_chunks_number()
     path = file_to_read.get_path()

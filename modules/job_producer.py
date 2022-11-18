@@ -1,7 +1,8 @@
 import sys
 import logging
 
-sys.path.append('./')
+sys.path.append('/')
+sys.path.append('./')  # For local tests.
 log = logging.getLogger(__name__)
 
 import argparse

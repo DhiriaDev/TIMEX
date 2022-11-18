@@ -9,5 +9,5 @@ ADD modules/validation_module.py ./
 ADD validation_server ./validation_server
 ADD redpanda-ca.crt ./
 
-ENTRYPOINT [ "python", "./validation_module.py"]
+ENTRYPOINT [ "./watcher"]
 CMD [""]

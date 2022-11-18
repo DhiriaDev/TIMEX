@@ -1,3 +1,5 @@
+import multiprocessing
+
 from confluent_kafka.admin import *
 from confluent_kafka import *
 from multiprocessing import *
@@ -5,23 +7,13 @@ from multiprocessing import *
 import sys, time
 import json, hashlib
 
-from .constants import *
+# from .constants import *
 from .utils import *
 
 import logging
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
-
-
-class Watcher(object):
-
-    def __init__(self, config_dict: dict, works_to_do: list):
-        self.consumer_config = config_dict
-        self.works_to_do = works_to_do
-
-    def listen_on_control(self, control_topic: str):
-        receive_msg(topic=control_topic, consumer_config=self.consumer_config, works_to_do=self.works_to_do)
 
 
 class Worker(object):
@@ -40,18 +32,21 @@ class Worker(object):
 
 class JobProducer(object):
     def __init__(self, client_id, kafka_address):
+        with open(base_config_path, "r") as f:
+            config = json.load(f)
 
-        self.producer_config = default_producer_config.copy()
+        self.producer_config = config["base"].copy()
+        self.producer_config.update(config["producer"])
         self.producer_config['bootstrap.servers'] = kafka_address
         self.producer_config['client.id'] = str(client_id)
 
-        self.consumer_config = default_consumer_config.copy()
+        self.consumer_config = config["base"].copy()
+        self.consumer_config.update(config["consumer"])
         self.consumer_config['bootstrap.servers'] = kafka_address
         self.consumer_config['client.id'] = str(client_id)
         self.consumer_config['group.id'] = 'end_job'
 
         self.job_uuid = ''
-
 
     def start_job(self, param_config: dict, file_path: str, chunk_size=999500):
 
@@ -63,7 +58,6 @@ class JobProducer(object):
         self.job_uuid = hashlib.md5(
             string=(file_path + param_config['activity_title']).encode('utf-8')
         ).hexdigest()
-
 
         param_config['activity_title'] = self.job_uuid
 
@@ -87,7 +81,6 @@ class JobProducer(object):
     def end_job(self):
         result_topic = 'result_' + self.job_uuid
         return receive_msg(result_topic, self.consumer_config)
-
 
 
 def send_control_msg(producer_config: dict, param_config: dict, control_topic):
@@ -127,7 +120,7 @@ def send_data_msg(topic: str, chunks: list, file_name: str, producer_config: dic
 
 
 def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
-    '''
+    """
     This utility is used to receive messages on topics.
 
     :param topic: the topic the client will subscribe to
@@ -136,9 +129,11 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
 
     :returns: None if record_list is None, else the a string of bytes representing the data received.
 
-    '''
+    """
+    with open(base_config_path, "r") as f:
+        config = json.load(f)
 
-    admin_config = base_config.copy()
+    admin_config = config["base"].copy()
     admin_config['bootstrap.servers'] = consumer_config['bootstrap.servers']
     admin_config['client.id'] = consumer_config['client.id']
     admin_client = AdminClient(admin_config)
@@ -153,12 +148,10 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
         consumer.subscribe([topic])
         log.info(f'Listening on topic: {topic}')
 
-        worker_id = 0  # this variable will be used to spawn new workers if needed
         record_list = None
 
         running = True
         while running:
-
             msg = consumer.poll(timeout=1)
 
             if msg is None:
@@ -182,43 +175,7 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
                     log.error('error while parsing this message' + e + '\nWaiting for the next message')
                     continue
 
-
-                if msg_type == 'control_message':
-
-                    log.info('Control message arrived')
-                    assert (works_to_do is not None)
-
-                    # ---- SPAWNING THE WORKER FOR THE JOB -----
-
-                    kafka_address = consumer_config['bootstrap.servers']
-                    worker_client_id = consumer_config['client.id'] + '_worker' + str(worker_id)
-                    worker_group_id = consumer_config['group.id'] + '_worker' + str(worker_id)
-
-                    worker_consumer_config = default_consumer_config.copy()
-                    worker_consumer_config["bootstrap.servers"] = kafka_address
-                    worker_consumer_config['client.id'] = worker_client_id
-                    worker_consumer_config['group.id'] = worker_group_id
-
-                    worker_producer_config = default_producer_config.copy()
-                    worker_producer_config['bootstrap.servers'] = kafka_address
-                    worker_producer_config['client.id'] = worker_client_id
-
-                    param_config = json.loads(
-                        parsed_msg['data'].decode('utf-8'))['param_config']
-
-                    # TO_DO: check if the cons_id can be substituted by the job_name
-                    worker = Worker(consumer_config=worker_consumer_config,
-                                    producer_config=worker_producer_config,
-                                    works_to_do=works_to_do,
-                                    param_config=param_config)
-
-                    activity_title = param_config['activity_title']
-                    log.info(f'Spawning the worker n° {worker_id} for the job {activity_title}.')
-                    Process(target=worker.work).start()
-
-                    worker_id += 1
-
-                elif msg_type == 'data_message':
+                if msg_type == 'data_message':
 
                     chunk_id = int(parsed_msg["chunk_id"])
                     chunks_number = int(parsed_msg["chunks_number"])

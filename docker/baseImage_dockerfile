@@ -17,6 +17,7 @@ RUN apt-get update && \
     curl \
     #for monitoring
     htop \
+    procps \
     # deps for building python deps
     build-essential && \
     python -m ensurepip --upgrade
@@ -27,6 +28,8 @@ RUN poetry self update
 
 WORKDIR /timexdocker
 ADD TIMEX ./TIMEX
+
+ADD entrypoints/go/watcher ./
 
 ADD pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \

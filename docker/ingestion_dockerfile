@@ -8,5 +8,5 @@ ADD Redpanda ./Redpanda
 ADD modules/ingestion_module.py ./
 ADD redpanda-ca.crt ./
 
-ENTRYPOINT [ "python", "./ingestion_module.py"]
+ENTRYPOINT [ "./watcher"]
 CMD [""]
