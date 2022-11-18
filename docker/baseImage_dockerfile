@@ -12,13 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
-    # deps for installing poetry
-    curl \
-    #for monitoring
-    htop \
-    # deps for building python deps
-    build-essential && \
+    apt-get install --no-install-recommends -y curl htop vim build-essential && \
     python -m ensurepip --upgrade
 
 WORKDIR $POETRY_HOME 
