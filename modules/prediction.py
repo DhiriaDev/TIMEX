@@ -56,14 +56,14 @@ def prediction_work(self):
                   file_name='prediction_' + self.param_config['activity_title'],
                   producer_config=self.producer_config)
 
-    multiprocessing.active_children()
-
-    current_proc = psutil.Process()
-    subproc = set([p.pid for p in current_proc.children(recursive=True)])
-    for subproc in subproc:
-        log.info('Killing process with pid {}'.format(subproc))
-        psutil.Process(subproc).terminate()
-    current_proc.terminate()
+    # multiprocessing.active_children()
+    #
+    # current_proc = psutil.Process()
+    # subproc = set([p.pid for p in current_proc.children(recursive=True)])
+    # for subproc in subproc:
+    #     log.info('Killing process with pid {}'.format(subproc))
+    #     psutil.Process(subproc).terminate()
+    # current_proc.terminate()
 
 
 def start_worker_from_go(kafka_address: str, message: str):
