@@ -13,6 +13,7 @@ spec:
       labels:
         app: data-ingestion
     spec:
+      shareProcessNamespace: true
       containers:
       - name: data-ingestion
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:ingestion_container
@@ -34,6 +35,7 @@ spec:
       labels:
         app: validation
     spec:
+      shareProcessNamespace: true
       containers:
       - name: validation
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:validation_container
@@ -55,6 +57,7 @@ spec:
       labels:
         app: prediction
     spec:
+      shareProcessNamespace: true
       containers:
       - name: prediction
         image: 485540626268.dkr.ecr.eu-west-1.amazonaws.com/dhiria_repo:prediction_container
