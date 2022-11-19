@@ -17,6 +17,6 @@ COPY redpanda-ca.crt ./
 COPY entrypoints/go/watcher ./
 
 
-#ENTRYPOINT [ "./watcher"]
-ENTRYPOINT [ "python", "./prediction_module.py"]
+ENTRYPOINT [ "./watcher"]
+#ENTRYPOINT [ "python", "./prediction.py"]
 CMD [""]

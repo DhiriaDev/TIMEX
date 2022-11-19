@@ -57,6 +57,10 @@ def prediction_work(self):
                   producer_config=self.producer_config)
 
     multiprocessing.active_children()
+    current_proc = psutil.Process()
+    subproc = set([p.pid for p in current_proc.children(recursive=True)])
+    for subproc in subproc:
+        psutil.Process(subproc).terminate()
 
 
 def start_worker_from_go(kafka_address: str, message: str):
@@ -98,44 +102,44 @@ def start_worker_from_go(kafka_address: str, message: str):
 
 if __name__ == '__main__':
     # TO USE WITH GO WATCHER
-    # parser = argparse.ArgumentParser()
-    #
-    # parser.add_argument('kafka_address',
-    #                     type=str,
-    #                     help='single address (or list of addresses) of the form IP:port[,IP:port]')
-    #
-    # parser.add_argument('message',
-    #                     type=str,
-    #                     help='message to parse')
-    #
-    # args = parser.parse_args()
-    # if args.kafka_address is None:
-    #     log.error('a kafka address has been not specified')
-    #     exit(1)
-    #
-    # start_worker_from_go(args.kafka_address, args.message)
-
-    # TO USE WITH PYTHON WATCHER
     parser = argparse.ArgumentParser()
 
     parser.add_argument('kafka_address',
                         type=str,
                         help='single address (or list of addresses) of the form IP:port[,IP:port]')
 
+    parser.add_argument('message',
+                        type=str,
+                        help='message to parse')
+
     args = parser.parse_args()
     if args.kafka_address is None:
         log.error('a kafka address has been not specified')
         exit(1)
 
-    with open(base_config_path, "r") as f:
-        config = json.load(f)
+    start_worker_from_go(args.kafka_address, args.message)
 
-    prediction_watcher_config = config["base"].copy()
-    prediction_watcher_config['bootstrap.servers'] = args.kafka_address
-    prediction_watcher_config['client.id'] = 'watcher_prediction'
-    prediction_watcher_config['group.id'] = 'watcher_prediction'
-
-    prediction_watcher = Watcher(
-        config_dict=prediction_watcher_config, works_to_do=[prediction_work])
-
-    prediction_watcher.listen_on_control(control_topic='control_topic')
+    # TO USE WITH PYTHON WATCHER
+    # parser = argparse.ArgumentParser()
+    #
+    # parser.add_argument('kafka_address',
+    #                     type=str,
+    #                     help='single address (or list of addresses) of the form IP:port[,IP:port]')
+    #
+    # args = parser.parse_args()
+    # if args.kafka_address is None:
+    #     log.error('a kafka address has been not specified')
+    #     exit(1)
+    #
+    # with open(base_config_path, "r") as f:
+    #     config = json.load(f)
+    #
+    # prediction_watcher_config = config["base"].copy()
+    # prediction_watcher_config['bootstrap.servers'] = args.kafka_address
+    # prediction_watcher_config['client.id'] = 'watcher_prediction'
+    # prediction_watcher_config['group.id'] = 'watcher_prediction'
+    #
+    # prediction_watcher = Watcher(
+    #     config_dict=prediction_watcher_config, works_to_do=[prediction_work])
+    #
+    # prediction_watcher.listen_on_control(control_topic='control_topic')
