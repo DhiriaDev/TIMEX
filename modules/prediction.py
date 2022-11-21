@@ -62,6 +62,8 @@ def prediction_work(self):
     for subproc in subproc:
         psutil.Process(subproc).terminate()
 
+    # TODO: optimize topic deletion
+    delete_topics(self.consumer_config, [prediction_topic])
 
 def start_worker_from_go(kafka_address: str, message: str):
     log.info('Control message arrived')

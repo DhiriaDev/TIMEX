@@ -41,6 +41,9 @@ def ingestion_work(self):
                   file_name='dataset_' + self.param_config['activity_title'],
                   producer_config=self.producer_config)
 
+    # TODO: optimize topic deletion
+    delete_topics(self.consumer_config, [data_ingestion_topic])
+
 
 def start_worker_from_go(kafka_address: str, message: str):
     log.info('Control message arrived')

@@ -73,12 +73,13 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
 # TODO: check before using! it's missing the config.
 def delete_topics(client_config : dict, topics: list):
     try:
-        admin_client = AdminClient(
-            {   
-                "bootstrap.servers": client_config['bootstrap.servers'],
-                "client.id": client_config['client.id']
-            }
-        )
+        with open(base_config_path, "r") as f:
+            config = json.load(f)
+
+        admin_config = config["base"].copy()
+        admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
+        admin_config['client.id'] = client_config['client.id']
+        admin_client = AdminClient(admin_config)
         admin_client.delete_topics(topics=topics)
         print("Topics Deleted Successfully")
     except Exception as e:

@@ -51,6 +51,8 @@ def validation_work(self):
                   file_name='best_model' + self.param_config['activity_title'],
                   producer_config=self.producer_config)
 
+    # TODO: optimize topic deletion
+    delete_topics(self.consumer_config, [validation_topic])
 
 def start_worker_from_go(kafka_address: str, message: str):
     log.info('Control message arrived')

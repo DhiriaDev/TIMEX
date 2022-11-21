@@ -1,19 +1,19 @@
 #!/bin/bash
 
 # checking if the docker daemon is active
-ps auxw | grep -P '\bdocker(?!-)\b' > /dev/null
-if [ $? != 0 ]; then
-    echo "The docker daemon is not active. Please, insert your password to activate it."
-    read -p "Password:" -s pswd
-    echo "$pswd" | sudo -S systemctl start docker
-    ps auxw | grep -P '\bdocker(?!-)\b' > /dev/null
-    if [ $? == 0 ]; then
-        echo "Docker successfully activated"
-    else
-        echo "There was an error activating docker."
-        exit 1
-    fi
-fi
+#ps auxw | grep -P '\bdocker(?!-)\b' > /dev/null
+#if [ $? != 0 ]; then
+#    echo "The docker daemon is not active. Please, insert your password to activate it."
+#    read -p "Password:" -s pswd
+#    echo "$pswd" | sudo -S systemctl start docker
+#    ps auxw | grep -P '\bdocker(?!-)\b' > /dev/null
+#    if [ $? == 0 ]; then
+#        echo "Docker successfully activated"
+#    else
+#        echo "There was an error activating docker."
+#        exit 1
+#    fi
+#fi
 
 
 echo "--------- BUILDING DOCKER IMAGES ---------\n"
