@@ -70,6 +70,7 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
         else:
             log.info(f'topic {topics[t]} already exists')
 
+
 # TODO: check before using! it's missing the config.
 def delete_topics(client_config : dict, topics: list):
     try:
@@ -80,8 +81,17 @@ def delete_topics(client_config : dict, topics: list):
         admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
         admin_config['client.id'] = client_config['client.id']
         admin_client = AdminClient(admin_config)
-        admin_client.delete_topics(topics=topics)
-        print("Topics Deleted Successfully")
+
+        fs = admin_client.delete_topics(topics, operation_timeout=30)
+
+        # Wait for operation to finish.
+        for topic, f in fs.items():
+            try:
+                f.result()  # The result itself is None
+                print("Topic {} deleted".format(topic))
+            except Exception as e:
+                print("Failed to delete topic {}: {}".format(topic, e))
+
     except Exception as e:
         log.error(e)
 
