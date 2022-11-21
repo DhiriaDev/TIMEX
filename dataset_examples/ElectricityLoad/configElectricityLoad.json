@@ -9,9 +9,9 @@
     },
     "model_parameters": {
         "validation_values": 10,
-        "delta_training_percentage": 30,
+        "delta_training_percentage": 100,
         "forecast_horizon": 10,
-        "possible_transformations": "none,log_modified",
+        "possible_transformations": "none",
         "models": "fbprophet",
         "main_accuracy_estimator": "rmse"
     }
