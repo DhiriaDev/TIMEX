@@ -1,4 +1,4 @@
-from locust import User, task, between, events, runners
+from locust import User, task, between, events, runners, stats
 import string
 import random
 import json
@@ -8,7 +8,11 @@ import os
 
 from Redpanda import JobProducer
 
-runners.HEARTBEAT_INTERVAL = 60  # We do very long tests.
+runners.HEARTBEAT_INTERVAL = 600  # We do very long tests.
+stats.CONSOLE_STATS_INTERVAL_SEC = 1
+stats.HISTORY_STATS_INTERVAL_SEC = 5
+stats.CURRENT_RESPONSE_TIME_PERCENTILE_WINDOW = 20
+
 
 @events.init_command_line_parser.add_listener
 def _(parser):
@@ -32,7 +36,7 @@ def _(parser):
 
 
 class RepandaClient(User):
-    wait_time = between(0.0, 0.1)
+    wait_time = between(1.0, 10.0)
     
 
     def __init__(self, environment):
