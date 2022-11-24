@@ -155,7 +155,8 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
             log.debug(f'the topic {topic} does not exist: waiting..')
             time.sleep(0.5)
 
-        consumer.subscribe([topic])
+        # consumer.subscribe([topic])
+        consumer.assign([TopicPartition(topic=topic, partition=0, offset=OFFSET_BEGINNING)])
         log.info(f'Listening on topic: {topic}')
 
         worker_id = 0  # this variable will be used to spawn new workers if needed
@@ -163,7 +164,7 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
 
         running = True
         while running:
-            msg = consumer.poll(timeout=1)
+            msg = consumer.poll(timeout=0.1)
 
             if msg is None:
                 continue
