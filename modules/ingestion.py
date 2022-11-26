@@ -77,9 +77,7 @@ def start_worker_from_go(kafka_address: str, message: str):
 
     activity_title = param_config['activity_title']
     log.info(f'Spawning a worker for the job {activity_title}.')
-    p = Process(target=worker.work)
-    p.start()
-    p.join()
+    worker.work()
 
 
 if __name__ == '__main__':
