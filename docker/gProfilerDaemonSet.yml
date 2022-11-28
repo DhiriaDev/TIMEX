@@ -1,0 +1,351 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: granulate-gprofiler
+  name: granulate-gprofiler
+  namespace: timex
+spec:
+  selector:
+    matchLabels:
+      app: granulate-gprofiler
+  template:
+    metadata:
+      labels:
+        app: granulate-gprofiler
+    spec:
+      containers:
+      - args:
+        - -cu
+        - --token=$(GPROFILER_TOKEN)
+        - --service-name=$(GPROFILER_SERVICE)
+        env:
+        - name: GPROFILER_TOKEN
+          value: btfIAIhJ0JBnQv6DRKFJXpInMXybG7r3aL3iMhnwGbM
+        - name: GPROFILER_SERVICE
+          value: Timex
+        - name: GPROFILER_IN_K8S
+          value: '1'
+        image: index.docker.io/granulate/gprofiler:latest
+        imagePullPolicy: Always
+        name: granulate-gprofiler
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          privileged: true
+      hostPID: true
+      restartPolicy: Always
+      securityContext:
+        runAsGroup: 0
+        runAsUser: 0
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: granulate-cluster-role
+rules:
+- apiGroups:
+  - ''
+  - apps
+  - extensions
+  resources:
+  - nodes
+  - pods
+  - deployments
+  - daemonsets
+  - statefulsets
+  - replicasets
+  - replicationcontrollers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  - apps
+  - extensions
+  - policy
+  resources:
+  - services
+  - endpoints
+  - namespaces
+  - limitranges
+  - resourcequotas
+  - persistentvolumes
+  - persistentvolumeclaims
+  - poddisruptionbudget
+  - pods/log
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - nodes/spec
+  - nodes/stats
+  - nodes/proxy
+  - nodes/metrics
+  verbs:
+  - get
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - granulate-cluster-role
+  resources:
+  - clusterroles
+  verbs:
+  - get
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - external.metrics.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - list
+  - get
+  - watch
+- apiGroups:
+  - custom.metrics.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - list
+  - get
+  - watch
+- nonResourceURLs:
+  - /version
+  - /healthz
+  - /healthz/*
+  - /metrics
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - rollouts
+  - rollouts/scale
+  - rollouts/status
+  - experiments
+  - analysistemplates
+  - clusteranalysistemplates
+  - analysisruns
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resourceNames:
+  - granulate-maestro
+  resources:
+  - deployments
+  verbs:
+  - '*'
+- apiGroups:
+  - ''
+  resourceNames:
+  - grafana-config
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: granulate-service-account
+  namespace: timex
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: granulate-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: granulate-cluster-role
+# These RBAC configurations are set for the "default" namespace, by default.
+# If you are using a custom namespace for the granulate-agent, update the following namespace parameter before
+# applying this configuration (the subject's namespace should match the granulate-agent namespace).
+subjects:
+  - kind: ServiceAccount
+    name: granulate-service-account
+    namespace: timex
+---
+kind: PriorityClass
+apiVersion: scheduling.k8s.io/v1
+metadata:
+  name: granulate-high-priority
+value: 1000000
+preemptionPolicy: Never
+globalDefault: false
+description: "This priority class should be used for Granulate daemonset only"
+---
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: timex
+apiVersion: v1
+data:
+  agent.yaml: |
+    server:
+      http_listen_port: 12345
+    prometheus:
+      wal_directory: /tmp/grafana-agent-wal
+      global:
+        scrape_interval: 60s
+        external_labels:
+          client_id: npdlb2Rr8udPVArM2KQ8arvskmymavV7BSovo86pgKg=
+          client_name: francesco.puotidhiria.com
+          service_name: Timex
+      configs:
+      - name: integrations
+        remote_write:
+        - url: https://prometheus-prod-10-prod-us-central-0.grafana.net/api/prom/push
+          basic_auth:
+            username: 297748
+            password: eyJrIjoiNDRkNDY3YWI1MGQ1ZGE5ZTE5ZDgzNTM1YWZhM2UwY2Y3ZTJmNDU5NyIsIm4iOiJtYWVzdHJvLW1ldHJpY3MtcHJvZCIsImlkIjo1NjcwMjh9
+        scrape_configs:
+        - bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          job_name: maestro-metrics-collection
+          kubernetes_sd_configs:
+              - role: pod
+                selectors:
+                  - role: "pod"
+                    label: "app=granulate-maestro"
+
+          scheme: http
+          tls_config:
+              ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              insecure_skip_verify: false
+              server_name: kubernetes
+    loki:
+      configs:
+      - name: default
+        positions:
+          filename: /tmp/positions.yaml
+        scrape_configs:
+          - job_name: maestro-logs
+            static_configs:
+              - targets: [localhost]
+                labels:
+                  job: maestro-logs
+                  __path__: /var/log/maestro.log
+                  client_id: npdlb2Rr8udPVArM2KQ8arvskmymavV7BSovo86pgKg=
+                  client_name: francesco.puotidhiria.com
+                  service_name: Timex
+        clients:
+          - url: https://logs-prod-us-central1.grafana.net/api/prom/push
+            basic_auth:
+              username: 147844
+              password: eyJrIjoiOTQ0ZmJhODM1MmNlMTAyOWRiNmJhNDE4M2ZkMjcyZDcyNzRjNzZkOCIsIm4iOiJtYWVzdHJvLXByb2QiLCJpZCI6NTY3MDI4fQ==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: granulate-maestro
+  name: granulate-maestro
+  namespace: timex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: granulate-maestro
+  template:
+    metadata:
+      labels:
+        app: granulate-maestro
+    spec:
+      containers:
+      - env:
+        - name: MAESTRO_CLIENT_ID
+          value: npdlb2Rr8udPVArM2KQ8arvskmymavV7BSovo86pgKg=
+        - name: MAESTRO_SERVICE_NAME
+          value: Timex
+        - name: MAESTRO_DISABLE_CONFIGURATOR_SERVICE
+          value: 'FALSE'
+        - name: LOGS_ENABLE_STDOUT
+          value: '1'
+        - name: MAESTRO_RUN_ON_K8S
+          value: 'TRUE'
+        - name: MAESTRO_PROMETHEUS_PORT
+          value: '8000'
+        - name: LOGS_DIR
+          value: /logs
+        - name: LOG_FILENAME
+          value: maestro.log
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: K8S_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MAESTRO_SERVER_HOST
+          value: https://containerunits.granulate.io
+        image: index.docker.io/granulate/maestro:latest
+        name: granulate-maestro
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 50m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /logs
+          name: maestro-logs
+      - args:
+        - -config.file=/etc/agent/agent.yaml
+        command:
+        - /bin/agent
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        image: grafana/agent:v0.21.2
+        name: grafana-agent
+        ports:
+        - containerPort: 12345
+          name: http-metrics
+        volumeMounts:
+        - mountPath: /etc/agent
+          name: grafana-config-volume
+        - mountPath: /var/log
+          name: maestro-logs
+      serviceAccountName: granulate-service-account
+      terminationGracePeriodSeconds: 3
+      volumes:
+      - emptyDir: {}
+        name: maestro-logs
+      - configMap:
+          name: grafana-config
+        name: grafana-config-volume
