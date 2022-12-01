@@ -6,6 +6,7 @@ import (
     "os"
     "os/exec"
     "time"
+    "github.com/joho/godotenv"
 )
 
 type Data struct {
@@ -17,7 +18,7 @@ func runCommand(message string) {
     boostrapServers := os.Args[1]
     role := os.Args[2]
 
-    cmd := exec.Command("python", role + ".py", boostrapServers, message)
+    cmd := exec.Command("python", os.Getenv("PYTHON_MODULES_DIR") + role + ".py", boostrapServers, message)
     data, err := cmd.CombinedOutput()
     fmt.Printf("Data: %s", data)
 
@@ -27,24 +28,41 @@ func runCommand(message string) {
 }
 
 func main() {
-
     boostrapServers := os.Args[1]
     role := os.Args[2]
 
+    // Load env variables.
+    err := godotenv.Load(".env")
+
+    if err != nil {
+        panic(err)
+    }
+
     fmt.Printf("Hello, I am the watcher for %s.\n", role)
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-        "bootstrap.servers": boostrapServers,
-		"group.id":          role,
-		"auto.offset.reset": "earliest",
-		"max.in.flight.requests.per.connection": 5,
-        "receive.message.max.bytes" : 2000000000,
-        "security.protocol" : "sasl_ssl",
-        "ssl.ca.location" : "./redpanda-ca.crt",
-        "sasl.username" : "dhiria",
-        "sasl.password" : "piic9xplo8fc",
-        "sasl.mechanisms" : "SCRAM-SHA-256",
-	})
+    var c *kafka.Consumer
+    if os.Getenv("KAFKA_SASL") == "true" {  // On the cluster
+        c, err = kafka.NewConsumer(&kafka.ConfigMap{
+            "bootstrap.servers": boostrapServers,
+            "group.id":          role,
+            "auto.offset.reset": "earliest",
+            "max.in.flight.requests.per.connection": 5,
+            "receive.message.max.bytes" : 2000000000,
+            "security.protocol" : "sasl_ssl",
+            "ssl.ca.location" : os.Getenv("SSL.CA.LOCATION"),
+            "sasl.username" : os.Getenv("SASL.USERNAME"),
+            "sasl.password" : os.Getenv("SASL.PASSWORD"),
+            "sasl.mechanisms" : "SCRAM-SHA-256",
+        })
+    } else {  // In local
+        c, err = kafka.NewConsumer(&kafka.ConfigMap{
+            "bootstrap.servers": boostrapServers,
+            "group.id":          role,
+            "auto.offset.reset": "earliest",
+            "max.in.flight.requests.per.connection": 5,
+            "receive.message.max.bytes" : 2000000000,
+        })
+    }
 
 	if err != nil {
 		panic(err)

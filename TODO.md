@@ -1,0 +1,1 @@
+- [x] Use environment variables to automatically set SSL/SASL only on the cluster

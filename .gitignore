@@ -147,3 +147,4 @@ possibleNewTechnologies.md
 .idea/*
 
 stats-50usrs_slow.json
+/envs/

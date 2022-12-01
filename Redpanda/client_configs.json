@@ -1,14 +1,8 @@
 {
   "base": {
-    "bootstrap.servers" : "",
     "client.id" : "",
     "max.in.flight.requests.per.connection": 5,
-    "receive.message.max.bytes" : 2000000000,
-    "security.protocol" : "sasl_ssl",
-    "ssl.ca.location" : "./redpanda-ca.crt",
-    "sasl.username" : "dhiria",
-    "sasl.password" : "piic9xplo8fc",
-    "sasl.mechanisms" : "SCRAM-SHA-256"
+    "receive.message.max.bytes" : 2000000000
   },
   "consumer": {
     "group.id" : "",
@@ -20,7 +14,7 @@
     "fetch.message.max.bytes" : 1000000000
   },
   "producer": {
-    "enable.idempotence" : true,
+    "enable.idempotence" : false,
     "batch.num.messages" : 10000,
     "batch.size" : 1000000
   }

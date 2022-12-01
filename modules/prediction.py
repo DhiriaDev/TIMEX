@@ -5,7 +5,7 @@ import uuid
 import sys
 
 sys.path.append('/')
-sys.path.append('../')  # For local tests.
+sys.path.append('.')  # For local tests.
 
 from Redpanda import *
 from timexseries.data_prediction import create_timeseries_containers

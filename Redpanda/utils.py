@@ -1,20 +1,33 @@
 import json
 
 from confluent_kafka.admin import *
-from confluent_kafka import *
-from multiprocessing import *
 
 import os, sys, enum
 from math import ceil
 
-# from .constants import *
 
 import logging
+
+from dotenv import load_dotenv
+
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
+load_dotenv()
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 base_config_path = os.path.join(__location__, "client_configs.json")
+
+with open(base_config_path, "r") as f:
+    config = json.load(f)
+
+config["base"]["bootstrap.servers"] = os.getenv("KAFKA_BROKERS")
+
+if os.getenv("KAFKA_SASL") == "true":  # Deployment
+    config["base"]["security.protocol"] = "sasl_ssl"
+    config["base"]["sasl.mechanisms"] = "SCRAM-SHA-256"
+    config["base"]["ssl.ca.location"] = os.getenv("SSL.CA.LOCATION")
+    config["base"]["sasl.username"] = os.getenv("SASL.USERNAME")
+    config["base"]["sasl.password"] = os.getenv("SASL.PASSWORD")
 
 
 class MessageType(enum.Enum):
@@ -29,12 +42,8 @@ chunk_size = 999500
 
 # ----------- TOPICS UTILITY -----------
 
-def create_topics(topics: list, client_config:dict, broker_offset : int):
-    with open(base_config_path, "r") as f:
-        config = json.load(f)
-
+def create_topics(topics: list, client_config: dict, broker_offset : int):
     admin_config = config["base"].copy()
-    admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
     admin_config['client.id'] = client_config['client.id']
     admin_client = AdminClient(admin_config)
 
@@ -74,11 +83,7 @@ def create_topics(topics: list, client_config:dict, broker_offset : int):
 # TODO: check before using! it's missing the config.
 def delete_topics(client_config : dict, topics: list):
     try:
-        with open(base_config_path, "r") as f:
-            config = json.load(f)
-
         admin_config = config["base"].copy()
-        admin_config['bootstrap.servers'] = client_config['bootstrap.servers']
         admin_config['client.id'] = client_config['client.id']
         admin_client = AdminClient(admin_config)
 

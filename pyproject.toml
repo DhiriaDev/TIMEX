@@ -10,6 +10,7 @@ python = ">=3.8,<3.11"
 confluent-kafka = "^1.9.2"
 timexseries = {path = "TIMEX"}
 psutil = "^5.9.4"
+python-dotenv = "^0.21.0"
 
 
 [build-system]

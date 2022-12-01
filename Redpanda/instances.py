@@ -1,19 +1,17 @@
-import multiprocessing
+import time
+import hashlib
+from multiprocessing import Process
 
-from confluent_kafka.admin import *
-from confluent_kafka import *
-from multiprocessing import *
+from confluent_kafka import Producer, Consumer
+from dotenv import load_dotenv
 
-import sys, time
-import json, hashlib
-
-# from .constants import *
 from .utils import *
 
 import logging
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger(__name__)
+load_dotenv()
 
 
 class Watcher(object):
@@ -41,18 +39,17 @@ class Worker(object):
 
 
 class JobProducer(object):
-    def __init__(self, client_id, kafka_address):
-        with open(base_config_path, "r") as f:
-            config = json.load(f)
-
+    def __init__(self, client_id, kafka_address=None):
         self.producer_config = config["base"].copy()
         self.producer_config.update(config["producer"])
-        self.producer_config['bootstrap.servers'] = kafka_address
+        if kafka_address is not None:
+            self.producer_config['bootstrap.servers'] = kafka_address
         self.producer_config['client.id'] = str(client_id)
 
         self.consumer_config = config["base"].copy()
         self.consumer_config.update(config["consumer"])
-        self.consumer_config['bootstrap.servers'] = kafka_address
+        if kafka_address is not None:
+            self.consumer_config['bootstrap.servers'] = kafka_address
         self.consumer_config['client.id'] = str(client_id)
         self.consumer_config['group.id'] = 'end_job'
 
@@ -140,11 +137,7 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
     :returns: None if record_list is None, else the a string of bytes representing the data received.
 
     """
-    with open(base_config_path, "r") as f:
-        config = json.load(f)
-
     admin_config = config["base"].copy()
-    admin_config['bootstrap.servers'] = consumer_config['bootstrap.servers']
     admin_config['client.id'] = consumer_config['client.id']
     admin_client = AdminClient(admin_config)
 
@@ -155,8 +148,7 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
             log.debug(f'the topic {topic} does not exist: waiting..')
             time.sleep(0.5)
 
-        # consumer.subscribe([topic])
-        consumer.assign([TopicPartition(topic=topic, partition=0, offset=OFFSET_BEGINNING)])
+        consumer.subscribe([topic])
         log.info(f'Listening on topic: {topic}')
 
         worker_id = 0  # this variable will be used to spawn new workers if needed
@@ -194,18 +186,15 @@ def receive_msg(topic: str, consumer_config: dict, works_to_do=None):
 
                     # ---- SPAWNING THE WORKER FOR THE JOB -----
 
-                    kafka_address = consumer_config['bootstrap.servers']
                     worker_client_id = consumer_config['client.id'] + '_worker' + str(worker_id)
                     worker_group_id = consumer_config['group.id'] + '_worker' + str(worker_id)
 
                     worker_producer_config = config["base"].copy()
                     worker_producer_config.update(config["producer"])
-                    worker_producer_config['bootstrap.servers'] = kafka_address
                     worker_producer_config['client.id'] = worker_client_id
 
                     worker_consumer_config = config["base"].copy()
                     worker_consumer_config.update(config["consumer"])
-                    worker_consumer_config['bootstrap.servers'] = kafka_address
                     worker_consumer_config['client.id'] = worker_client_id
                     worker_consumer_config['group.id'] = worker_group_id
 

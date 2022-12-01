@@ -2,7 +2,7 @@ import sys
 import uuid
 
 sys.path.append('/')
-sys.path.append('../')  # For local tests.
+sys.path.append('.')  # For local tests.
 
 import base64, pickle
 from confluent_kafka import *

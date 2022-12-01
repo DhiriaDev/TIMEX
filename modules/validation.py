@@ -3,7 +3,7 @@ import logging
 import uuid
 
 sys.path.append('/')
-sys.path.append('../')  # For local tests.
+sys.path.append('.')  # For local tests.
 log = logging.getLogger(__name__)
 
 import pickle, base64
