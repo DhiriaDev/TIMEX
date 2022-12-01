@@ -73,9 +73,6 @@ def start_worker_from_go(kafka_address: str, message: str):
     works_to_do = [prediction_work]
 
     # ---- SPAWNING THE WORKER FOR THE JOB -----
-    with open(base_config_path, "r") as f:
-        config = json.load(f)
-
     worker_producer_config = config["base"].copy()
     worker_producer_config.update(config["producer"])
     worker_producer_config['bootstrap.servers'] = kafka_address
@@ -98,7 +95,6 @@ def start_worker_from_go(kafka_address: str, message: str):
     activity_title = param_config['activity_title']
     log.info(f'Spawning a worker for the job {activity_title}.')
     worker.work()
-
 
 
 if __name__ == '__main__':

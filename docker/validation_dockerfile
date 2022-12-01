@@ -15,6 +15,7 @@ COPY modules/validation.py ./
 COPY validation_server ./validation_server
 COPY redpanda-ca.crt ./
 COPY entrypoints/go/watcher ./
+COPY envs/DEPLOYENV ./.env
 
 ENTRYPOINT [ "./watcher"]
 CMD [""]

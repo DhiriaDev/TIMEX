@@ -15,6 +15,7 @@ COPY Redpanda ./Redpanda
 COPY modules/prediction.py ./
 COPY redpanda-ca.crt ./
 COPY entrypoints/go/watcher ./
+COPY envs/DEPLOYENV ./.env
 
 
 ENTRYPOINT [ "./watcher"]

@@ -53,9 +53,6 @@ def start_worker_from_go(kafka_address: str, message: str):
     works_to_do = [ingestion_work]
 
     # ---- SPAWNING THE WORKER FOR THE JOB -----
-    with open(base_config_path, "r") as f:
-        config = json.load(f)
-
     worker_producer_config = config["base"].copy()
     worker_producer_config.update(config["producer"])
     worker_producer_config['bootstrap.servers'] = kafka_address
