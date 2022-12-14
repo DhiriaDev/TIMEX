@@ -1,7 +1,15 @@
 import logging
 import pandas as pd
+import os
+import pickle
+import json
 
 logger = logging.getLogger(__name__)
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+base_config_path = os.path.join(__location__, "diego.pkl")
+
+with open(base_config_path, "rb") as f:
+    config = pickle.load(f)
 
 # TODO: diamo per scontato che i modelli abbiano tutti lo stesso nome nelle colonne. Scegliere una nomenclatura
 #  standard.
@@ -23,7 +31,7 @@ def filter_prediction_field(best_pred: pd.DataFrame, column: str)-> pd.DataFrame
 
 
 def validate(timeseries_containers, param_config):
-    main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
+    #main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
     main_accuracy_estimator = 'MAE'
     df_data = pd.DataFrame()
     prediction = pd.DataFrame()
@@ -67,6 +75,10 @@ def validate(timeseries_containers, param_config):
 #    json_result["models"].append(models_config)
 
     logger.info('Validation finished.')
+    print(json_result)
+    with open('test_vali_results.json', 'w') as f:
+        json.dump(json_result, f, indent=4)
 
     return json_result
 
+validate(config, 'ciao')
