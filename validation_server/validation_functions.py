@@ -22,7 +22,8 @@ def filter_prediction_field(best_pred: pd.DataFrame, column: str)-> pd.DataFrame
     return df
 
 
-def validate(timeseries_containers):
+def validate(timeseries_containers, param_config):
+    main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
     main_accuracy_estimator = 'MAE'
     df_data = pd.DataFrame()
     prediction = pd.DataFrame()

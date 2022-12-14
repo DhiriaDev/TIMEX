@@ -1,3 +1,4 @@
+import json
 import sys
 import logging
 import uuid
@@ -31,21 +32,12 @@ def validation_work(self):
 
     result_topic = 'result_' + self.param_config['activity_title']
     create_topics(topics=[result_topic], client_config=self.consumer_config, broker_offset=1)
-    try:
-        if(len(timeseries_containers) > 1):
-            best_model = validate(timeseries_containers, self.param_config)
-        else:
-            best_model = timeseries_containers[0]        
-            log.info('Just one model. No validation will be performed.')
+    result = validate(timeseries_containers, self.param_config)
 
-    except ValueError as e:
-        print (e)
-        return 500
+    # best_model = pickle.dumps(best_model)
+    # best_model = base64.b64encode(best_model).decode('utf-8')
 
-    best_model = pickle.dumps(best_model)
-    best_model = base64.b64encode(best_model).decode('utf-8')
-
-    chunks = prepare_chunks(best_model, chunk_size)
+    chunks = prepare_chunks(json.dumps(result), chunk_size)
 
     send_data_msg(topic = result_topic, chunks=chunks,
                   file_name='best_model' + self.param_config['activity_title'],
