@@ -10,14 +10,16 @@ def filter_prediction_field(best_pred: pd.DataFrame, column: str)-> pd.DataFrame
     Filters out the columns that are not relevant for a "non-debug" result output, when present
     """
     if 'yhat_lower' and 'yhat_upper' in best_pred.columns:
-        mux = pd.MultiIndex.from_product([[column], ['yhat', 'yhat_lower', 'yhat_upper']])
+        #mux = pd.MultiIndex.from_product([[column], ['yhat', 'yhat_lower', 'yhat_upper']])
         best_pred = best_pred[['yhat', 'yhat_lower', 'yhat_upper']]
+        columns = [f'{column}-yhat', f'{column}-yhat_lower', f'{column}-yhat_upper']
     elif 'yhat' in best_pred.columns:
-        mux = pd.MultiIndex.from_product([[column], ['yhat']])
+        #mux = pd.MultiIndex.from_product([[column], ['yhat']])
         best_pred = best_pred['yhat']
+        columns = [f'{column}-yhat']
     else:
         logger.info("Unexpected column label in Timeseries_container")
-    df = pd.DataFrame(best_pred.values, columns=mux, index=best_pred.index)
+    df = pd.DataFrame(best_pred.values, columns=columns, index=best_pred.index)
 
     return df
 
