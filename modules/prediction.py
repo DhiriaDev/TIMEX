@@ -8,7 +8,7 @@ sys.path.append('/')
 sys.path.append('.')  # For local tests.
 
 from Redpanda import *
-from timexseries.data_prediction import create_timeseries_containers
+from timexseries.data_prediction import create_timeseries_containers, validate
 import multiprocessing
 
 log = logging.getLogger(__name__)
