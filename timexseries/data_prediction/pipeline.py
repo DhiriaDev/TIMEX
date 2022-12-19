@@ -6,6 +6,7 @@ from typing import Tuple
 
 import dateparser
 from pandas import DataFrame
+import pandas as pd
 
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction.models.arima import ARIMAModel
@@ -830,7 +831,7 @@ def validate(timeseries_containers, param_config):
         models = timeseries_container.models
         models_best = {}
         column = timeseries_container.timeseries_data.columns.values[0]
-        df_data = concat([df_data, timeseries_container.timeseries_data], ignore_index=False, axis=1)
+        df_data = pd.concat([df_data, timeseries_container.timeseries_data], ignore_index=False, axis=1)
         #        models_config[column] = []
 
         for model in models:
@@ -844,7 +845,7 @@ def validate(timeseries_containers, param_config):
         best_model = min(models_best, key=models_best.get)
         best_pred = models[best_model].best_prediction
         best_pred = filter_prediction_field(best_pred, column)
-        prediction = concat([prediction, best_pred], axis=1)
+        prediction = pd.concat([prediction, best_pred], axis=1)
 
     data_json = df_data.to_json(orient='columns', date_format='iso')
     prediction = prediction.to_json(orient='columns', date_format='iso')
