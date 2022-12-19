@@ -42,17 +42,15 @@ def prediction_work(self):
                     print('not present')
                     os.makedirs(cur)
 
-    validation_topic = 'validation_' + self.param_config['activity_title']
-    create_topics(topics=[validation_topic], client_config=self.consumer_config, broker_offset=1)
+    result_topic = 'result_' + self.param_config['activity_title']
+    create_topics(topics=[result_topic], client_config=self.consumer_config, broker_offset=1)
 
     timeseries_containers = create_timeseries_containers(dataset, self.param_config)
+    ts_json = validate(timeseries_containers, self.param_config)
 
-    timeseries_containers = pickle.dumps(timeseries_containers)
-    timeseries_containers = base64.b64encode(timeseries_containers).decode('utf-8')
+    chunks = prepare_chunks(ts_json, chunk_size)
 
-    chunks = prepare_chunks(timeseries_containers, chunk_size)
-
-    send_data_msg(topic=validation_topic, chunks=chunks,
+    send_data_msg(topic=result_topic, chunks=chunks,
                   file_name='prediction_' + self.param_config['activity_title'],
                   producer_config=self.producer_config)
 
