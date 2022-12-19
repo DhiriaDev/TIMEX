@@ -46,9 +46,9 @@ def prediction_work(self):
     create_topics(topics=[result_topic], client_config=self.consumer_config, broker_offset=1)
 
     timeseries_containers = create_timeseries_containers(dataset, self.param_config)
-    ts_json = validate(timeseries_containers, self.param_config)
+    ts_json = json.dumps(validate(timeseries_containers, self.param_config))
 
-    chunks = prepare_chunks(ts_json, chunk_size)
+    chunks = prepare_chunks(str(ts_json), chunk_size)
 
     send_data_msg(topic=result_topic, chunks=chunks,
                   file_name='prediction_' + self.param_config['activity_title'],
