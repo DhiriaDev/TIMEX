@@ -787,8 +787,9 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     #     return FLAMLModel(param_config, transformation)
     else:
         return ARIMAModel(params=param_config, transformation=transformation)
-    
-    def filter_prediction_field(best_pred: DataFrame, column: str) -> DataFrame:
+
+
+def filter_prediction_field(best_pred: DataFrame, column: str) -> DataFrame:
     """
     Filters out the columns that are not relevant for a "non-debug" result output, when present
     """
