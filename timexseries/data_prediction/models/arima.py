@@ -11,7 +11,7 @@ from timexseries.data_prediction.models.seasonality_estimator import estimate_se
 
 class ARIMAModel(PredictionModel):
     """ARIMA prediction model."""
-    def __init__(self, params: dict, transformation: str = "none"):
+    def __init__(self, params: dict, transformation: str = "nonconda e"):
         super().__init__(params, name="ARIMA", transformation=transformation)
 
     def predict(self, train_data: DataFrame, points_to_predict: int,
