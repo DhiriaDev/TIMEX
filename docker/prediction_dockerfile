@@ -13,6 +13,7 @@ RUN poetry install --with data_prediction
 WORKDIR /timexdocker
 COPY Redpanda ./Redpanda
 COPY modules/prediction.py ./
+COPY modules/validation_functions.py ./
 COPY redpanda-ca.crt ./
 COPY entrypoints/go/watcher ./
 COPY envs/DEPLOYENV ./.env

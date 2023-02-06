@@ -1,15 +1,7 @@
 import logging
 import pandas as pd
-import os
-import pickle
-import json
 
 logger = logging.getLogger(__name__)
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-base_config_path = os.path.join(__location__, "diego.pkl")
-
-with open(base_config_path, "rb") as f:
-    config = pickle.load(f)
 
 # TODO: diamo per scontato che i modelli abbiano tutti lo stesso nome nelle colonne. Scegliere una nomenclatura
 #  standard.
@@ -18,11 +10,11 @@ def filter_prediction_field(best_pred: pd.DataFrame, column: str)-> pd.DataFrame
     Filters out the columns that are not relevant for a "non-debug" result output, when present
     """
     if 'yhat_lower' and 'yhat_upper' in best_pred.columns:
-        # mux = pd.MultiIndex.from_product([[column], ['yhat', 'yhat_lower', 'yhat_upper']])
+        #mux = pd.MultiIndex.from_product([[column], ['yhat', 'yhat_lower', 'yhat_upper']])
         best_pred = best_pred[['yhat', 'yhat_lower', 'yhat_upper']]
         columns = [f'{column}-yhat', f'{column}-yhat_lower', f'{column}-yhat_upper']
     elif 'yhat' in best_pred.columns:
-        # mux = pd.MultiIndex.from_product([[column], ['yhat']])
+        #mux = pd.MultiIndex.from_product([[column], ['yhat']])
         best_pred = best_pred['yhat']
         columns = [f'{column}-yhat']
     else:
@@ -33,8 +25,11 @@ def filter_prediction_field(best_pred: pd.DataFrame, column: str)-> pd.DataFrame
 
 
 def validate(timeseries_containers, param_config):
-    #main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
-    main_accuracy_estimator = 'MAE'
+    try:
+        main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
+    except:
+        main_accuracy_estimator = 'MAE'
+        
     df_data = pd.DataFrame()
     prediction = pd.DataFrame()
     val_err = float
@@ -77,10 +72,6 @@ def validate(timeseries_containers, param_config):
 #    json_result["models"].append(models_config)
 
     logger.info('Validation finished.')
-    print(json_result)
-    with open('test_vali_results.json', 'w') as f:
-        json.dump(json_result, f, indent=4)
 
     return json_result
 
-validate(config, 'ciao')

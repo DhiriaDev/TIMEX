@@ -12,7 +12,7 @@ from confluent_kafka import *
 import argparse
 
 from Redpanda import *
-from validation_server.validation_functions import *
+from modules.validation_functions import *
 
 
 def validation_work(self):

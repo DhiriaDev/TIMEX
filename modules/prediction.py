@@ -8,7 +8,8 @@ sys.path.append('/')
 sys.path.append('.')  # For local tests.
 
 from Redpanda import *
-from timexseries.data_prediction import create_timeseries_containers, validate
+from timexseries.data_prediction import create_timeseries_containers
+from validation_functions import validate
 import multiprocessing
 
 log = logging.getLogger(__name__)
@@ -45,8 +46,13 @@ def prediction_work(self):
     result_topic = 'result_' + self.param_config['activity_title']
     create_topics(topics=[result_topic], client_config=self.consumer_config, broker_offset=1)
 
+    # PREDICTION / INFERENCE FUNCTION
     timeseries_containers = create_timeseries_containers(dataset, self.param_config)
-    ts_json = json.dumps(validate(timeseries_containers, self.param_config))
+
+    # VALIDATION FUNCTION
+    ts_json = json.dumps(
+        validate(timeseries_containers, self.param_config)
+    )
 
     chunks = prepare_chunks(str(ts_json), chunk_size)
 
