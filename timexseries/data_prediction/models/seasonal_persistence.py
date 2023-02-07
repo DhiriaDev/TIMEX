@@ -1,35 +1,29 @@
-from pandas import DataFrame
-
 from statsforecast import StatsForecast
 from timexseries.data_prediction import PredictionModel
-from statsforecast.models import AutoARIMA, SeasonalNaive
-
-from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
+from statsforecast.models import SeasonalNaive
+import pandas as pd
 
 
 class SeasonalPersistenceModel(PredictionModel):
     """Seasonal persistence (naive) prediction model."""
-    def __init__(self, params: dict, transformation: str = "none"):
-        super().__init__(params, name="Seasonal persistence", transformation=transformation)
+    def predict(self, train_ts: pd.Series, seasonality: int, forecast_horizon: int) -> pd.Series:
 
-    def predict(self, train_data: DataFrame, points_to_predict: int,
-                future_dataframe: DataFrame, extra_regressor: DataFrame = None) -> DataFrame:
-        freq = train_data.index.freq
+        freq = train_ts.index.freq
+        name = train_ts.name
 
-        seasonality = estimate_seasonality(train_data)
-
-        train_data.reset_index(inplace=True)
-        train_data.columns = ['ds', 'y']
-        train_data.loc[:, 'unique_id'] = 0
+        train_ts = pd.DataFrame(train_ts)
+        train_ts.reset_index(inplace=True)
+        train_ts.columns = ['ds', 'y']
+        train_ts.loc[:, 'unique_id'] = 0
 
         model = StatsForecast(
-            df=train_data,
+            df=train_ts,
             models=[SeasonalNaive(season_length=seasonality)],
             freq=freq
         )
 
-        y_hat_df = model.forecast(points_to_predict).set_index("ds")
+        y_hat_df = model.forecast(forecast_horizon).set_index("ds")
+        y_hat = y_hat_df.loc[:, 'SeasonalNaive']
+        y_hat.name = name
+        return y_hat
 
-        future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'SeasonalNaive']
-
-        return future_dataframe
