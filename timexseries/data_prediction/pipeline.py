@@ -110,7 +110,6 @@ def get_best_univariate_predictions(ingested_data: pd.DataFrame, param_config: d
         best_configs.append(_configs[0])
 
     best_predictions = Parallel(n_jobs=max_threads)(delayed(predict)(w) for w in best_configs)
-    print(best_predictions)
 
     # 6. Create timeseries containers
     timeseries_containers = []
@@ -121,10 +120,10 @@ def get_best_univariate_predictions(ingested_data: pd.DataFrame, param_config: d
             single_results = list(filter(lambda x: x["model"] == model, worker_configs))
             single_results = [SingleResult(None, x["validation_performances"]) for x in single_results]
             best_prediction = list(filter(lambda x: x.name == name, best_predictions))[0]
-            model_results[model] = ModelResult(single_results, {"name": model}, best_prediction)
+            model_results[model] = ModelResult(single_results, {"name": model}, pd.DataFrame(best_prediction))
 
         timeseries_containers.append(
-            TimeSeriesContainer(ingested_data.loc[:, name], model_results, total_xcorr[name] if total_xcorr is not None else None)
+            TimeSeriesContainer(ingested_data.loc[:, [name]], model_results, total_xcorr[name] if total_xcorr is not None else None)
         )
 
     return timeseries_containers
@@ -862,6 +861,8 @@ def validate_model(worker_config: dict) -> ValidationPerformance:
     validation_ts = worker_config["time_series_validation"]
 
     model = model_factory(worker_config["model"])
+
+    print(model)
 
     forecast = transformation.inverse(model.predict(transformed_ts, worker_config["seasonality"],
                                       len(validation_ts)))
