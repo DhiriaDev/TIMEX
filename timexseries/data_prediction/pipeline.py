@@ -52,7 +52,7 @@ def prepare_extra_regressor(container: TimeSeriesContainer, model: str) -> pd.Da
 
 
 def get_best_univariate_predictions(ingested_data: pd.DataFrame, param_config: dict, total_xcorr: dict = None) -> \
-        [TimeSeriesContainer]:
+        list[TimeSeriesContainer]:
 
     # Parameters
     max_threads = param_config["max_threads"]
