@@ -15,7 +15,7 @@ from timexseries import TimeSeriesContainer
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
-from timexseries.data_prediction.models.lstm import LSTMModel
+# from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
@@ -28,7 +28,7 @@ from timexseries.data_ingestion import add_freq
 
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
-    create_timeseries_containers
+    create_timeseries_containers, get_result_dict
 from timexseries.data_prediction.models.prophet import suppress_stdout_stderr, FBProphetModel
 from timexseries.data_prediction.transformation import transformation_factory, Identity
 
@@ -488,7 +488,7 @@ class Test_Models_General:
 class Test_Models_Specific:
     @pytest.mark.parametrize(
         "model_class,check_multivariate",
-        [(FBProphetModel, True), (LSTMModel, True), (ARIMAModel, False),
+        [(FBProphetModel, True), (ARIMAModel, False),
          (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
          (SeasonalPersistenceModel, False)]
     )
@@ -500,7 +500,7 @@ class Test_Models_Specific:
                                                      periods=110),
                                  columns=["yhat"], dtype=df.iloc[:, 0].dtype)
 
-        np.random.seed = 42
+        np.random.seed(42)
         extra_regressors = pd.DataFrame(data={"a": np.random.random(110), "b": np.random.random(110)},
                                         index=pd.date_range(freq="1d",
                                                             start=df.index.values[0],
@@ -544,8 +544,6 @@ class TestGetPredictions:
                                              44.0, 45.0, 46.0])})
         expected.set_index("a", inplace=True)
 
-        print(expected)
-        print(result)
         assert expected.equals(result)
 
     def test_get_best_univariate_and_multivariate_predictions(self):
@@ -954,7 +952,7 @@ class TestGetPredictions:
             assert timeseries_containers[1].models['mockup'].best_prediction.loc[i, "yhat"] == 0.0
 
 
-class TestCreateScenarios:
+class TestCreateContainers:
     @pytest.mark.parametrize(
         "historical_predictions, xcorr, additional_regressors, expected_extra_regressors, expected_value",
         [(True, True, True, {"b": "c, d", "c": "b, e"}, 2.0),
@@ -1097,3 +1095,40 @@ class TestCreateScenarios:
             else:
                 assert container.xcorr is None
             assert container.timeseries_data.equals(ing_data[[name]])
+
+
+class TestGetResultDict:
+    def test_get_result_dict_1(self):
+        df = get_fake_df(length=100, features=2)
+        param_config = {
+            "xcorr_parameters": {
+                "xcorr_max_lags": 5,
+                "xcorr_extra_regressor_threshold": 0.8,
+                "xcorr_mode": "pearson",
+                "xcorr_mode_target": "pearson"
+            },
+            "input_parameters": {},
+            "model_parameters": {
+                "validation_percentage": 2,
+                "delta_training_percentage": 20,
+                "forecast_horizon": 10,
+                "possible_transformations": "log_modified,none",
+                "models": "fbprophet,arima,seasonal_persistence,exponentialsmoothing",
+                "main_accuracy_estimator": "mae",
+            },
+        }
+        result, model_characteristics = get_result_dict(ingested_data=df, param_config=param_config)
+
+        data_df = pd.read_json(result['data'])
+        pred_df = pd.read_json(result['best_pred'])
+        model_results = result['models_results']
+
+        assert len(data_df) == 100
+        assert len(data_df.columns) == 2
+
+        assert len(pred_df) == 10
+        assert len(model_results.keys()) == 2
+
+        assert len(model_results['value_0'].keys()) == 4
+        assert len(model_results['value_1'].keys()) == 4
+

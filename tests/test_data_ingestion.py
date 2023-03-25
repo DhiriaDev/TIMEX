@@ -458,8 +458,8 @@ class TestDataSelection:
         assert selected_df.index.values[0] == Timestamp("2000-01-02")
         assert selected_df.index.values[1] == Timestamp("2000-01-03")
 
-        assert df.iloc[1]["value"] == selected_df.iloc[0]["value"]
-        assert df.iloc[2]["value"] == selected_df.iloc[1]["value"]
+        assert df.iloc[1]["value_0"] == selected_df.iloc[0]["value_0"]
+        assert df.iloc[2]["value_0"] == selected_df.iloc[1]["value_0"]
         assert len(selected_df) == 2
 
     def test_end_datetime(self):
@@ -477,8 +477,8 @@ class TestDataSelection:
         assert selected_df.index.values[0] == Timestamp("2000-01-01")
         assert selected_df.index.values[1] == Timestamp("2000-01-02")
 
-        assert df.iloc[0]["value"] == selected_df.iloc[0]["value"]
-        assert df.iloc[1]["value"] == selected_df.iloc[1]["value"]
+        assert df.iloc[0]["value_0"] == selected_df.iloc[0]["value_0"]
+        assert df.iloc[1]["value_0"] == selected_df.iloc[1]["value_0"]
         assert len(selected_df) == 2
 
     @pytest.mark.parametrize(
@@ -507,9 +507,9 @@ class TestDataSelection:
         assert selected_df.index.values[1] == Timestamp("2000-01-03")
         assert selected_df.index.values[2] == Timestamp("2000-01-04")
 
-        assert df.iloc[1]["value"] == selected_df.iloc[0]["value"]
-        assert df.iloc[2]["value"] == selected_df.iloc[1]["value"]
-        assert df.iloc[3]["value"] == selected_df.iloc[2]["value"]
+        assert df.iloc[1]["value_0"] == selected_df.iloc[0]["value_0"]
+        assert df.iloc[2]["value_0"] == selected_df.iloc[1]["value_0"]
+        assert df.iloc[3]["value_0"] == selected_df.iloc[2]["value_0"]
 
         assert len(selected_df) == 3
 
@@ -543,12 +543,12 @@ class TestAddDiff:
         # Add a single diff column.
         df = get_fake_df(3)
 
-        new_df = add_diff_columns(df, ["value"])
-        assert df.iloc[1]["value"] == new_df.iloc[0]["value"]
-        assert df.iloc[2]["value"] == new_df.iloc[1]["value"]
+        new_df = add_diff_columns(df, ["value_0"])
+        assert df.iloc[1]["value_0"] == new_df.iloc[0]["value_0"]
+        assert df.iloc[2]["value_0"] == new_df.iloc[1]["value_0"]
 
-        assert new_df.iloc[0]["value_diff"] == df.iloc[1]["value"]-df.iloc[0]["value"]
-        assert new_df.iloc[1]["value_diff"] == df.iloc[2]["value"]-df.iloc[1]["value"]
+        assert new_df.iloc[0]["value_0_diff"] == df.iloc[1]["value_0"]-df.iloc[0]["value_0"]
+        assert new_df.iloc[1]["value_0_diff"] == df.iloc[2]["value_0"]-df.iloc[1]["value_0"]
 
         assert len(new_df) == 2
 

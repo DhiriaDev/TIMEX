@@ -7,7 +7,12 @@ from pandas import DataFrame
 
 from timexseries.data_prediction import PredictionModel
 
-logging.getLogger('fbprophet').setLevel(logging.WARNING)
+logging.getLogger('prophet').setLevel(logging.WARNING)
+stanpy_logger = logging.getLogger('cmdstanpy')
+stanpy_logger.addHandler(logging.NullHandler())
+stanpy_logger.propagate = False
+stanpy_logger.setLevel(logging.CRITICAL)
+
 log = logging.getLogger(__name__)
 
 

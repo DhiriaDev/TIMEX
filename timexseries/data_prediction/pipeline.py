@@ -7,12 +7,13 @@ from typing import Tuple
 import dateparser
 from pandas import DataFrame
 import pandas as pd
+import numpy as np
 
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
-from timexseries.data_prediction.models.lstm import LSTMModel
+# from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
@@ -737,6 +738,80 @@ def create_timeseries_containers(ingested_data: DataFrame, param_config: dict):
     return timeseries_containers
 
 
+def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict, dict):
+    """
+    Get the result of the prediction pipeline on `ingested_data`, according to `param_config`, in a dict that can be.
+    easily dumped to JSON. Also a dict containing information on the obtained models is returned.
+    Parameters
+    ----------
+    ingested_data : DataFrame
+        Initial data of the time-series.
+
+    param_config : dict
+        TIMEX configuration dictionary.
+
+    Returns
+    -------
+    Dictionary containing the parsed data, the prediction, and indications on the prediction, as well as a dict with
+    more information on the obtained models.
+    """
+    timeseries_containers = create_timeseries_containers(ingested_data, param_config)
+
+    try:
+        main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
+    except KeyError:
+        main_accuracy_estimator = 'MAE'
+
+    df_data = pd.DataFrame()
+    prediction = pd.DataFrame()
+    json_result = {"data": "",
+                   "best_pred": "",
+                   "models_results": {}}
+
+    log.info('Validation started using %s as main accuracy estimator!', main_accuracy_estimator)
+
+    for timeseries_container in timeseries_containers:
+        # 1. Concat the ingested data in the final dataframe
+        column_name = timeseries_container.timeseries_data.columns.values[0]
+        df_data = pd.concat([df_data, timeseries_container.timeseries_data], ignore_index=False, axis=1)
+
+        # 2. Create the models_results dictionary
+        json_result["models_results"][column_name] = {}
+        models = timeseries_container.models
+
+        best_model_name = list(models.keys())[0]
+        best_validation_error = np.inf
+
+        for model_name, model_results in models.items():
+            _dict = {}
+            model_results.results.sort(key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
+            _dict['best_training_window_start'] = model_results.results[0].testing_performances.first_used_index
+            _dict['validation_error'] = getattr(model_results.results[0].testing_performances,
+                                                main_accuracy_estimator.upper())
+            json_result["models_results"][column_name][model_name] = _dict
+
+            if _dict['validation_error'] < best_validation_error:
+                best_model_name = model_name
+                best_validation_error = _dict['validation_error']
+
+        best_model_characteristics = models[best_model_name].characteristics
+
+        best_pred = models[best_model_name].best_prediction
+        best_pred = filter_prediction_field(best_pred, column_name)
+        prediction = pd.concat([prediction, best_pred], axis=1)
+
+    data_json = df_data.to_json(orient='columns', date_format='iso')
+    prediction = (prediction.iloc[-param_config['model_parameters']['forecast_horizon']:, :]
+                  .to_json(orient='columns', date_format='iso'))
+
+    json_result["data"] = data_json
+    json_result["best_pred"] = prediction
+
+    log.info('Validation finished.')
+
+    return json_result, best_model_characteristics
+
+
 def model_factory(model_class: str, param_config: dict, transformation: str = None) -> PredictionModel:
     """
     Given the name of the model, return the corresponding PredictionModel.
@@ -774,8 +849,8 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
     model_class = model_class.lower()
     if model_class == "fbprophet":
         return FBProphetModel(params=param_config, transformation=transformation)
-    if model_class == "lstm":
-        return LSTMModel(param_config, transformation)
+    # if model_class == "lstm":
+    #     return LSTMModel(param_config, transformation)
     if model_class == "mockup":
         return MockUpModel(param_config, transformation)
     if model_class == "persistence" or model_class == "naive":
@@ -807,54 +882,3 @@ def filter_prediction_field(best_pred: DataFrame, column: str) -> DataFrame:
     df = DataFrame(best_pred.values, columns=columns, index=best_pred.index)
 
     return df
-
-
-def validate(timeseries_containers, param_config):
-    main_accuracy_estimator = param_config["model_parameters"]["main_accuracy_estimator"]
-    #main_accuracy_estimator = 'MAE'
-    df_data = DataFrame()
-    prediction = DataFrame()
-    val_err = float
-    json_result = {"data": "",
-                   "best_pred": {}}
-    # models_config = {}
-
-    log.info('Validation started using %s as main accuracy estimator!', main_accuracy_estimator)
-
-    '''
-    Since the prediction request are asynchronous for each requested model, now we have to merge the results of
-    all the models for the requested timeseries in a single container
-    '''
-
-    for timeseries_container in timeseries_containers:
-
-        models = timeseries_container.models
-        models_best = {}
-        column = timeseries_container.timeseries_data.columns.values[0]
-        df_data = pd.concat([df_data, timeseries_container.timeseries_data], ignore_index=False, axis=1)
-        #        models_config[column] = []
-
-        for model in models:
-            models[model].results.sort(
-                key=lambda x: getattr(x.testing_performances, main_accuracy_estimator.upper()))
-            #            models_config[column].append(models[model].characteristics)
-            models_best[model] = getattr(models[model].results[0].testing_performances,
-                                         main_accuracy_estimator.upper())
-
-        val_err = min(models_best.values())
-        best_model = min(models_best, key=models_best.get)
-        best_pred = models[best_model].best_prediction
-        best_pred = filter_prediction_field(best_pred, column)
-        prediction = pd.concat([prediction, best_pred], axis=1)
-
-    data_json = df_data.to_json(orient='columns', date_format='iso')
-    prediction = prediction.to_json(orient='columns', date_format='iso')
-
-    json_result["data"] = data_json
-    json_result["best_pred"]["df_pred"] = prediction
-    json_result["best_pred"]["val_err"] = val_err
-    #    json_result["models"].append(models_config)
-
-    log.info('Validation finished.')
-
-    return json_result
