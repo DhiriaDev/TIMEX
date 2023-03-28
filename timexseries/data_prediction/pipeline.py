@@ -738,7 +738,7 @@ def create_timeseries_containers(ingested_data: DataFrame, param_config: dict):
     return timeseries_containers
 
 
-def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict, dict):
+def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
     """
     Get the result of the prediction pipeline on `ingested_data`, according to `param_config`, in a dict that can be.
     easily dumped to JSON. Also a dict containing information on the obtained models is returned.
@@ -752,6 +752,27 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict, dict
 
     Returns
     -------
+    json_results : dict
+        {
+            "data" : ingested_data
+            "best_pred" : prediction of the best model
+            "models_results" : dict
+                {
+                    "column_name" : dict
+                        {
+                            "model_name" : dict for each trained model
+                                {
+                                    "best_training_window_start" : first timestamp of the best training window
+                                    "validation_error" : float
+                                }
+                            
+                            "best_model_name" : str,
+                            "best_model_characteristics" : dict 
+                        }
+                }
+        }
+
+
     Dictionary containing the parsed data, the prediction, and indications on the prediction, as well as a dict with
     more information on the obtained models.
     """
@@ -794,7 +815,8 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict, dict
                 best_model_name = model_name
                 best_validation_error = _dict['validation_error']
 
-        best_model_characteristics = models[best_model_name].characteristics
+        json_result["models_results"][column_name]["best_model_name"] = best_model_name
+        json_result["models_results"][column_name]["best_model_characteristics"] = models[best_model_name].characteristics
 
         best_pred = models[best_model_name].best_prediction
         best_pred = filter_prediction_field(best_pred, column_name)
@@ -809,7 +831,7 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict, dict
 
     log.info('Validation finished.')
 
-    return json_result, best_model_characteristics
+    return json_result
 
 
 def model_factory(model_class: str, param_config: dict, transformation: str = None) -> PredictionModel:
