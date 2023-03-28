@@ -147,6 +147,8 @@ def get_best_univariate_predictions(ingested_data: DataFrame, param_config: dict
             max_threads = len(os.sched_getaffinity(0))
         except:
             max_threads = 1
+    
+    log.info(f"the number of threads used is: {max_threads}")
 
     columns = ingested_data.columns
 
