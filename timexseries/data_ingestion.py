@@ -8,7 +8,7 @@ from pandas import DataFrame
 log = logging.getLogger(__name__)
 
 
-def ingest_timeseries(param_config: dict, dataset = None):
+def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame = None):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
     This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
@@ -19,6 +19,8 @@ def ingest_timeseries(param_config: dict, dataset = None):
         A dictionary corresponding to a TIMEX JSON configuration file.
     dataset : [bytes]
         String of bytes from which the data frame will be loaded.
+    storage pandas.DataFrame:
+        Storage dataset for old data
 
     Returns
     -------
@@ -155,6 +157,10 @@ def ingest_timeseries(param_config: dict, dataset = None):
              f"-> Number of columns: {len(df_ingestion.columns)}\n"
              f"-> Column names: {[*df_ingestion.columns]}\n"
              f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
+
+    if storage is not None:
+        df_ingestion = pd.concat([df_ingestion, storage]).sort_index() #axis = 0 -> concat along the rows (extension of the dataset with more samples)
+        df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='first')]
 
     return df_ingestion
 
