@@ -119,6 +119,10 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
 
+        
+    if storage is not None:
+        df_ingestion = pd.concat([df_ingestion, storage])
+
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
@@ -157,10 +161,6 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
              f"-> Number of columns: {len(df_ingestion.columns)}\n"
              f"-> Column names: {[*df_ingestion.columns]}\n"
              f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
-
-    if storage is not None:
-        df_ingestion = pd.concat([df_ingestion, storage]).sort_index() #axis = 0 -> concat along the rows (extension of the dataset with more samples)
-        df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='first')]
 
     return df_ingestion
 
