@@ -1117,7 +1117,7 @@ class TestGetResultDict:
                 "main_accuracy_estimator": "mae",
             },
         }
-        result, model_characteristics = get_result_dict(ingested_data=df, param_config=param_config)
+        result = get_result_dict(ingested_data=df, param_config=param_config)
 
         data_df = pd.read_json(result['data'])
         pred_df = pd.read_json(result['best_pred'])
