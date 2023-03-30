@@ -1129,6 +1129,6 @@ class TestGetResultDict:
         assert len(pred_df) == 10
         assert len(model_results.keys()) == 2
 
-        assert len(model_results['value_0'].keys()) == 4
-        assert len(model_results['value_1'].keys()) == 4
+        assert len(model_results['value_0'].keys()) == 6
+        assert len(model_results['value_1'].keys()) == 6
 
