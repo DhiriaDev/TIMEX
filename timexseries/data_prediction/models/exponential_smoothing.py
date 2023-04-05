@@ -2,7 +2,7 @@ import logging
 
 from pandas import DataFrame
 from statsforecast import StatsForecast
-from statsforecast.models import ETS
+from statsforecast.models import AutoETS
 
 from timexseries.data_prediction import PredictionModel
 from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
@@ -32,19 +32,19 @@ class ExponentialSmoothingModel(PredictionModel):
         train_data.columns = ['ds', 'y']
         train_data.loc[:, 'unique_id'] = 0
 
-        if seasonality == 1:
-            model = 'ZZN'
-        else:
-            model = 'ZZA'
+        # if seasonality == 1:
+        #     model = 'ZZN'
+        # else:
+        #     model = 'ZZA'
 
         model = StatsForecast(
             df=train_data,
-            models=[ETS(season_length=seasonality, model=model)],
+            models=[AutoETS(season_length=seasonality, model='ZZZ')],
             freq=freq
         )
 
         y_hat_df = model.forecast(points_to_predict).set_index("ds")
 
-        future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'ETS']
+        future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'AutoETS']
 
         return future_dataframe
