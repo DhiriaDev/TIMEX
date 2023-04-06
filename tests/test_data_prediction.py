@@ -21,10 +21,11 @@ from timexseries.data_prediction.models.mockup import MockUpModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.models.predictor import ModelResult
+from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
 from timexseries.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
 
 from tests.utilities import get_fake_df
-from timexseries.data_ingestion import add_freq
+from timexseries.data_ingestion import add_freq, ingest_timeseries
 
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
@@ -1095,6 +1096,28 @@ class TestCreateContainers:
             else:
                 assert container.xcorr is None
             assert container.timeseries_data.equals(ing_data[[name]])
+
+
+class TestEstimateSeasonality:
+    def test_white_noise(self):
+        # No seasonality.
+        df = get_fake_df(length=100, features=1)
+
+        assert estimate_seasonality(df) == 1
+
+    def test_weekly(self):
+        # Weekly seasonality for a daily series.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/covid_example_data_ingestion.csv",
+                "columns_to_load_from_url": "data,nuovi_positivi",
+                "datetime_column_name": "data",
+                "index_column_name": "data",
+            }
+        }
+        df = ingest_timeseries(param_config)
+        assert estimate_seasonality(df) == 7
+
 
 
 class TestGetResultDict:
