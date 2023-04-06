@@ -9,7 +9,7 @@ def estimate_seasonality(series: pd.DataFrame):
     Returns seasonality period. Returns 1 if no seasonality is found.
     """
 
-    maxnlags = 30
+    maxnlags = min(30, int(len(series)/2)-1)
 
     s = pd.Series(sm.tsa.pacf(series, method='ywm', nlags=maxnlags))
     s = np.abs(s)

@@ -1119,7 +1119,6 @@ class TestEstimateSeasonality:
         assert estimate_seasonality(df) == 7
 
 
-
 class TestGetResultDict:
     def test_get_result_dict_1(self):
         df = get_fake_df(length=100, features=2)
