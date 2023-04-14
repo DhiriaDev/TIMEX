@@ -21,10 +21,11 @@ from timexseries.data_prediction.models.mockup import MockUpModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.models.predictor import ModelResult
+from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
 from timexseries.data_prediction.xcorr import calc_xcorr, calc_all_xcorr
 
 from tests.utilities import get_fake_df
-from timexseries.data_ingestion import add_freq
+from timexseries.data_ingestion import add_freq, ingest_timeseries
 
 from timexseries.data_prediction.pipeline import prepare_extra_regressor, get_best_univariate_predictions, \
     get_best_multivariate_predictions, compute_historical_predictions, get_best_predictions, \
@@ -1097,6 +1098,27 @@ class TestCreateContainers:
             assert container.timeseries_data.equals(ing_data[[name]])
 
 
+class TestEstimateSeasonality:
+    def test_white_noise(self):
+        # No seasonality.
+        df = get_fake_df(length=100, features=1)
+
+        assert estimate_seasonality(df) == 1
+
+    def test_weekly(self):
+        # Weekly seasonality for a daily series.
+        param_config = {
+            "input_parameters": {
+                "source_data_url": "test_datasets/covid_example_data_ingestion.csv",
+                "columns_to_load_from_url": "data,nuovi_positivi",
+                "datetime_column_name": "data",
+                "index_column_name": "data",
+            }
+        }
+        df = ingest_timeseries(param_config)
+        assert estimate_seasonality(df) == 7
+
+
 class TestGetResultDict:
     def test_get_result_dict_1(self):
         df = get_fake_df(length=100, features=2)
@@ -1117,7 +1139,7 @@ class TestGetResultDict:
                 "main_accuracy_estimator": "mae",
             },
         }
-        result, model_characteristics = get_result_dict(ingested_data=df, param_config=param_config)
+        result = get_result_dict(ingested_data=df, param_config=param_config)
 
         data_df = pd.read_json(result['data'])
         pred_df = pd.read_json(result['best_pred'])
@@ -1129,6 +1151,6 @@ class TestGetResultDict:
         assert len(pred_df) == 10
         assert len(model_results.keys()) == 2
 
-        assert len(model_results['value_0'].keys()) == 4
-        assert len(model_results['value_1'].keys()) == 4
+        assert len(model_results['value_0'].keys()) == 6
+        assert len(model_results['value_1'].keys()) == 6
 
