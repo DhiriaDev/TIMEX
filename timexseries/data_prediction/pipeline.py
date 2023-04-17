@@ -758,6 +758,7 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
         {
             "data" : ingested_data
             "best_pred" : prediction of the best model
+            "frequency":
             "models_results" : dict
                 {
                     "column_name" : dict
@@ -828,6 +829,7 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
     prediction = (prediction.iloc[-param_config['model_parameters']['forecast_horizon']:, :]
                   .to_json(orient='columns', date_format='iso'))
 
+    json_result['freq'] = df_data.index.freq.freqstr
     json_result["data"] = data_json
     json_result["best_pred"] = prediction
 
