@@ -754,26 +754,28 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
 
     Returns
     -------
-    json_results : dict
-        {
-            "data" : ingested_data
-            "best_pred" : prediction of the best model
-            "frequency":
-            "models_results" : dict
-                {
-                    "column_name" : dict
-                        {
-                            "model_name" : dict for each trained model
-                                {
-                                    "best_training_window_start" : first timestamp of the best training window
-                                    "validation_error" : float
-                                }
-                            
-                            "best_model_name" : str,
-                            "best_model_characteristics" : dict 
-                        }
-                }
+    json_results : {
+      "data" : ingested_data
+      "best_pred" : prediction of the best model
+      "frequency": frequency of the time-series found by TIMEX
+      "models_results" : {
+        "column_name" : {
+          "model_name" : {
+            "best_training_window_start" : first timestamp of the best training window
+            "validation_error" : float
+            "performances_with_different_windows": [
+              {
+                'first_used_index': datetiome,
+                'MSE': ...,
+                ...
+              }, {...}
+            ]
+          }
+          "best_model_name" : str,
+          "best_model_characteristics" : dict
         }
+      }
+    }
 
 
     Dictionary containing the parsed data, the prediction, and indications on the prediction, as well as a dict with
@@ -812,6 +814,9 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
             _dict['best_training_window_start'] = model_results.results[0].testing_performances.first_used_index
             _dict['validation_error'] = getattr(model_results.results[0].testing_performances,
                                                 main_accuracy_estimator.upper())
+            _dict['performances_with_different_windows'] = [result.testing_performances.get_dict()
+                                                            for result in model_results.results]
+
             json_result["models_results"][column_name][model_name] = _dict
 
             if _dict['validation_error'] < best_validation_error:
