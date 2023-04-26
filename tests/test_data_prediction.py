@@ -1156,3 +1156,9 @@ class TestGetResultDict:
         assert len(model_results['value_0'].keys()) == 6
         assert len(model_results['value_1'].keys()) == 6
 
+        for ts in ['value_0', 'value_1']:
+            for name in ['fbprophet', 'arima', 'seasonal_persistence', 'exponentialsmoothing']:
+                m = model_results[ts][name]
+                assert m['best_training_window_start'] is not None
+                assert m['validation_error'] is not None
+                assert len(m['performances_with_different_windows']) == 5
