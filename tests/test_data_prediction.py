@@ -14,6 +14,7 @@ from prophet import Prophet
 from timexseries import TimeSeriesContainer
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
+from timexseries.data_prediction.models.linear import LinearModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 # from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
@@ -491,7 +492,7 @@ class Test_Models_Specific:
         "model_class,check_multivariate",
         [(FBProphetModel, True), (ARIMAModel, False),
          (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
-         (SeasonalPersistenceModel, False)]
+         (SeasonalPersistenceModel, False), (LinearModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
