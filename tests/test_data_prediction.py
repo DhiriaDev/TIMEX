@@ -491,10 +491,11 @@ class Test_Models_General:
 class Test_Models_Specific:
     @pytest.mark.parametrize(
         "model_class,check_multivariate",
-        # [(FBProphetModel, True), (ARIMAModel, False),
-        #  (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
-        #  (SeasonalPersistenceModel, False), (LinearModel, False),
-         [(RandomWalkWithDriftModel, False)]
+        [(FBProphetModel, True),
+         (ARIMAModel, False),
+         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
+         (SeasonalPersistenceModel, False), (LinearModel, False),
+         (RandomWalkWithDriftModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)

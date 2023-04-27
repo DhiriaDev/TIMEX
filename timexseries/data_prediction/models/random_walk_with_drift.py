@@ -26,7 +26,10 @@ class RandomWalkWithDriftModel(PredictionModel):
             freq=freq
         )
 
-        y_hat_df = model.forecast(points_to_predict).set_index("ds")
+        y_hat_df = model.forecast(points_to_predict, level=[95]).set_index("ds")
         future_dataframe.iloc[-points_to_predict:, 0] = y_hat_df.loc[:, 'RWD']
+        index_to_update = future_dataframe.index[-points_to_predict:]
+        future_dataframe.loc[index_to_update, 'yhat_upper'] = y_hat_df.loc[:, 'RWD-hi-95']
+        future_dataframe.loc[index_to_update, 'yhat_lower'] = y_hat_df.loc[:, 'RWD-lo-95']
 
         return future_dataframe

@@ -31,7 +31,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert df.index.name == "first_column"
         assert df.index.values[0] == Timestamp("2020-02-25")
         assert df.index.values[1] == Timestamp("2020-02-26")
@@ -59,7 +59,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert df.index.name == "first_column"
         assert df.index.values[0] == Timestamp("2011-01-31 18:00:00")
         assert df.index.values[1] == Timestamp("2011-02-28 18:00:00")
@@ -87,7 +87,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
 
         assert df.index.name == "first_column"
         assert df.columns[0] == "third_column"
@@ -129,7 +129,7 @@ class TestDataIngestion:
         else:
             index_name = "first_column"
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
 
         assert df.index.name == index_name
         assert df.columns[0] == "C"
@@ -153,7 +153,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
 
         assert len(df) == 3
         assert df.iloc[0, 0] == 1
@@ -181,7 +181,7 @@ class TestDataIngestion:
         else:
             param_config["input_parameters"]["columns_to_load_from_url"] = columns_to_load_from_url
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert df.index.name == "first_column"
         assert df.index.values[0] == Timestamp("2020-02-25")
         assert df.index.values[1] == Timestamp("2020-02-26")
@@ -211,7 +211,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert df.index.name == "first_column"
         assert df.index.values[0] == Timestamp("2020-11-01")
         assert df.index.values[1] == Timestamp("2020-12-01")
@@ -236,7 +236,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert df.index.name == "first_column"
         assert df.index.values[0] == Timestamp("1959-01-01")
         assert df.index.values[1] == Timestamp("1959-02-01")
@@ -260,7 +260,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
 
         expected = pd.read_csv(os.path.join("test_datasets", "test_6_expected.csv"), parse_dates=["first_column"],
                                index_col="first_column")
@@ -290,7 +290,7 @@ class TestDataIngestion:
                 df = df.drop(df.sample(1).index)
 
             df.to_csv(os.path.join(tmp_path, "test.csv"))
-            df = ingest_timeseries(param_config)
+            df = ingest_timeseries(param_config)[2]
 
             assert df.iloc[:, 0].isnull().sum() == 0
             assert df.index.freq == "D"
@@ -310,7 +310,7 @@ class TestDataIngestion:
                                   pd.Timestamp("2020-02-27"),
                                   pd.Timestamp("2020-02-28")], freq="D")
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert len(df.columns) == 2
         assert df.index.name == "first_column"
         assert df.columns[0] == "second_column"
@@ -332,7 +332,7 @@ class TestDataIngestion:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert len(df.columns) == 1
         assert df.index.name == "first_column"
 
@@ -439,7 +439,7 @@ class TestDataSelection:
             }
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         selected_df = select_timeseries_portion(df, param_config)
         assert df.equals(selected_df)
 
@@ -529,7 +529,7 @@ class TestDataSelection:
             },
         }
 
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         df = select_timeseries_portion(df, param_config)
 
         assert df.index.values[0] == Timestamp("2020-02-25")
