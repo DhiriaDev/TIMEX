@@ -12,6 +12,7 @@ import numpy as np
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
+from timexseries.data_prediction.models.linear import LinearModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 # from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
@@ -888,6 +889,8 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return PersistenceModel(param_config, transformation)
     if model_class == "seasonal_persistence" or model_class == "seasonal_naive":
         return SeasonalPersistenceModel(param_config, transformation)
+    if model_class == "linear":
+        return LinearModel(param_config, transformation)
     if model_class == "exponentialsmoothing" or model_class == "exponential_smoothing" or model_class == "ets":
         return ExponentialSmoothingModel(param_config, transformation)
     # if model_class == "flaml":
