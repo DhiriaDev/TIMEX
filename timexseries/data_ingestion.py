@@ -4,6 +4,7 @@ from io import StringIO
 import dateparser
 import pandas as pd
 from pandas import DataFrame
+import copy
 
 log = logging.getLogger(__name__)
 
@@ -118,8 +119,9 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
     )
 
     df_ingestion.set_index(index_column_name, inplace=True, drop=True)
-
-        
+ 
+    raw_data = copy.deepcopy(df_ingestion)
+ 
     if storage is not None:
         df_ingestion = pd.concat([df_ingestion, storage])
 
@@ -130,6 +132,8 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
         log.warning(f"Dataframe is not ordered. Ordering it...")
         df_ingestion = df_ingestion.sort_index()
 
+    storage_data = copy.deepcopy(df_ingestion)
+    
     try:
         targets = list(input_parameters["add_diff_column"].split(','))
         log.debug(f"Adding the diff columns...")
@@ -162,7 +166,7 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
              f"-> Column names: {[*df_ingestion.columns]}\n"
              f"-> Number of missing data: {[*df_ingestion.isnull().sum()]}")
 
-    return df_ingestion
+    return raw_data, storage_data, df_ingestion
 
 
 def ingest_additional_regressors(source_data_url, param_config):
