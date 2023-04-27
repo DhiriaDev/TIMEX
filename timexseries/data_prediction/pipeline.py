@@ -19,6 +19,7 @@ from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
 from timexseries.data_prediction.models.prophet import FBProphetModel
+from timexseries.data_prediction.models.random_walk_with_drift import RandomWalkWithDriftModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.xcorr import calc_all_xcorr
 from timexseries import TimeSeriesContainer, ValidationPerformance
@@ -891,6 +892,8 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return SeasonalPersistenceModel(param_config, transformation)
     if model_class == "linear":
         return LinearModel(param_config, transformation)
+    if model_class == "random_walk_with_drift":
+        return RandomWalkWithDriftModel(param_config, transformation)
     if model_class == "exponentialsmoothing" or model_class == "exponential_smoothing" or model_class == "ets":
         return ExponentialSmoothingModel(param_config, transformation)
     # if model_class == "flaml":
