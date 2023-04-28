@@ -1119,7 +1119,7 @@ class TestEstimateSeasonality:
                 "index_column_name": "data",
             }
         }
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert estimate_seasonality(df) == 7
 
 
