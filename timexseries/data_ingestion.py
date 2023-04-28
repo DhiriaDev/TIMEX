@@ -123,7 +123,14 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
     raw_data = copy.deepcopy(df_ingestion)
  
     if storage is not None:
+        if len(df_ingestion.columns) != len(storage.columns):
+            raise ValueError("The number of columns must be the same between the new data and the storage dataset")        
+        # df_ingestion columns renaming as the storage dataset.
+        df_ingestion = df_ingestion.set_axis(storage.columns, axis=1) 
+        raw_data = raw_data.set_axis(storage.columns, axis=1)   
+             
         df_ingestion = pd.concat([df_ingestion, storage])
+
 
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
