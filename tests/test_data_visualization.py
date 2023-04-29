@@ -43,7 +43,7 @@ def dash_children(tmp_path):
         }
     }
 
-    ingested_dataset = ingest_timeseries(param_config)
+    ingested_dataset = ingest_timeseries(param_config)[2]
     timeseries_containers = create_timeseries_containers(ingested_dataset, param_config)
 
     # Data visualization
