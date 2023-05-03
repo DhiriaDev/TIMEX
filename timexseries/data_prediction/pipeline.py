@@ -12,12 +12,14 @@ import numpy as np
 from timexseries.data_ingestion import ingest_additional_regressors
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
+from timexseries.data_prediction.models.linear import LinearModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 # from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
 from timexseries.data_prediction.models.prophet import FBProphetModel
+from timexseries.data_prediction.models.random_walk_with_drift import RandomWalkWithDriftModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.xcorr import calc_all_xcorr
 from timexseries import TimeSeriesContainer, ValidationPerformance
@@ -754,26 +756,28 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
 
     Returns
     -------
-    json_results : dict
-        {
-            "data" : ingested_data
-            "best_pred" : prediction of the best model
-            "frequency":
-            "models_results" : dict
-                {
-                    "column_name" : dict
-                        {
-                            "model_name" : dict for each trained model
-                                {
-                                    "best_training_window_start" : first timestamp of the best training window
-                                    "validation_error" : float
-                                }
-                            
-                            "best_model_name" : str,
-                            "best_model_characteristics" : dict 
-                        }
-                }
+    json_results : {
+      "data" : ingested_data
+      "best_pred" : prediction of the best model
+      "frequency": frequency of the time-series found by TIMEX
+      "models_results" : {
+        "column_name" : {
+          "model_name" : {
+            "best_training_window_start" : first timestamp of the best training window
+            "validation_error" : float
+            "performances_with_different_windows": [
+              {
+                'first_used_index': datetiome,
+                'MSE': ...,
+                ...
+              }, {...}
+            ]
+          }
+          "best_model_name" : str,
+          "best_model_characteristics" : dict
         }
+      }
+    }
 
 
     Dictionary containing the parsed data, the prediction, and indications on the prediction, as well as a dict with
@@ -814,6 +818,9 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
             _dict['best_training_window_start'] = model_results.results[0].testing_performances.first_used_index
             _dict['validation_error'] = getattr(model_results.results[0].testing_performances,
                                                 main_accuracy_estimator.upper())
+            _dict['performances_with_different_windows'] = [result.testing_performances.get_dict()
+                                                            for result in model_results.results]
+
             json_result["models_results"][column_name][model_name] = _dict
 
             
@@ -898,6 +905,10 @@ def model_factory(model_class: str, param_config: dict, transformation: str = No
         return PersistenceModel(param_config, transformation)
     if model_class == "seasonal_persistence" or model_class == "seasonal_naive":
         return SeasonalPersistenceModel(param_config, transformation)
+    if model_class == "linear":
+        return LinearModel(param_config, transformation)
+    if model_class == "random_walk_with_drift":
+        return RandomWalkWithDriftModel(param_config, transformation)
     if model_class == "exponentialsmoothing" or model_class == "exponential_smoothing" or model_class == "ets":
         return ExponentialSmoothingModel(param_config, transformation)
     # if model_class == "flaml":

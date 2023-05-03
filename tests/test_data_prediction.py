@@ -14,11 +14,13 @@ from prophet import Prophet
 from timexseries import TimeSeriesContainer
 from timexseries.data_prediction.models.arima import ARIMAModel
 from timexseries.data_prediction.models.exponential_smoothing import ExponentialSmoothingModel
+from timexseries.data_prediction.models.linear import LinearModel
 # from timexseries.data_prediction.models.flaml_predictor import FLAMLModel
 # from timexseries.data_prediction.models.lstm import LSTMModel
 from timexseries.data_prediction.models.mockup import MockUpModel
 # from timexseries.data_prediction.models.neuralprophet_predictor import NeuralProphetModel
 from timexseries.data_prediction.models.persistence import PersistenceModel
+from timexseries.data_prediction.models.random_walk_with_drift import RandomWalkWithDriftModel
 from timexseries.data_prediction.models.seasonal_persistence import SeasonalPersistenceModel
 from timexseries.data_prediction.models.predictor import ModelResult
 from timexseries.data_prediction.models.seasonality_estimator import estimate_seasonality
@@ -489,9 +491,11 @@ class Test_Models_General:
 class Test_Models_Specific:
     @pytest.mark.parametrize(
         "model_class,check_multivariate",
-        [(FBProphetModel, True), (ARIMAModel, False),
+        [(FBProphetModel, True),
+         (ARIMAModel, False),
          (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
-         (SeasonalPersistenceModel, False)]
+         (SeasonalPersistenceModel, False), (LinearModel, False),
+         (RandomWalkWithDriftModel, False)]
     )
     def test_models(self, model_class, check_multivariate):
         dates = pd.date_range('1/1/2000', periods=100)
@@ -1156,3 +1160,9 @@ class TestGetResultDict:
         assert len(model_results['value_0'].keys()) == 6
         assert len(model_results['value_1'].keys()) == 6
 
+        for ts in ['value_0', 'value_1']:
+            for name in ['fbprophet', 'arima', 'seasonal_persistence', 'exponentialsmoothing']:
+                m = model_results[ts][name]
+                assert m['best_training_window_start'] is not None
+                assert m['validation_error'] is not None
+                assert len(m['performances_with_different_windows']) == 5
