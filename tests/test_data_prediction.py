@@ -1166,3 +1166,11 @@ class TestGetResultDict:
                 assert m['best_training_window_start'] is not None
                 assert m['validation_error'] is not None
                 assert len(m['performances_with_different_windows']) == 5
+                
+        # -1 because the xcorr dict contains also the threshold value for the xcorr to be meaningful
+        xcorr_modes = param_config["xcorr_parameters"]["xcorr_mode"].split(',')
+        assert(len(result["xcorr"]) -1 == len(xcorr_modes))
+        for mode in xcorr_modes:
+            assert(len(result["xcorr"][mode].keys()) == len(df.columns))
+            for ts in result["xcorr"][mode]:
+                assert(len(result["xcorr"][mode][ts].keys()) == len(df.columns) - 1)

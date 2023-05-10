@@ -795,6 +795,13 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
     json_result = {"data": "",
                    "best_pred": "",
                    "models_results": {}}
+    
+    try:
+        xcorr_modes = param_config['xcorr_parameters']['xcorr_mode'].split(',')
+        xcorr_dict = dict.fromkeys(xcorr_modes, {})
+        xcorr_dict["threshold"] = threshold = param_config['xcorr_parameters']['xcorr_extra_regressor_threshold']
+    except:
+        xcorr_dict = {}
 
     log.info('Validation started using %s as main accuracy estimator!', main_accuracy_estimator)
 
@@ -831,6 +838,19 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
         best_pred = models[best_model_name].best_prediction
         best_pred = filter_prediction_field(best_pred, column_name)
         prediction = pd.concat([prediction, best_pred], axis=1)
+        
+        # Adding the cross-correlation information if more than one series
+        if timeseries_container.xcorr is not None and threshold is not None:            
+            xcorr = timeseries_container.xcorr
+            name = timeseries_container.timeseries_data.columns.values[0] 
+            for mode in xcorr_modes:
+                xcorr_dict[mode][name] = {}
+                for col in xcorr[mode].columns:
+                    # With .loc[0 :] I'm retrieving the correlation of other series with the current one
+                    # if corr > threshold that series is also useful to predict the current series future values
+                    index_of_max = xcorr[mode][col].loc[0 : ].abs().idxmax()       
+                    corr = xcorr[mode].loc[index_of_max, col]
+                    xcorr_dict[mode][name][col] = {"value" : corr, "lag" : index_of_max}
 
     data_json = df_data.to_json(orient='columns', date_format='iso')
     prediction = (prediction.iloc[-param_config['model_parameters']['forecast_horizon']:, :]
@@ -839,7 +859,8 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
     json_result['freq'] = df_data.index.freq.freqstr
     json_result["data"] = data_json
     json_result["best_pred"] = prediction
-
+    json_result["xcorr"] = xcorr_dict
+    
     log.info('Validation finished.')
 
     return json_result
