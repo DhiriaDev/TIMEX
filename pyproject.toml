@@ -30,6 +30,7 @@ gunicorn = "^20.1.0"
 pandas = "^1.5.0"
 joblib = "^1.2.0"
 prophet = "1.1.1"
+numpy = "1.23.5"
 
 
 

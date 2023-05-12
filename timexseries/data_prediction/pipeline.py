@@ -757,26 +757,44 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
     Returns
     -------
     json_results : {
-      "data" : ingested_data
-      "best_pred" : prediction of the best model
-      "frequency": frequency of the time-series found by TIMEX
-      "models_results" : {
-        "column_name" : {
-          "model_name" : {
-            "best_training_window_start" : first timestamp of the best training window
-            "validation_error" : float
-            "performances_with_different_windows": [
-              {
-                'first_used_index': datetiome,
-                'MSE': ...,
-                ...
-              }, {...}
-            ]
-          }
-          "best_model_name" : str,
-          "best_model_characteristics" : dict
+        "data" : ingested_data
+        "best_pred" : prediction of the best model
+        "frequency": frequency of the time-series found by TIMEX
+        "models_results" : {
+            "column_name" : {
+            "model_name" : {
+                "best_training_window_start" : first timestamp of the best training window
+                "validation_error" : float
+                "performances_with_different_windows": [
+                {
+                    'first_used_index': datetiome,
+                    'MSE': ...,
+                    ...
+                }, {...}
+                ]
+            }
+            "best_model_name" : str,
+            "best_model_characteristics" : dict
         }
-      }
+        "xcorr" : {
+            "threshold" : int = the threshold to have a meaningful crosscorr
+            "xcorr-alg0" : {
+                "timeseries0" : {
+                    "timeseries1" : {
+                        value: float,
+                        lag : int
+                    }
+                    .
+                    .
+                    .
+                    "timeseriesN" : {...}
+                }
+                .
+                .
+                .
+                "timeseriesN" : {...}
+            }
+        }
     }
 
 
