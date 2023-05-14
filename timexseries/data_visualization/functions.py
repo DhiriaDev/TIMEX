@@ -912,10 +912,20 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
                              mode='markers',
                              name=_('real data')), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.iloc[:, 0],
+    fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.loc[:, 'yhat'],
                              line=dict(color='blue'),
                              mode='lines+markers',
                              name=_('historical prediction')), row=1, col=1)
+
+    try:
+        fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.loc[:, 'yhat_upper'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name=_('historical prediction upper')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.loc[:, 'yhat_lower'],
+                                 line=dict(color='lightgreen', dash='dash'),
+                                 name=_('historical prediction lower')), row=1, col=1)
+    except:
+        pass
 
     future_prediction.loc[historical_prediction.index[-1], 'yhat'] = historical_prediction.iloc[-1, 0]
     future_prediction = future_prediction.loc[historical_prediction.index[-1]:, :]
