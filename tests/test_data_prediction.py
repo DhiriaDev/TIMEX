@@ -490,14 +490,17 @@ class Test_Models_General:
 
 class Test_Models_Specific:
     @pytest.mark.parametrize(
-        "model_class,check_multivariate",
-        [(FBProphetModel, True),
-         (ARIMAModel, False),
-         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
-         (SeasonalPersistenceModel, False), (LinearModel, False),
-         (RandomWalkWithDriftModel, False)]
+        "model_class,check_multivariate,check_intervals",
+        [(FBProphetModel, True, True),
+         (ARIMAModel, False, False),
+         (MockUpModel, True, False),
+         (ExponentialSmoothingModel, False, True),
+         (PersistenceModel, False, False),
+         (SeasonalPersistenceModel, False, True),
+         (LinearModel, False, False),
+         (RandomWalkWithDriftModel, False, True)]
     )
-    def test_models(self, model_class, check_multivariate):
+    def test_models(self, model_class, check_multivariate, check_intervals):
         dates = pd.date_range('1/1/2000', periods=100)
         df = pd.DataFrame(np.random.rand(100), index=dates, columns=["value"])
         future_df = pd.DataFrame(index=pd.date_range(freq="1d",
@@ -519,6 +522,9 @@ class Test_Models_Specific:
 
         for i in range(100, 110):
             assert not np.isnan(result.iloc[i]['yhat'])
+            if check_intervals:
+                assert not np.isnan(result.iloc[i]['yhat_upper'])
+                assert not np.isnan(result.iloc[i]['yhat_lower'])
 
         if check_multivariate:
             model = model_class({})
