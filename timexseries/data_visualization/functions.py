@@ -912,7 +912,7 @@ def historical_prediction_plot(real_data: DataFrame, historical_prediction: Data
                              mode='markers',
                              name=_('real data')), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.loc[:, 'yhat'],
+    fig.add_trace(go.Scatter(x=historical_prediction.index, y=historical_prediction.iloc[:, 0],
                              line=dict(color='blue'),
                              mode='lines+markers',
                              name=_('historical prediction')), row=1, col=1)
