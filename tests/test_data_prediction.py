@@ -490,14 +490,17 @@ class Test_Models_General:
 
 class Test_Models_Specific:
     @pytest.mark.parametrize(
-        "model_class,check_multivariate",
-        [(FBProphetModel, True),
-         (ARIMAModel, False),
-         (MockUpModel, True), (ExponentialSmoothingModel, False), (PersistenceModel, False),
-         (SeasonalPersistenceModel, False), (LinearModel, False),
-         (RandomWalkWithDriftModel, False)]
+        "model_class,check_multivariate,check_intervals",
+        [(FBProphetModel, True, True),
+         (ARIMAModel, False, False),
+         (MockUpModel, True, False),
+         (ExponentialSmoothingModel, False, True),
+         (PersistenceModel, False, False),
+         (SeasonalPersistenceModel, False, True),
+         (LinearModel, False, False),
+         (RandomWalkWithDriftModel, False, True)]
     )
-    def test_models(self, model_class, check_multivariate):
+    def test_models(self, model_class, check_multivariate, check_intervals):
         dates = pd.date_range('1/1/2000', periods=100)
         df = pd.DataFrame(np.random.rand(100), index=dates, columns=["value"])
         future_df = pd.DataFrame(index=pd.date_range(freq="1d",
@@ -519,6 +522,9 @@ class Test_Models_Specific:
 
         for i in range(100, 110):
             assert not np.isnan(result.iloc[i]['yhat'])
+            if check_intervals:
+                assert not np.isnan(result.iloc[i]['yhat_upper'])
+                assert not np.isnan(result.iloc[i]['yhat_lower'])
 
         if check_multivariate:
             model = model_class({})
@@ -1119,7 +1125,7 @@ class TestEstimateSeasonality:
                 "index_column_name": "data",
             }
         }
-        df = ingest_timeseries(param_config)
+        df = ingest_timeseries(param_config)[2]
         assert estimate_seasonality(df) == 7
 
 
@@ -1166,3 +1172,11 @@ class TestGetResultDict:
                 assert m['best_training_window_start'] is not None
                 assert m['validation_error'] is not None
                 assert len(m['performances_with_different_windows']) == 5
+                
+        # -1 because the xcorr dict contains also the threshold value for the xcorr to be meaningful
+        xcorr_modes = param_config["xcorr_parameters"]["xcorr_mode"].split(',')
+        assert(len(result["xcorr"]) -1 == len(xcorr_modes))
+        for mode in xcorr_modes:
+            assert(len(result["xcorr"][mode].keys()) == len(df.columns))
+            for ts in result["xcorr"][mode]:
+                assert(len(result["xcorr"][mode][ts].keys()) == len(df.columns) - 1)
