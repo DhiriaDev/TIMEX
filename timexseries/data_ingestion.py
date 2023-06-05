@@ -3,6 +3,9 @@ from io import StringIO
 
 import dateparser
 import pandas as pd
+import numpy as np
+
+from collections import Counter
 from pandas import DataFrame
 import copy
 
@@ -131,7 +134,6 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
              
         df_ingestion = pd.concat([df_ingestion, storage])
 
-
     log.debug(f"Removing duplicates rows from dataframe; keep the last...")
     df_ingestion = df_ingestion[~df_ingestion.index.duplicated(keep='last')]
 
@@ -166,6 +168,7 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
 
     df_ingestion = add_freq(df_ingestion, freq)
     df_ingestion = df_ingestion.interpolate()
+    df_ingestion = df_ingestion.dropna()
 
     log.info(f"Finished the data-ingestion phase. Some stats:\n"
              f"-> Number of rows: {len(df_ingestion)}\n"
@@ -251,7 +254,7 @@ def add_freq(df, freq=None) -> DataFrame:
     freq : str, optional
         If this attribute is specified, then the corresponding frequency will be forced on the DataFrame. If it is not
         specified, than, the frequency will be estimated.
-        `freq` should be a so called 'offset alias'; the possible values can be found at
+        `freq` could also be called 'offset alias'; the possible values can be found at
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
 
     Returns
@@ -301,30 +304,48 @@ def add_freq(df, freq=None) -> DataFrame:
     except:
         return local_df
 
-    # Df has already a freq. Don't do anything.
+    # df has already a freq. Don't do anything.
     if local_df.index.freq is not None:
         return local_df
 
+    # A `freq` was explictly passed, apply it and return
     if freq is not None:
-        if freq == 'D':
-            local_df.index = local_df.index.normalize()
-
         local_df = local_df.asfreq(freq=freq)
         return local_df
+
+    # We have to find a frequency for df.
+    for case in [0, 1]:
+        if case == 0:
+            index = local_df.index.to_numpy()
+        else:
+            index = local_df.index.normalize().to_numpy()
+
+        portions = 1
+
+        while freq is None and portions <= (len(local_df) // 3):
+            freqs = [pd.infer_freq(portion) for portion in np.array_split(index, portions)]
+            freqs = [f for f in freqs if f is not None]  # Filter out None
+            c = Counter(freqs)
+            if len(c) == 1:
+                freq = c.most_common()[0][0]
+            elif len(c) > 1:
+                if c.most_common()[0][0] > c.most_common()[1][0]:
+                    freq = c.most_common()[0][0]
+            if freq is not None:
+                if case == 0:
+                    local_df = local_df.asfreq(freq=freq)
+                if case == 1:
+                    local_df.index = local_df.index.normalize()
+                    local_df = local_df.asfreq(freq=freq)
+
+            portions += 1
 
     if freq is None:
-        freq = pd.infer_freq(local_df.index)
-
-        if freq is None:
-            local_df.index = local_df.index.normalize()
-            freq = pd.infer_freq(local_df.index)
-
-        if freq is None:
-            log.warning(f"No discernible frequency found for the dataframe.")
-            freq = "D"
-
+        log.warning(f"No discernible frequency found for the dataframe.")
+        freq = "D"
         local_df = local_df.asfreq(freq=freq)
-        return local_df
+
+    return local_df
 
 
 def select_timeseries_portion(data_frame, param_config):
