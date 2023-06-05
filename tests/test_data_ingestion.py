@@ -1,3 +1,4 @@
+import glob
 import os
 from datetime import datetime
 
@@ -289,11 +290,12 @@ class TestDataIngestion:
             for j in range(0, i):
                 df = df.drop(df.sample(1).index)
 
+            print("#########################")
+            print(df)
             df.to_csv(os.path.join(tmp_path, "test.csv"))
             df = ingest_timeseries(param_config)[2]
 
             assert df.iloc[:, 0].isnull().sum() == 0
-            assert df.index.freq == "D"
 
     def test_data_reordering(self):
         # Check that the dataframe is reordered from lowest to higher datetime index.
@@ -428,6 +430,20 @@ class TestAddFreq:
 
         new_ts = add_freq(ts)
         assert new_ts.index.freq == "D"
+
+    def test_real_datasets(self):
+        # Some real datasets are provided, with a human-annotated frequency.
+        # Check that it is always applied.
+        for fp in glob.glob('test_datasets/infer_freq_datasets/*'):
+            freq = fp.split("/")[-1].split("_")[0]
+            param_config = {
+                "input_parameters": {
+                    "source_data_url": fp,
+                }
+            }
+
+            df = ingest_timeseries(param_config)[2]
+            assert str(df.index.freq) == freq
 
 
 class TestDataSelection:
