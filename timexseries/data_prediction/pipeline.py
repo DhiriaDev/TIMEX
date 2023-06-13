@@ -834,6 +834,8 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
 
         best_model_name = list(models.keys())[0]
         best_validation_error = np.inf
+        default_model_name = list(models.keys())[0] #default best model in case all the predictions are constant
+        default_validation_error = np.inf
 
         for model_name, model_results in models.items():
             _dict = {}
@@ -846,10 +848,23 @@ def get_result_dict(ingested_data: DataFrame, param_config: dict) -> (dict):
 
             json_result["models_results"][column_name][model_name] = _dict
 
-            if _dict['validation_error'] < best_validation_error:
-                best_model_name = model_name
-                best_validation_error = _dict['validation_error']
+            
+            # In order to avoid constant predictions, when we select the best model among those with non-constant predictions.
+            # If all of them have contast predictions, we select the one with the min val error as default.
+            if _dict['validation_error'] < best_validation_error: 
+                # If max = min it means that all the predictions are equal: constant value has been predicted
+                if not (models[model_name].best_prediction['yhat'].max() == models[model_name].best_prediction['yhat'].min()) or param_config['model_parameters']['forecast_horizon'] == 1:
+                    best_model_name = model_name
+                    best_validation_error = _dict['validation_error']
+                    
+            if _dict['validation_error'] < default_validation_error:
+                default_model_name = model_name
+                default_validation_error = _dict['validation_error']
 
+        if best_validation_error == np.inf:
+            best_model_name = default_model_name
+            best_validation_error = default_validation_error
+        
         json_result["models_results"][column_name]["best_model_name"] = best_model_name
         json_result["models_results"][column_name]["best_model_characteristics"] = models[best_model_name].characteristics
 
