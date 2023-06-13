@@ -12,6 +12,30 @@ import copy
 log = logging.getLogger(__name__)
 
 
+def read_csv_flexible(dataset, columns_to_read=None):
+    combs = [[",","."],[";",","]]
+    for comb1 in combs:
+        for comb2 in combs:
+            if comb1!=comb2:
+                if columns_to_read is not None:
+                    try:
+                        df = pd.read_csv(StringIO(dataset.decode()), sep=comb1[0], decimal=comb1[1], usecols=columns_to_read)[columns_to_read]
+                        if comb2[0] in str(df.index[0]):
+                            continue
+                        return df
+                    except pd.errors.ParserError:
+                        continue
+                else:
+                    try:
+                        df = pd.read_csv(StringIO(dataset.decode()), sep=comb1[0], decimal=comb1[1])
+                        if comb2[0] in str(df.index[0]):
+                            continue
+                        return df
+                    except pd.errors.ParserError:
+                        continue
+    raise ValueError()
+
+
 def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame = None):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
@@ -93,13 +117,13 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
             # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
             df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
         else :
-            df_ingestion = pd.read_csv(StringIO(dataset.decode()), usecols=columns_to_read)[columns_to_read]
+            df_ingestion = read_csv_flexible(dataset, columns_to_read)
 
     except (KeyError, ValueError):
         if dataset is None:
             df_ingestion = pd.read_csv(source_data_url)
         else:
-            df_ingestion = pd.read_csv(StringIO(dataset.decode()))
+            df_ingestion = read_csv_flexible(dataset)
 
     try:
         index_column_name = input_parameters["index_column_name"]
