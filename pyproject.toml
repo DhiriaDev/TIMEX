@@ -17,11 +17,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis"
 ]
 
-[tool.poetry.group.data_visualization]
-optional = true
-[tool.poetry.group.data_prediction]
-optional = true
-
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
@@ -32,29 +27,26 @@ joblib = "^1.2.0"
 prophet = "1.1.1"
 numpy = "1.23.5"
 
+scipy = { version = ">=1.10.1", optional = true}
+dash = { version = ">=2.0.0", optional = true}
+dash-bootstrap-components = { version = ">=1.0.3", optional = true}
+colorhash = { version = ">=1.0.4", optional = true}
+networkx = { version = ">=2.6.3", optional = true}
+statsforecast = { version = ">=1.0.0", optional = true}
+scikit-learn = { version = ">=1.2.1", optional = true}
+statsmodels = { version = ">=0.13.1", optional = true}
+
+[tool.poetry.extras]
+data_prediction = ["scipy", "statsmodels", "statsforecast", "scikit-learn"]
+data_visualization = ["dash", "dash-bootstrap-components", "colorhash", "networkx", "statsmodels"]
 
 
-[tool.poetry.group.data_visualization.dependencies]
-dash = "^2.0.0"
-dash-bootstrap-components = "^1.0.3"
-colorhash = "^1.0.4"
-networkx = "^2.6.3"
-statsmodels = "^0.13.1"
-
-
-[tool.poetry.group.data_prediction.dependencies]
-scipy = "^1.7.3"
-statsmodels = "^0.13.1"
-statsforecast = "^1.0.0"
-scikit-learn = "^1.2.1"
-
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^6.2.2"
 pytest-cov = "^2.11.1"
 coverage-badge = "^1.0.1"
 pdoc3 = "^0.9.2"
 
 [build-system]
-requires = ["poetry-core>=1.2.*"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

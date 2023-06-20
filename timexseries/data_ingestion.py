@@ -1,5 +1,4 @@
 import logging
-from io import StringIO
 
 import dateparser
 import pandas as pd
@@ -12,31 +11,7 @@ import copy
 log = logging.getLogger(__name__)
 
 
-def read_csv_flexible(dataset, columns_to_read=None):
-    combs = [[",","."],[";",","]]
-    for comb1 in combs:
-        for comb2 in combs:
-            if comb1!=comb2:
-                if columns_to_read is not None:
-                    try:
-                        df = pd.read_csv(StringIO(dataset.decode()), sep=comb1[0], decimal=comb1[1], usecols=columns_to_read)[columns_to_read]
-                        if comb2[0] in str(df.index[0]):
-                            continue
-                        return df
-                    except pd.errors.ParserError:
-                        continue
-                else:
-                    try:
-                        df = pd.read_csv(StringIO(dataset.decode()), sep=comb1[0], decimal=comb1[1])
-                        if comb2[0] in str(df.index[0]):
-                            continue
-                        return df
-                    except pd.errors.ParserError:
-                        continue
-    raise ValueError()
-
-
-def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame = None):
+def ingest_timeseries(param_config: dict, records : list[str] or None, storage : pd.DataFrame or None):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
     This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
@@ -45,8 +20,8 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
     ----------
     param_config : dict
         A dictionary corresponding to a TIMEX JSON configuration file.
-    dataset : [bytes]
-        String of bytes from which the data frame will be loaded.
+    dataset : list[dict]
+        A list of json objects containing the data to be ingested
     storage pandas.DataFrame:
         Storage dataset for old data
 
@@ -113,22 +88,23 @@ def ingest_timeseries(param_config: dict, dataset = None, storage : pd.DataFrame
     try:
         columns_to_load_from_url = input_parameters["columns_to_load_from_url"]
         columns_to_read = list(columns_to_load_from_url.split(','))
-        if dataset is None:
+        if records is None:
             # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
             df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
         else :
-            df_ingestion = read_csv_flexible(dataset, columns_to_read)
+            df_ingestion = pd.concat([pd.read_json(record, orient='records') for record in records]).reset_index(drop=True)[columns_to_read]
 
     except (KeyError, ValueError):
-        if dataset is None:
+        if records is None:
             df_ingestion = pd.read_csv(source_data_url)
         else:
-            df_ingestion = read_csv_flexible(dataset)
+            df_ingestion = pd.concat([pd.read_json(record, orient='records') for record in records]).reset_index(drop=True)
 
     try:
         index_column_name = input_parameters["index_column_name"]
     except KeyError:
         index_column_name = df_ingestion.columns[0]
+        
 
     log.debug(f"Parsing {index_column_name} as datetime column...")
 
