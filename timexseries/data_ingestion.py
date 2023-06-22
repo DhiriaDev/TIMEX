@@ -92,13 +92,13 @@ def ingest_timeseries(param_config: dict, records : list[str] or None, storage :
             # We append [columns_to_read] to read_csv to maintain the same order of columns also in the df.
             df_ingestion = pd.read_csv(source_data_url, usecols=columns_to_read)[columns_to_read]
         else :
-            df_ingestion = pd.concat([pd.read_json(record, orient='records') for record in records]).reset_index(drop=True)[columns_to_read]
+            df_ingestion = pd.concat([pd.read_json(record, orient='columns') for record in records]).reset_index(drop=True)[columns_to_read]
 
     except (KeyError, ValueError):
         if records is None:
             df_ingestion = pd.read_csv(source_data_url)
         else:
-            df_ingestion = pd.concat([pd.read_json(record, orient='records') for record in records]).reset_index(drop=True)
+            df_ingestion = pd.concat([pd.read_json(record, orient='columns') for record in records]).reset_index(drop=True)
 
     try:
         index_column_name = input_parameters["index_column_name"]

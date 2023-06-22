@@ -35,7 +35,7 @@ networkx = { version = ">=2.6.3", optional = true}
 statsforecast = { version = ">=1.0.0", optional = true}
 scikit-learn = { version = ">=1.2.1", optional = true}
 statsmodels = { version = ">=0.13.1", optional = true}
-prophet = { version = "1.1.2", optional = true}
+prophet = { version = "1.1.1", optional = true}
 
 
 [tool.poetry.extras]
