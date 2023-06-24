@@ -11,7 +11,7 @@ import copy
 log = logging.getLogger(__name__)
 
 
-def ingest_timeseries(param_config: dict, records : list[str] or None, storage : pd.DataFrame or None):
+def ingest_timeseries(param_config: dict, records : list[str] or None=None, storage : pd.DataFrame or None=None):
     """Retrieve the time-series data at the URL specified in `param_config['input parameters']` and return it in a
     Pandas' DataFrame.
     This can be used for the initial data ingestion, i.e. to ingest the initial time-series which will be predicted.
